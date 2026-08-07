@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* محايدات باردة — أساس واجهة مؤسسية هادئة */
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    /* اللون الأساسي: أخضر مزرقّ عميق — جدّي وموثوق */
+    --primary: 175 77% 26%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 28% 17%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 175 60% 95%;
+    --accent-foreground: 175 77% 22%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 32%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 90% 44%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 214 26% 90%;
+    --input: 214 26% 90%;
+    --ring: 175 77% 26%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 215 32% 10%;
+    --foreground: 210 30% 96%;
+
+    --card: 215 30% 13%;
+    --card-foreground: 210 30% 96%;
+
+    --popover: 215 30% 13%;
+    --popover-foreground: 210 30% 96%;
+
+    --primary: 175 62% 45%;
+    --primary-foreground: 215 32% 10%;
+
+    --secondary: 215 25% 19%;
+    --secondary-foreground: 210 30% 96%;
+
+    --muted: 215 25% 19%;
+    --muted-foreground: 215 15% 65%;
+
+    --accent: 215 25% 21%;
+    --accent-foreground: 210 30% 96%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 50% 45%;
+    --success-foreground: 215 32% 10%;
+
+    --warning: 32 80% 55%;
+    --warning-foreground: 215 32% 10%;
+
+    --border: 215 22% 24%;
+    --input: 215 22% 24%;
+    --ring: 175 62% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'kern' 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* الأرقام تبقى لاتينية داخل النص العربي لسهولة القراءة في الجداول */
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    display: inline-block;
+  }
+
+  /* في RTL يُقلب اتجاه شريط التمرير الأفقي تلقائيًا */
+  [dir='rtl'] .scroll-shadow {
+    background-attachment: local, local, scroll, scroll;
+  }
+
+  ::selection {
+    @apply bg-primary/15;
+  }
+}
+
+@layer components {
+  /* حلقة تركيز موحّدة لكل العناصر التفاعلية */
+  .focus-ring {
+    @apply outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* تنسيق نص إجابة المساعد */
+  .answer-prose {
+    @apply text-[15px] leading-[1.9] text-foreground;
+  }
+  .answer-prose p {
+    @apply mb-3 last:mb-0;
+  }
+  .answer-prose ul,
+  .answer-prose ol {
+    @apply mb-3 space-y-1.5 pe-5;
+  }
+  .answer-prose ul {
+    @apply list-disc;
+  }
+  .answer-prose ol {
+    @apply list-decimal;
+  }
+  .answer-prose strong {
+    @apply font-semibold;
+  }
+  .answer-prose code {
+    @apply rounded bg-muted px-1.5 py-0.5 text-[13px];
+  }
+}
+
+/* شريط تمرير رفيع */
+@layer utilities {
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
