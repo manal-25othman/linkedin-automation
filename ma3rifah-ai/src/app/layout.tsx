@@ -70,6 +70,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/*
+          القاعدة التالية تخص Pages Router؛ هنا الخط مُعرَّف في الجذر مرة
+          واحدة فيُحمَّل لكل الصفحات، ولا يُستخدم next/font لتفادي جلب
+          الخط وقت البناء في بيئات بلا وصول للشبكة.
+        */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
           rel="stylesheet"

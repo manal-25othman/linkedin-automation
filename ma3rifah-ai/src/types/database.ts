@@ -425,6 +425,22 @@ export interface Database {
           created_at: string;
         }[];
       };
+      seed_match_chunks: {
+        Args: {
+          p_company_id: string;
+          p_query_embedding: string;
+          p_match_count?: number;
+        };
+        Returns: {
+          chunk_id: string;
+          document_id: string;
+          document_name: string;
+          content: string;
+          page_number: number | null;
+          section_title: string | null;
+          similarity: number;
+        }[];
+      };
       company_usage_summary: {
         Args: Record<string, never>;
         Returns: {
