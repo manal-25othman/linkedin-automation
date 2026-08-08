@@ -8,12 +8,7 @@ import { recordAudit } from '@/lib/audit';
 import { loginSchema, registerSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { logger } from '@/lib/logger';
 
-export interface AuthFormState {
-  status: 'idle' | 'error' | 'pending_confirmation';
-  message: string;
-}
-
-export const AUTH_INITIAL_STATE: AuthFormState = { status: 'idle', message: '' };
+import type { AuthFormState } from './form-state';
 
 /** رسائل Supabase الإنجليزية تُترجم إلى رسائل عربية صالحة للعرض */
 function translateAuthError(message: string): string {

@@ -365,6 +365,81 @@ export interface Database {
         Args: { p_text: string };
         Returns: string;
       };
+      company_dashboard_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          users_count: number;
+          documents_count: number;
+          documents_ready: number;
+          documents_processing: number;
+          conversations_count: number;
+          questions_count: number;
+          answered_count: number;
+          unanswered_count: number;
+          open_gaps_count: number;
+        }[];
+      };
+      company_top_questions: {
+        Args: { p_limit?: number };
+        Returns: {
+          question: string;
+          times_asked: number;
+          answered: number;
+          unanswered: number;
+        }[];
+      };
+      company_questions_timeseries: {
+        Args: { p_days?: number };
+        Returns: {
+          day: string;
+          total: number;
+          answered: number;
+          unanswered: number;
+        }[];
+      };
+      company_top_documents: {
+        Args: { p_limit?: number };
+        Returns: {
+          document_id: string;
+          document_name: string;
+          citations: number;
+        }[];
+      };
+      company_department_usage: {
+        Args: Record<string, never>;
+        Returns: {
+          department_id: string;
+          department_name: string;
+          questions: number;
+          active_users: number;
+        }[];
+      };
+      company_recent_activity: {
+        Args: { p_limit?: number };
+        Returns: {
+          id: string;
+          action: string;
+          entity_type: string | null;
+          actor_name: string;
+          metadata: Json;
+          created_at: string;
+        }[];
+      };
+      company_usage_summary: {
+        Args: Record<string, never>;
+        Returns: {
+          plan_name: string;
+          plan_code: string;
+          subscription_status: string;
+          period_end: string;
+          users_used: number;
+          users_limit: number | null;
+          documents_used: number;
+          documents_limit: number | null;
+          questions_used: number;
+          questions_limit: number | null;
+        }[];
+      };
     };
     Enums: {
       user_role: UserRole;

@@ -7,7 +7,8 @@ import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { loginAction, AUTH_INITIAL_STATE } from '../actions';
+import { loginAction } from '../actions';
+import { AUTH_INITIAL_STATE } from '../form-state';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
