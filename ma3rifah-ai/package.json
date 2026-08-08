@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:isolation": "bash tests/sql/run-isolation-tests.sh",
+    "test:isolation:mutate": "MUTATE=1 TEST_DB=ma3rifah_mutation bash tests/sql/run-isolation-tests.sh",
     "db:seed": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed.ts",
     "db:reset": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed.ts --reset"
   },

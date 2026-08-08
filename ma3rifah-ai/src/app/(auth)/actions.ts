@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { bootstrapCompany } from '@/lib/auth/bootstrap';
+import { activateInvitedProfile } from '@/lib/auth/activation';
 import { recordAudit } from '@/lib/audit';
 import { loginSchema, registerSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { logger } from '@/lib/logger';
@@ -65,6 +66,21 @@ export async function loginAction(
       return {
         status: 'error',
         message: 'هذا الحساب معطّل. تواصل مع مدير الشركة.',
+      };
+    }
+
+    // أول دخول لمستخدم مدعو يرفع حالته إلى ACTIVE
+    const activation = await activateInvitedProfile({
+      userId: data.user.id,
+      status: profile?.status,
+      companyId: profile?.company_id,
+    });
+
+    if (activation === 'PENDING_COMPANY') {
+      await supabase.auth.signOut();
+      return {
+        status: 'error',
+        message: 'حسابك غير مرتبط بأي شركة بعد. تواصل مع الدعم لإكمال التجهيز.',
       };
     }
 

@@ -105,9 +105,18 @@ create table if not exists public.profiles (
   last_seen_at  timestamptz,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
-  -- مدير المنصة وحده يجوز أن يكون بلا شركة
+  -- لا يجوز أن يكون الملف بلا شركة إلا في حالتين:
+  --   • مدير المنصة (SUPER_ADMIN) فليس تابعًا لأي شركة.
+  --   • ملف مؤقت حالته INVITED أنشأه مُحفِّز التسجيل قبل أن يُنشئ
+  --     الخادم الشركة ويربطها به. هذه الحالة لا تمنح أي وصول:
+  --     getSessionContext ترفض غير ACTIVE، وسياسات RLS ودوال
+  --     الاسترجاع تشترط company_id غير فارغ.
   constraint profiles_company_required
-    check (role = 'SUPER_ADMIN' or company_id is not null)
+    check (
+      role = 'SUPER_ADMIN'
+      or company_id is not null
+      or status = 'INVITED'
+    )
 );
 
 create index if not exists profiles_company_idx on public.profiles (company_id);
@@ -131,11 +140,15 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, full_name)
+  -- الحالة INVITED مؤقتة: الملف بلا شركة بعد، ولا يمنح أي وصول.
+  -- يرفعها الخادم إلى ACTIVE بعد إنشاء الشركة وربطها (bootstrapCompany)
+  -- أو عند قبول دعوة من مدير شركة.
+  insert into public.profiles (id, email, full_name, status)
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data ->> 'full_name', '')
+    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    'INVITED'
   )
   on conflict (id) do nothing;
   return new;
