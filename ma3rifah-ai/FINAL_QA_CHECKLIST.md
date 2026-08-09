@@ -196,7 +196,7 @@
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `service_role` → `SUPABASE_SERVICE_ROLE_KEY` ⚠️ **لا يُعرض في المتصفح ولا يُوضع في Git**
-3. **SQL Editor** — نفّذي ملفات `supabase/migrations/*.sql` **بالترتيب الرقمي** من `0001` إلى `0011`.
+3. **SQL Editor** — الصقي محتوى **`supabase/ALL_MIGRATIONS.sql`** كاملًا ونفّذيه **مرة واحدة**. (هو نفسه ملفات `supabase/migrations/*.sql` الأحد عشر مدمجة بالترتيب؛ إن فضّلتِ نفّذيها واحدًا واحدًا من `0001` إلى `0011`. الملف آمن لإعادة التنفيذ.)
 4. **Storage** — تُنشئ الهجرة `0008` الحاويات تلقائيًا. تأكدي أن حاوية `documents` **خاصة (Private)** لا عامة.
 5. **Authentication → Providers → Email** — فعّلي البريد. للتجربة السريعة أوقفي «Confirm email»، وأعيدي تفعيله قبل الإنتاج.
 6. **Authentication → URL Configuration** — أضيفي `Site URL` ونطاق Vercel في `Redirect URLs`.
@@ -254,7 +254,7 @@ cp .env.example .env.local
 #    ثم املئي القيم من القسم 6 أعلاه
 
 # 4) تطبيق مخطط قاعدة البيانات
-#    من Supabase SQL Editor: نفّذي supabase/migrations/*.sql بالترتيب 0001 → 0011
+#    من Supabase SQL Editor: الصقي supabase/ALL_MIGRATIONS.sql كاملًا ونفّذيه مرة واحدة
 
 # 5) زرع البيانات التجريبية (اختياري لكنه موصى به للعرض)
 npm run db:seed
@@ -282,6 +282,23 @@ npm run test:isolation:mutate                                     # يتوقع �
 ```
 
 يخرج السكربت بحالة غير صفرية عند أي فشل، فيصلح بوابةً في CI قبل النشر.
+
+### إنشاء حساب مدير المنصة (SUPER_ADMIN)
+
+سكربت البذور **لا يُنشئ** حساب مدير منصة — عمدًا، فمنح هذا الدور آليًا خطر. أنشئيه بنفسك بعد أول تشغيل:
+
+1. سجّلي حسابًا عاديًا من `/register`.
+2. من **Supabase SQL Editor** نفّذي (بعد تبديل البريد ببريدك):
+
+```sql
+update public.profiles
+set role = 'SUPER_ADMIN', company_id = null, status = 'ACTIVE'
+where email = 'بريدك@مثال.com';
+```
+
+3. سجّلي الخروج ثم الدخول مجددًا — ستظهر لوحة `/admin`.
+
+⚠️ مدير المنصة يرى كل الشركات. لا تمنحي هذا الدور إلا لكِ.
 
 ### حسابات البيانات التجريبية
 

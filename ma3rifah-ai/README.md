@@ -150,6 +150,8 @@ supabase link --project-ref <project-ref>
 supabase db push
 ```
 
+**اختصار:** بدل تنفيذ الملفات الأحد عشر واحدًا واحدًا، الصقي محتوى `supabase/ALL_MIGRATIONS.sql` كاملًا في SQL Editor ونفّذيه مرة واحدة. يُولَّد بـ`npm run db:bundle` بعد أي تغيير في مجلد الهجرات، وآمن لإعادة التنفيذ.
+
 ### التحقق من نجاح التطبيق
 
 ```sql
