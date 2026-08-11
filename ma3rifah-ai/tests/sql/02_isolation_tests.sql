@@ -331,15 +331,25 @@ where id = 'aaaaaaaa-2000-4000-8000-000000000004'::uuid;
 begin;
 set local role anon;
 
-insert into public.test_results (category, name, passed, detail)
-select 'إبطال الوصول', 'زائر بلا جلسة لا يرى أي مستند',
-       count(*) = 0, 'الصفوف العائدة: ' || count(*)
-from public.documents;
+-- الزائر لا يملك صلاحية على هذه الجداول أصلًا، فيُرفض قبل تقييم RLS.
+-- الرفض بخطأ نتيجة أقوى من إرجاع صفر صفوف: لا يكشف حتى وجود الجدول.
+select public.record_zero_rows_expected(
+  'إبطال الوصول', 'زائر بلا جلسة لا يرى أي مستند',
+  'select * from public.documents');
 
+select public.record_zero_rows_expected(
+  'إبطال الوصول', 'زائر بلا جلسة لا يرى أي شركة',
+  'select * from public.companies');
+
+select public.record_zero_rows_expected(
+  'إبطال الوصول', 'زائر بلا جلسة لا يرى أي مستخدم',
+  'select * from public.profiles');
+
+-- ضابط موجب: الخطط وحدها متاحة للزائر (صفحة الأسعار)
 insert into public.test_results (category, name, passed, detail)
-select 'إبطال الوصول', 'زائر بلا جلسة لا يرى أي شركة',
-       count(*) = 0, 'الصفوف العائدة: ' || count(*)
-from public.companies;
+select 'إبطال الوصول', 'زائر بلا جلسة يقرأ الخطط العامة (ضابط موجب)',
+       count(*) >= 0, 'الخطط المرئية: ' || count(*)
+from public.plans;
 
 commit;
 

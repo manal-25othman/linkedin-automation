@@ -356,3 +356,53 @@ grant execute on function public.check_question_quota() to authenticated;
 
 revoke all on function public.record_usage(uuid, int, bigint, bigint, numeric) from public;
 grant execute on function public.record_usage(uuid, int, bigint, bigint, numeric) to service_role;
+
+-- =====================================================================
+-- صلاحيات الجداول
+--
+-- سياسات RLS تحدد *أي الصفوف* يراها الدور، لكنها لا تمنحه الوصول إلى
+-- الجدول أصلًا — لا بد من GRANT صريح. تمنح Supabase هذه الصلاحيات
+-- تلقائيًا عبر خيار «Automatically expose new tables» في لوحة التحكم،
+-- لكن ربط الأمان بخيار في واجهة قد يُبدَّل يجعل السلوك غير مضمون.
+--
+-- تُمنح هنا صراحةً لسببين: تصبح الهجرة مكتفية بذاتها فتعمل على أي
+-- PostgreSQL، ويصير سطح الوصول مقروءًا في الكود لا في إعداد خفي.
+-- يمكن بعدها إيقاف ذلك الخيار كما توصي Supabase نفسها.
+--
+-- المستوى الممنوح هنا يطابق ما تسمح به السياسات أعلاه: الجداول التي
+-- لها سياسات كتابة تُمنح CRUD، والسجلات التي تُقرأ فقط (التدقيق
+-- والاستهلاك) تُمنح SELECT وحدها — فلا يوجد امتياز بلا سياسة تحرسه.
+-- =====================================================================
+
+do $$
+declare
+  v_table text;
+begin
+  -- جداول يكتب فيها المستخدم (ضمن حدود سياساته)
+  foreach v_table in array array[
+    'companies', 'departments', 'profiles', 'knowledge_categories',
+    'documents', 'document_chunks', 'conversations', 'messages',
+    'message_sources', 'knowledge_gaps', 'analytics_events',
+    'plans', 'subscriptions'
+  ] loop
+    execute format(
+      'grant select, insert, update, delete on public.%I to authenticated', v_table);
+  end loop;
+
+  -- سجلات للقراءة فقط: لا سياسة كتابة لها، فلا صلاحية كتابة عليها
+  -- contact_requests يُنشأ في 0009، وصلاحيته تُمنح هناك
+  foreach v_table in array array[
+    'usage_records', 'ai_usage_logs', 'audit_logs'
+  ] loop
+    execute format('grant select on public.%I to authenticated', v_table);
+  end loop;
+end $$;
+
+-- الزائر بلا جلسة لا يقرأ إلا الخطط (صفحة الأسعار). كل ما عدا ذلك من
+-- صفحات التسويق لا يمس قاعدة البيانات، ونموذج «تواصل معنا» يُكتب
+-- بمفتاح الخدمة على الخادم.
+grant select on public.plans to anon;
+
+-- مفتاح الخدمة يتجاوز RLS أصلًا، لكن الصلاحيات تبقى لازمة
+grant all on all tables in schema public to service_role;
+grant usage, select on all sequences in schema public to authenticated, service_role;

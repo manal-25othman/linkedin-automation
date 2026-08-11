@@ -32,3 +32,8 @@ drop policy if exists contact_requests_select on public.contact_requests;
 create policy contact_requests_select on public.contact_requests
   for select to authenticated
   using (public.is_super_admin());
+
+-- الجدول يُقرأ من لوحة مدير المنصة فقط؛ الكتابة تتم بمفتاح الخدمة على
+-- الخادم بعد التحقق من النموذج، فلا يحتاج الزائر أي صلاحية عليه.
+grant select on public.contact_requests to authenticated;
+grant all on public.contact_requests to service_role;

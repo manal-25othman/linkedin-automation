@@ -111,11 +111,12 @@ grant select on storage.buckets to anon, authenticated;
 grant select, insert, update, delete on storage.objects to anon, authenticated;
 grant all on storage.buckets, storage.objects to service_role;
 
-alter default privileges in schema public
-  grant select, insert, update, delete on tables to authenticated;
-alter default privileges in schema public
-  grant select on tables to anon;
-alter default privileges in schema public
-  grant all on tables to service_role;
+-- ملاحظة مقصودة: لا تُمنح هنا أي صلاحيات افتراضية على الجداول.
+--
+-- تمنحها Supabase تلقائيًا حين يكون خيار «Automatically expose new
+-- tables» مفعّلًا. تركها هنا كان سيخفي اعتمادًا خفيًا: هجرة تبدو
+-- ناجحة لأن المنصة منحت الصلاحيات نيابةً عنها، فتنكسر عند من يوقف
+-- ذلك الخيار. إبقاء البيئة «فارغة الصلاحيات» يجعل الاختبارات تثبت أن
+-- 0007_rls_policies.sql يمنح ما يلزم بنفسه.
 alter default privileges in schema public
   grant usage, select on sequences to anon, authenticated, service_role;
