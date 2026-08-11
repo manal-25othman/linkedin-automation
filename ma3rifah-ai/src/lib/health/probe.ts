@@ -23,14 +23,27 @@ type RestStatus =
   | 'unconfigured'
   | 'invalid_key'
   | 'schema_missing'
+  | 'not_found'
   | 'unreachable'
   | 'unexpected_status';
 
-type AuthStatus = 'ok' | 'unconfigured' | 'invalid_key' | 'unreachable' | 'unexpected_status';
+type AuthStatus =
+  | 'ok'
+  | 'unconfigured'
+  | 'invalid_key'
+  | 'not_found'
+  | 'unreachable'
+  | 'unexpected_status';
 
 export type SupabaseProbe = {
   rest: RestStatus;
   auth: AuthStatus;
+  /**
+   * الرابط المستعمل فعلًا بعد التنظيف. عرضه هنا ليس تسريبًا: قيمة
+   * NEXT_PUBLIC_SUPABASE_URL تُشحن أصلًا إلى كل متصفح ضمن حزمة الواجهة.
+   * إظهارها ينهي التخمين حين يكون الخطأ في الرابط نفسه.
+   */
+  url: string;
   /** من إعدادات Supabase العامة — تُقرأ أصلًا من أي متصفح */
   signupEnabled: boolean | null;
   emailAutoconfirm: boolean | null;
@@ -55,7 +68,13 @@ async function request(path: string): Promise<Response> {
 
 export async function probeSupabase(): Promise<SupabaseProbe> {
   if (!hasPublicSupabaseConfig) {
-    return { rest: 'unconfigured', auth: 'unconfigured', signupEnabled: null, emailAutoconfirm: null };
+    return {
+      rest: 'unconfigured',
+      auth: 'unconfigured',
+      url: PUBLIC_SUPABASE_URL,
+      signupEnabled: null,
+      emailAutoconfirm: null,
+    };
   }
 
   // جدول plans عام بطبيعته (سياسة قراءة للزوار)، فهو مسبار مناسب:
@@ -86,6 +105,10 @@ export async function probeSupabase(): Promise<SupabaseProbe> {
       emailAutoconfirm = settings.mailer_autoconfirm ?? null;
     } else if (response.status === 401 || response.status === 403) {
       auth = 'invalid_key';
+    } else if (response.status === 404) {
+      // خدمة المصادقة موجودة في كل مشروع Supabase، فـ404 هنا يعني أن
+      // الرابط لا يشير إلى جذر واجهة المشروع أصلًا.
+      auth = 'not_found';
     } else {
       auth = 'unexpected_status';
     }
@@ -93,5 +116,5 @@ export async function probeSupabase(): Promise<SupabaseProbe> {
     auth = 'unreachable';
   }
 
-  return { rest, auth, signupEnabled, emailAutoconfirm };
+  return { rest, auth, url: PUBLIC_SUPABASE_URL, signupEnabled, emailAutoconfirm };
 }

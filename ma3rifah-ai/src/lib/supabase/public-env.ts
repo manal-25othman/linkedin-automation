@@ -21,7 +21,18 @@ function firstNonEmpty(...values: (string | undefined)[]): string {
   return '';
 }
 
-export const PUBLIC_SUPABASE_URL = firstNonEmpty(process.env.NEXT_PUBLIC_SUPABASE_URL);
+/**
+ * تُبنى مسارات الواجهة بالإلحاق (`${url}/rest/v1/...`)، فشرطة زائدة في
+ * آخر القيمة تُنتج `//rest/v1` فترفضه بوابة Supabase بـ404 — عطل صامت
+ * يبدو كأن الجداول غير موجودة. نزعها هنا يجعل القيمتين متكافئتين.
+ */
+function normalizeBaseUrl(value: string): string {
+  return value.replace(/\/+$/, '');
+}
+
+export const PUBLIC_SUPABASE_URL = normalizeBaseUrl(
+  firstNonEmpty(process.env.NEXT_PUBLIC_SUPABASE_URL),
+);
 
 export const PUBLIC_SUPABASE_ANON_KEY = firstNonEmpty(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
