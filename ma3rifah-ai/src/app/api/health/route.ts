@@ -32,6 +32,9 @@ export async function GET() {
       embeddings: { provider: embeddingsProvider, productionReady: embeddingsProduction },
     },
     missingEnvVars: configuration.missing,
+    // أسماء المتغيرات المقروءة فعلًا وقت التشغيل — بلا أي قيمة. يكشف
+    // أخطاء التسمية (مثل حفظ المفتاح باسم غير الذي يقرأه الكود).
+    detectedEnvVars: configuration.detected,
     warnings: configuration.warnings,
   };
 

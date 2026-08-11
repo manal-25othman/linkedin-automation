@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { FALLBACK_PLANS, formatLimit } from '@/lib/config/plans';
 import { formatCurrency, cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { hasPublicSupabaseConfig } from '@/lib/supabase/public-env';
 import type { Plan } from '@/types/database';
 
 /**
@@ -12,7 +13,7 @@ import type { Plan } from '@/types/database';
  * إن تعذّر الوصول (وقت البناء مثلًا) نعرض النسخة الاحتياطية.
  */
 async function loadPlans(): Promise<Plan[]> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (!hasPublicSupabaseConfig) {
     return FALLBACK_PLANS;
   }
 

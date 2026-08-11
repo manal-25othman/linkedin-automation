@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/types/database';
+import {
+  PUBLIC_SUPABASE_ANON_KEY,
+  PUBLIC_SUPABASE_URL,
+  hasPublicSupabaseConfig,
+} from './public-env';
 
 /**
  * تحديث جلسة Supabase على كل طلب وإعادة توجيه غير المصادَقين.
@@ -9,18 +14,15 @@ import type { Database } from '@/types/database';
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   // قبل ضبط متغيرات Supabase لا يمكن التحقق من أي جلسة. لا نرمي خطأ هنا:
   // الـmiddleware يعمل على كل طلب، ورميه يحوّل حتى صفحات التسويق العامة
   // إلى صفحة خطأ. نعيد «لا مستخدم» فتظهر الصفحات العامة كما هي، وتُحوَّل
   // الصفحات المحمية إلى /login. التشخيص متاح على /api/health.
-  if (!url || !anonKey) {
+  if (!hasPublicSupabaseConfig) {
     return { response, user: null };
   }
 
-  const supabase = createServerClient<Database>(url, anonKey, {
+  const supabase = createServerClient<Database>(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

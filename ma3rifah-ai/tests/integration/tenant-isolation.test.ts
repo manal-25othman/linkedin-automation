@@ -19,8 +19,13 @@ config({ path: '.env' });
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// يُقبل الاسمان القديم والجديد لمفاتيح Supabase (anon/publishable و
+// service_role/secret) حتى لا تتخطى الاختبارات نفسها بصمت لخطأ تسمية.
+const ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
 const CAN_RUN = Boolean(SUPABASE_URL && ANON_KEY && SERVICE_KEY);
 const suite = CAN_RUN ? describe : describe.skip;
