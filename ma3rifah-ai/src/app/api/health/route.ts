@@ -34,6 +34,7 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     checks: {
       supabaseEnvVars: configuration.missing.length === 0,
+      supabaseUrl: supabase.url,
       supabaseRest: supabase.rest,
       supabaseAuth: supabase.auth,
       signupEnabled: supabase.signupEnabled,
