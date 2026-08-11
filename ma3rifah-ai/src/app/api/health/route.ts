@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { checkConfiguration } from '@/lib/env';
 import { getEmbeddingProvider } from '@/lib/rag/embeddings';
 import { isAiConfigured } from '@/lib/ai/claude';
+import { probeSupabase } from '@/lib/health/probe';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET() {
   const configuration = checkConfiguration();
+  const supabase = await probeSupabase();
 
   let embeddingsProvider = 'unknown';
   let embeddingsProduction = false;
@@ -23,11 +25,19 @@ export async function GET() {
     embeddingsProvider = 'unavailable';
   }
 
+  // الإعدادات موجودة ≠ الإعدادات صحيحة. لا يُعدّ النظام جاهزًا حتى
+  // ينجح المسبار الحيّ ضد Supabase فعلًا.
+  const ready = configuration.ok && supabase.rest === 'ok' && supabase.auth === 'ok';
+
   const body = {
-    status: configuration.ok ? 'ok' : 'misconfigured',
+    status: ready ? 'ok' : 'misconfigured',
     timestamp: new Date().toISOString(),
     checks: {
-      supabase: configuration.missing.length === 0,
+      supabaseEnvVars: configuration.missing.length === 0,
+      supabaseRest: supabase.rest,
+      supabaseAuth: supabase.auth,
+      signupEnabled: supabase.signupEnabled,
+      emailAutoconfirm: supabase.emailAutoconfirm,
       claudeApi: isAiConfigured(),
       embeddings: { provider: embeddingsProvider, productionReady: embeddingsProduction },
     },
@@ -39,7 +49,7 @@ export async function GET() {
   };
 
   return NextResponse.json(body, {
-    status: configuration.ok ? 200 : 503,
+    status: ready ? 200 : 503,
     headers: { 'Cache-Control': 'no-store' },
   });
 }
