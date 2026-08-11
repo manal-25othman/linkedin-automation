@@ -48,7 +48,11 @@ export const serverEnv = {
     return allowed.includes(value) ? value : 'medium';
   },
   get anthropicMaxOutputTokens() {
-    return optionalInt('ANTHROPIC_MAX_OUTPUT_TOKENS', 2000);
+    // على claude-opus-5 التفكير مفعّل تلقائيًا ما لم يُعطَّل صراحةً، و
+    // max_tokens سقف لمجموع (التفكير + نص الإجابة) لا للإجابة وحدها.
+    // قيمة ضيقة كـ2000 قد يستهلكها التفكير فتُبتر الإجابة العربية في
+    // منتصفها بلا خطأ — يعود stop_reason = 'max_tokens' فقط.
+    return optionalInt('ANTHROPIC_MAX_OUTPUT_TOKENS', 8000);
   },
   get embeddingsProvider() {
     const value = optional('EMBEDDINGS_PROVIDER', 'local');

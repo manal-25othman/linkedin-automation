@@ -114,6 +114,28 @@ export async function generateAnswer(params: {
       };
     }
 
+    // بلوغ السقف يعني أن الإجابة مبتورة. لا يرفع SDK خطأً هنا، فلو
+    // أُعيد النص كما هو لظهر للموظف نصف جواب يبدو مكتملًا.
+    if (response.stop_reason === 'max_tokens') {
+      logger.warn('بلغت الإجابة سقف الرموز فبُترت', {
+        model,
+        outputTokens: response.usage.output_tokens,
+      });
+
+      return {
+        text:
+          (text ? `${text}\n\n` : '') +
+          '⚠️ تجاوزت الإجابة الحد الأقصى لطولها فتوقفت قبل اكتمالها. ' +
+          'أعد طرح السؤال بصيغة أضيق، أو اطلب من مدير الشركة رفع ' +
+          'ANTHROPIC_MAX_OUTPUT_TOKENS.',
+        model,
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+        latencyMs: Date.now() - startedAt,
+        stopReason: response.stop_reason,
+      };
+    }
+
     return {
       text,
       model,
