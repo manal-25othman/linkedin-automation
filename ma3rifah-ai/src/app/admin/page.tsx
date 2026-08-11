@@ -1,0 +1,141 @@
+import type { Metadata } from 'next';
+import { Building2, Coins, FileStack, MessageCircleQuestion, Users } from 'lucide-react';
+import { requireSuperAdmin } from '@/lib/auth/session';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { PageHeader } from '@/components/shared/page-header';
+import { StatCard } from '@/components/shared/stat-card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { formatRelativeTime } from '@/lib/utils';
+
+export const metadata: Metadata = { title: 'إدارة المنصة' };
+export const dynamic = 'force-dynamic';
+
+export default async function AdminOverviewPage() {
+  await requireSuperAdmin();
+
+  // مدير المنصة يرى كل الشركات — نستخدم العميل الإداري بعد تحقق صريح أعلاه
+  const admin = createAdminClient();
+
+  const [companies, profiles, documents, messages, usage, contactRequests] = await Promise.all([
+    admin.from('companies').select('id, name, status, is_demo, created_at').order('created_at', {
+      ascending: false,
+    }),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('status', 'ACTIVE'),
+    admin.from('documents').select('id', { count: 'exact', head: true }).neq('status', 'ARCHIVED'),
+    admin.from('messages').select('id', { count: 'exact', head: true }).eq('role', 'USER'),
+    admin
+      .from('usage_records')
+      .select('estimated_cost_usd')
+      .eq('period_month', new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        .toISOString()
+        .slice(0, 10)),
+    admin
+      .from('contact_requests')
+      .select('id, full_name, company_name, email, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(8),
+  ]);
+
+  const companyRows = companies.data ?? [];
+  const monthlyCost = (usage.data ?? []).reduce(
+    (total, record) => total + Number(record.estimated_cost_usd ?? 0),
+    0,
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="نظرة عامة على المنصة"
+        description="مؤشرات الاستخدام عبر جميع الشركات المشتركة."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="الشركات" value={companyRows.length} icon={Building2} />
+        <StatCard label="المستخدمون النشطون" value={profiles.count ?? 0} icon={Users} />
+        <StatCard label="المستندات" value={documents.count ?? 0} icon={FileStack} />
+        <StatCard label="إجمالي الأسئلة" value={messages.count ?? 0} icon={MessageCircleQuestion} />
+        <StatCard
+          label="تكلفة AI هذا الشهر"
+          value={`$${monthlyCost.toFixed(2)}`}
+          icon={Coins}
+          hint="تقديرية بأسعار القائمة"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>أحدث الشركات</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {companyRows.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                لا توجد شركات مسجّلة بعد.
+              </p>
+            ) : (
+              <ul className="divide-y">
+                {companyRows.slice(0, 8).map((company) => (
+                  <li
+                    key={company.id}
+                    className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{company.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatRelativeTime(company.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {company.is_demo ? <Badge variant="warning">تجريبية</Badge> : null}
+                      <Badge variant={company.status === 'ACTIVE' ? 'success' : 'muted'}>
+                        {company.status === 'ACTIVE' ? 'نشطة' : 'موقوفة'}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>طلبات التواصل</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(contactRequests.data ?? []).length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                لا توجد طلبات تواصل جديدة.
+              </p>
+            ) : (
+              <ul className="divide-y">
+                {(contactRequests.data ?? []).map((request) => (
+                  <li key={request.id} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-medium">{request.company_name}</p>
+                      <Badge variant={request.status === 'NEW' ? 'default' : 'muted'}>
+                        {request.status === 'NEW' ? 'جديد' : 'تمت المتابعة'}
+                      </Badge>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground" dir="ltr">
+                      {request.full_name} — {request.email}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {formatRelativeTime(request.created_at)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        عدد الأسئلة والتكلفة مؤشرات تشغيلية مجمّعة. محتوى المحادثات ومستندات الشركات لا
+        يُعرض في هذه الشاشة.
+      </p>
+    </div>
+  );
+}
