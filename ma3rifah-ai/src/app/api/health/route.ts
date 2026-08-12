@@ -36,6 +36,7 @@ export async function GET() {
       supabaseEnvVars: configuration.missing.length === 0,
       supabaseUrl: supabase.url,
       supabaseRest: supabase.rest,
+      supabaseRestStatusCode: supabase.restStatusCode,
       supabaseAuth: supabase.auth,
       signupEnabled: supabase.signupEnabled,
       emailAutoconfirm: supabase.emailAutoconfirm,

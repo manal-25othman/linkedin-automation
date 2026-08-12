@@ -125,15 +125,17 @@ export default async function SetupPage() {
     {
       label: 'الاتصال بقاعدة البيانات',
       ok: supabase.rest === 'ok',
-      detail: {
-        ok: 'الجداول موجودة والمفتاح صالح.',
-        invalid_key: 'المفتاح العام مرفوض — غالبًا من مشروع Supabase آخر.',
-        schema_missing: 'الاستعلام رجع «غير موجود» — إمّا الرابط خاطئ أو الهجرات لم تُطبَّق.',
-        not_found: 'المسار غير موجود على هذا الرابط.',
-        unreachable: 'تعذّر الوصول إلى الخادم.',
-        unexpected_status: 'رد غير متوقّع من الخادم.',
-        unconfigured: 'الإعدادات ناقصة.',
-      }[supabase.rest],
+      detail:
+        {
+          ok: 'الجداول موجودة والمفتاح صالح.',
+          invalid_key: 'المفتاح العام مرفوض — غالبًا من مشروع Supabase آخر.',
+          schema_missing: 'الاستعلام رجع «غير موجود» — إمّا الرابط خاطئ أو الهجرات لم تُطبَّق.',
+          not_found: 'المسار غير موجود على هذا الرابط.',
+          unreachable: 'تعذّر الوصول إلى الخادم.',
+          unexpected_status: 'رد غير متوقّع من الخادم.',
+          unconfigured: 'الإعدادات ناقصة.',
+        }[supabase.rest] +
+        (supabase.restStatusCode !== null ? ` (رمز الرد: ${supabase.restStatusCode})` : ''),
       fix: (
         <>
           أصلحي أولًا بند «رابط مشروع Supabase» أعلاه — فأغلب حالات هذا الخطأ سببها الرابط لا
