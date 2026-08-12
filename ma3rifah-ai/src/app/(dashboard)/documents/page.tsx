@@ -25,6 +25,12 @@ import { formatBytes, formatNumber, formatRelativeTime } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'المستندات' };
 export const dynamic = 'force-dynamic';
+/**
+ * رفع مستند يشمل الاستخراج والتقطيع والتضمين، وكلها داخل الطلب نفسه.
+ * المهلة الافتراضية على المنصات بلا خوادم دائمة عشر ثوانٍ، وهي تقتل
+ * معالجة أي ملف متوسط في منتصفها.
+ */
+export const maxDuration = 60;
 
 export default async function DocumentsPage() {
   const { profile } = await requirePermission('documents.view');

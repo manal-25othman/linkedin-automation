@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { ingestDocumentInBackground, ingestDocument } from '@/lib/rag/ingest';
+import { ingestDocumentNow, ingestDocument } from '@/lib/rag/ingest';
 import {
   detectFileKind,
   MAX_FILE_SIZE_BYTES,
@@ -172,13 +172,19 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
       metadata: { name: metadata.name, sizeBytes: file.size, visibility: metadata.visibility },
     });
 
-    // المعالجة تعمل في الخلفية حتى تعود الواجهة فورًا بحالة «جاري التحليل»
-    ingestDocumentInBackground(document.id);
+    // تُنتظر المعالجة هنا عمدًا: إطلاقها في الخلفية يُقتل عند تجميد
+    // الدالة بعد الرد، فيبقى المستند «جاري التحليل» أبدًا بلا خطأ.
+    const failure = await ingestDocumentNow(document.id);
 
     revalidatePath('/documents');
     revalidatePath('/dashboard');
 
-    return { ok: true, message: 'تم رفع المستند. جاري تحليله وإضافته إلى قاعدة المعرفة…' };
+    return {
+      ok: true,
+      message: failure
+        ? `تم رفع الملف لكن تعذّرت معالجته: ${failure}`
+        : 'تم رفع المستند وإضافته إلى قاعدة المعرفة.',
+    };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };
   }
@@ -205,11 +211,15 @@ export async function reprocessDocumentAction(documentId: string): Promise<Actio
       .update({ status: 'PROCESSING', error_message: null })
       .eq('id', documentId);
 
+    const failure = await ingestDocumentNow(documentId);
     revalidatePath('/documents');
-    ingestDocumentInBackground(documentId);
+    revalidatePath('/dashboard');
 
     logger.info('إعادة معالجة مستند', { documentId, actorId: profile.id });
-    return { ok: true, message: 'بدأت إعادة المعالجة.' };
+    return {
+      ok: true,
+      message: failure ? `تعذّرت إعادة المعالجة: ${failure}` : 'اكتملت إعادة المعالجة.',
+    };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };
   }
