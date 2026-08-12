@@ -44,6 +44,12 @@ export type SupabaseProbe = {
    * إظهارها ينهي التخمين حين يكون الخطأ في الرابط نفسه.
    */
   url: string;
+  /**
+   * رمز رد HTTP من استعلام الجداول. رقم لا يكشف أي بيانات، ووجوده
+   * يحسم التشخيص: 404 تعني جدولًا مفقودًا، و401 مفتاحًا مرفوضًا،
+   * و500 خطأ داخل القاعدة نفسها — ولكلٍّ علاج مختلف تمامًا.
+   */
+  restStatusCode: number | null;
   /** من إعدادات Supabase العامة — تُقرأ أصلًا من أي متصفح */
   signupEnabled: boolean | null;
   emailAutoconfirm: boolean | null;
@@ -72,6 +78,7 @@ export async function probeSupabase(): Promise<SupabaseProbe> {
       rest: 'unconfigured',
       auth: 'unconfigured',
       url: PUBLIC_SUPABASE_URL,
+      restStatusCode: null,
       signupEnabled: null,
       emailAutoconfirm: null,
     };
@@ -80,8 +87,10 @@ export async function probeSupabase(): Promise<SupabaseProbe> {
   // جدول plans عام بطبيعته (سياسة قراءة للزوار)، فهو مسبار مناسب:
   // 200 يعني المفتاح صالح والهجرات مطبَّقة.
   let rest: RestStatus;
+  let restStatusCode: number | null = null;
   try {
     const response = await request('/rest/v1/plans?select=id&limit=1');
+    restStatusCode = response.status;
     if (response.ok) rest = 'ok';
     else if (response.status === 401 || response.status === 403) rest = 'invalid_key';
     else if (response.status === 404) rest = 'schema_missing';
@@ -116,5 +125,12 @@ export async function probeSupabase(): Promise<SupabaseProbe> {
     auth = 'unreachable';
   }
 
-  return { rest, auth, url: PUBLIC_SUPABASE_URL, signupEnabled, emailAutoconfirm };
+  return {
+    rest,
+    auth,
+    url: PUBLIC_SUPABASE_URL,
+    restStatusCode,
+    signupEnabled,
+    emailAutoconfirm,
+  };
 }
