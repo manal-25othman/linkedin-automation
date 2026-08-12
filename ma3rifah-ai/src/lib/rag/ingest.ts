@@ -6,7 +6,7 @@ import { buildChunks } from '@/lib/rag/chunk';
 import { embedTexts, toPgVector, getEmbeddingProvider } from '@/lib/rag/embeddings';
 import { recordAudit } from '@/lib/audit';
 import { logger } from '@/lib/logger';
-import { toAppError } from '@/lib/errors';
+import { sanitizeTechnicalDetail, toAppError } from '@/lib/errors';
 
 /**
  * خط معالجة المستند:
@@ -35,15 +35,7 @@ export interface IngestResult {
 function buildFailureMessage(appError: { message: string; detail?: string }): string {
   if (!appError.detail) return appError.message;
 
-  // يُحذف الدليل ويبقى اسم الملف: بنية الخادم لا تخصّ أحدًا، أما الاسم
-  // فهو غالبًا كل التشخيص. محو المسار كاملًا حوّل خطأً واضحًا
-  // («تعذّر إيجاد pdf.worker.mjs») إلى نقاط لا تدلّ على شيء.
-  const hint = appError.detail
-    .split('\n')[0]
-    .replace(/https?:\/\/\S+/g, '…') // روابط
-    .replace(/(?:\/[\w.@ -]+)+\/([\w.@-]+)/g, '$1') // مسارات نظام الملفات
-    .trim()
-    .slice(0, 180);
+  const hint = sanitizeTechnicalDetail(appError.detail);
 
   return hint.length > 0 ? `${appError.message}\n\nتفصيل تقني: ${hint}` : appError.message;
 }

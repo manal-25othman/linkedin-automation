@@ -14,7 +14,8 @@ import {
 import { documentMetadataSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { recordAudit } from '@/lib/audit';
-import { AppError, toAppError } from '@/lib/errors';
+import { AppError, sanitizeTechnicalDetail, toAppError } from '@/lib/errors';
+import { safeStorageObjectName } from '@/lib/storage/object-name';
 import { logger } from '@/lib/logger';
 import type { DocumentVisibility, UserRole } from '@/types/database';
 
@@ -23,11 +24,6 @@ export interface ActionResult {
   message?: string;
 }
 
-/** يمنع Path Traversal ويحافظ على امتداد الملف */
-function safeFileName(original: string): string {
-  const base = original.split(/[\\/]/).pop() ?? 'document';
-  return base.replace(/[^\p{L}\p{N}._-]+/gu, '_').slice(0, 120) || 'document';
-}
 
 export async function uploadDocumentAction(formData: FormData): Promise<ActionResult> {
   try {
@@ -142,7 +138,7 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
     }
 
     // مسار التخزين يبدأ بمعرّف الشركة — وهذا ما تعتمد عليه سياسات التخزين
-    const storagePath = `${company.id}/${document.id}/${safeFileName(file.name)}`;
+    const storagePath = `${company.id}/${document.id}/${safeStorageObjectName(file.name)}`;
 
     const { error: uploadError } = await admin.storage
       .from('documents')
@@ -157,7 +153,13 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
         .from('documents')
         .update({ status: 'FAILED', error_message: 'تعذّر رفع الملف إلى التخزين.' })
         .eq('id', document.id);
-      throw new AppError('INTERNAL', 'تعذّر رفع الملف. حاول مرة أخرى.');
+
+      // يُذكر سبب التخزين لا «حاول مرة أخرى»: الإعادة لا تنفع مع سبب
+      // ثابت، وقد أخفت هذه الصياغة رفضًا صريحًا لمفتاح التخزين.
+      throw new AppError(
+        'INTERNAL',
+        `تعذّر رفع الملف إلى التخزين.\n\nتفصيل تقني: ${sanitizeTechnicalDetail(uploadError.message)}`,
+      );
     }
 
     await admin.from('documents').update({ storage_path: storagePath }).eq('id', document.id);

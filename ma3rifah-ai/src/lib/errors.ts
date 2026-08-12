@@ -78,3 +78,19 @@ export function toAppError(error: unknown): AppError {
   const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
   return new AppError('INTERNAL', undefined, detail);
 }
+
+/**
+ * تنقيح تفصيل تقني ليُعرض للمستخدم.
+ *
+ * يُحذف الدليل ويبقى اسم الملف: بنية الخادم لا تخصّ أحدًا، أما الاسم
+ * فهو غالبًا كل التشخيص. محو المسار كاملًا حوّل مرة خطأً واضحًا
+ * («تعذّر إيجاد pdf.worker.mjs») إلى نقاط لا تدلّ على شيء.
+ */
+export function sanitizeTechnicalDetail(detail: string): string {
+  return detail
+    .split('\n')[0]
+    .replace(/https?:\/\/\S+/g, '…') // روابط
+    .replace(/(?:\/[\w.@ -]+)+\/([\w.@-]+)/g, '$1') // مسارات نظام الملفات
+    .trim()
+    .slice(0, 180);
+}
