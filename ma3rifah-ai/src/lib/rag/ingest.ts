@@ -35,10 +35,13 @@ export interface IngestResult {
 function buildFailureMessage(appError: { message: string; detail?: string }): string {
   if (!appError.detail) return appError.message;
 
+  // يُحذف الدليل ويبقى اسم الملف: بنية الخادم لا تخصّ أحدًا، أما الاسم
+  // فهو غالبًا كل التشخيص. محو المسار كاملًا حوّل خطأً واضحًا
+  // («تعذّر إيجاد pdf.worker.mjs») إلى نقاط لا تدلّ على شيء.
   const hint = appError.detail
     .split('\n')[0]
-    .replace(/(\/[\w.@-]+){2,}/g, '…') // مسارات نظام الملفات
     .replace(/https?:\/\/\S+/g, '…') // روابط
+    .replace(/(?:\/[\w.@ -]+)+\/([\w.@-]+)/g, '$1') // مسارات نظام الملفات
     .trim()
     .slice(0, 180);
 
