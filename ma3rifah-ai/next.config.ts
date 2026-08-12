@@ -3,7 +3,7 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  serverExternalPackages: ['pdf-parse', 'mammoth', 'xlsx'],
+  serverExternalPackages: ['pdfjs-dist', 'mammoth', 'xlsx'],
   experimental: {
     serverActions: {
       // مستندات كبيرة قد تُرفع عبر Server Actions
