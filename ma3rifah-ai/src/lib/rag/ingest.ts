@@ -24,6 +24,27 @@ export interface IngestResult {
   durationMs: number;
 }
 
+/**
+ * رسالة الفشل المعروضة لمدير الشركة.
+ *
+ * الرسالة العربية وحدها لا تكفي لتشخيص سبب تقني (نسخة مكتبة، ملف
+ * تالف، بيئة تشغيل)، وتركها بلا تفصيل يحوّل كل عطل إلى جولة أسئلة.
+ * نُلحق سطرًا تقنيًا واحدًا مقتضبًا — لا أثر تتبّع ولا مسارات ملفات،
+ * فتلك تكشف بنية الخادم ولا تفيد القارئ.
+ */
+function buildFailureMessage(appError: { message: string; detail?: string }): string {
+  if (!appError.detail) return appError.message;
+
+  const hint = appError.detail
+    .split('\n')[0]
+    .replace(/(\/[\w.@-]+){2,}/g, '…') // مسارات نظام الملفات
+    .replace(/https?:\/\/\S+/g, '…') // روابط
+    .trim()
+    .slice(0, 180);
+
+  return hint.length > 0 ? `${appError.message}\n\nتفصيل تقني: ${hint}` : appError.message;
+}
+
 export async function ingestDocument(documentId: string): Promise<IngestResult> {
   const admin = createAdminClient();
   const startedAt = Date.now();
@@ -148,7 +169,7 @@ export async function ingestDocument(documentId: string): Promise<IngestResult> 
       .from('documents')
       .update({
         status: 'FAILED',
-        error_message: appError.message,
+        error_message: buildFailureMessage(appError),
       })
       .eq('id', documentId);
 
