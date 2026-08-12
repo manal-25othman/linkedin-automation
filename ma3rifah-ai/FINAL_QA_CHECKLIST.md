@@ -235,7 +235,7 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 
 1. مفتاح من [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) → `ANTHROPIC_API_KEY`.
 2. **Billing** — اشحني رصيدًا؛ بدونه ترتد كل الطلبات.
-3. اختياريًا اضبطي `ANTHROPIC_MODEL` (افتراضيًا `claude-opus-5`) و`ANTHROPIC_EFFORT` (`medium`) و`ANTHROPIC_MAX_OUTPUT_TOKENS` (`2000`).
+3. اختياريًا اضبطي `ANTHROPIC_MODEL` (افتراضيًا `claude-opus-5`) و`ANTHROPIC_EFFORT` (`medium`) و`ANTHROPIC_MAX_OUTPUT_TOKENS` (افتراضيًا `8000`؛ لا تنزلي تحت `4000` لأن التفكير مفعّل تلقائيًا على `claude-opus-5` ويشارك الإجابة في السقف نفسه).
 4. **موصى به:** ضعي حدًا شهريًا للإنفاق في **Limits** كسقف أمان فوق حصص المنصة الداخلية.
 
 ### 6.3 Voyage AI (التضمينات) — مطلوب للإنتاج

@@ -40,6 +40,11 @@ export interface RateLimitRule {
 export const RATE_LIMITS = {
   /** أسئلة المساعد الذكي — الأغلى تكلفة */
   chat: { limit: 20, windowMs: 60_000 },
+  /**
+   * محادثة زوّار الموقع — أضيق من حد الموظفين.
+   * الزائر مجهول ولا يستهلك حصة شركة بل رصيد المنصة مباشرة.
+   */
+  siteChat: { limit: 6, windowMs: 60_000 },
   /** رفع المستندات */
   upload: { limit: 15, windowMs: 60_000 },
   /** عمليات الكتابة العامة */

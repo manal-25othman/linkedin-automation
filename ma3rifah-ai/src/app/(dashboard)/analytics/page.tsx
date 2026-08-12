@@ -6,6 +6,10 @@ import {
   MessageCircleQuestion,
   MessagesSquare,
   Percent,
+  ThumbsUp,
+  Timer,
+  Users,
+  Wallet,
 } from 'lucide-react';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
@@ -14,7 +18,12 @@ import { StatCard } from '@/components/shared/stat-card';
 import { EmptyState } from '@/components/shared/states';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AnswerRateChart, DepartmentUsageChart } from '@/components/dashboard/charts';
+import {
+  AnswerRateChart,
+  CostChart,
+  DepartmentUsageChart,
+  HourlyActivityChart,
+} from '@/components/dashboard/charts';
 import { formatNumber, formatPercent, truncate } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'التحليلات' };
@@ -24,20 +33,59 @@ export default async function AnalyticsPage() {
   await requirePermission('analytics.view_department');
   const supabase = await createClient();
 
-  const [statsResult, timeseriesResult, topQuestionsResult, topDocumentsResult, departmentsResult] =
-    await Promise.all([
-      supabase.rpc('company_dashboard_stats'),
-      supabase.rpc('company_questions_timeseries', { p_days: 30 }),
-      supabase.rpc('company_top_questions', { p_limit: 10 }),
-      supabase.rpc('company_top_documents', { p_limit: 8 }),
-      supabase.rpc('company_department_usage'),
-    ]);
+  const [
+    statsResult,
+    timeseriesResult,
+    topQuestionsResult,
+    topDocumentsResult,
+    departmentsResult,
+    qualityResult,
+    activeUsersResult,
+    hourlyResult,
+    costResult,
+    usageResult,
+  ] = await Promise.all([
+    supabase.rpc('company_dashboard_stats'),
+    supabase.rpc('company_questions_timeseries', { p_days: 30 }),
+    supabase.rpc('company_top_questions', { p_limit: 10 }),
+    supabase.rpc('company_top_documents', { p_limit: 8 }),
+    supabase.rpc('company_department_usage'),
+    supabase.rpc('company_answer_quality', { p_days: 30 }),
+    supabase.rpc('company_active_users', { p_days: 30 }),
+    supabase.rpc('company_hourly_activity', { p_days: 30 }),
+    supabase.rpc('company_cost_summary', { p_months: 6 }),
+    supabase.rpc('company_usage_summary'),
+  ]);
 
   const stats = statsResult.data?.[0];
   const timeseries = timeseriesResult.data ?? [];
   const topQuestions = topQuestionsResult.data ?? [];
   const topDocuments = topDocumentsResult.data ?? [];
   const departments = departmentsResult.data ?? [];
+  const quality = qualityResult.data?.[0];
+  const activeUsers = activeUsersResult.data?.[0];
+  const hourly = hourlyResult.data ?? [];
+  const cost = costResult.data ?? [];
+  const usage = usageResult.data?.[0];
+
+  const answersTotal = quality?.answers_total ?? 0;
+  const citationRate =
+    answersTotal > 0 ? ((quality?.answers_with_source ?? 0) / answersTotal) * 100 : null;
+
+  const feedbackTotal = quality?.feedback_total ?? 0;
+  const satisfaction =
+    feedbackTotal > 0 ? ((quality?.feedback_up ?? 0) / feedbackTotal) * 100 : null;
+
+  const adoption =
+    activeUsers && activeUsers.total_users > 0
+      ? (activeUsers.active_users / activeUsers.total_users) * 100
+      : null;
+
+  const monthlyCost = cost.length > 0 ? Number(cost[cost.length - 1].estimated_cost_usd) : 0;
+  const questionsLimit = usage?.questions_limit ?? null;
+  const questionsUsed = usage?.questions_used ?? 0;
+  const quotaPercent =
+    questionsLimit && questionsLimit > 0 ? (questionsUsed / questionsLimit) * 100 : null;
 
   const answered = stats?.answered_count ?? 0;
   const unanswered = stats?.unanswered_count ?? 0;
@@ -83,6 +131,66 @@ export default async function AnalyticsPage() {
           }
         />
       </div>
+
+      {/* تبنّي النظام وجودة إجاباته — ما لا تكشفه أعداد الأسئلة وحدها */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard
+          label="مستخدمون نشطون"
+          value={activeUsers?.active_users ?? 0}
+          icon={Users}
+          hint={
+            adoption === null
+              ? 'خلال 30 يومًا'
+              : `${formatPercent(adoption)} من ${formatNumber(activeUsers?.total_users ?? 0)} مستخدمًا`
+          }
+          tone={adoption !== null && adoption < 40 ? 'warning' : 'default'}
+        />
+        <StatCard
+          label="إجابات موثّقة بمصدر"
+          value={citationRate === null ? '—' : formatPercent(citationRate)}
+          icon={FileStack}
+          hint={citationRate === null ? 'لا توجد إجابات بعد' : 'نسبة الإجابات المستندة لمستند'}
+          tone={citationRate !== null && citationRate < 60 ? 'warning' : 'success'}
+        />
+        <StatCard
+          label="رضا الموظفين"
+          value={satisfaction === null ? '—' : formatPercent(satisfaction)}
+          icon={ThumbsUp}
+          hint={
+            feedbackTotal === 0
+              ? 'لا توجد تقييمات بعد'
+              : `${formatNumber(feedbackTotal)} تقييمًا`
+          }
+          tone={satisfaction !== null && satisfaction < 60 ? 'warning' : 'success'}
+        />
+        <StatCard
+          label="متوسط زمن الرد"
+          value={quality ? `${(quality.avg_latency_ms / 1000).toFixed(1)} ث` : '—'}
+          icon={Timer}
+        />
+        <StatCard
+          label="تكلفة الشهر التقديرية"
+          value={`$${monthlyCost.toFixed(2)}`}
+          icon={Wallet}
+          hint={
+            quotaPercent === null
+              ? `${formatNumber(questionsUsed)} سؤالًا هذا الشهر`
+              : `${formatNumber(questionsUsed)} من ${formatNumber(questionsLimit ?? 0)} سؤالًا (${formatPercent(quotaPercent)})`
+          }
+          tone={quotaPercent !== null && quotaPercent >= 80 ? 'warning' : 'default'}
+        />
+      </div>
+
+      {activeUsers?.top_user_name ? (
+        <p className="text-sm text-muted-foreground">
+          الأكثر استخدامًا خلال 30 يومًا:{' '}
+          <span className="font-medium text-foreground">{activeUsers.top_user_name}</span> بـ
+          {formatNumber(activeUsers.top_user_questions ?? 0)} سؤالًا
+          {activeUsers.new_users > 0
+            ? ` · انضم ${formatNumber(activeUsers.new_users)} مستخدمًا جديدًا`
+            : ''}
+        </p>
+      ) : null}
 
       {!hasActivity ? (
         <EmptyState
@@ -182,6 +290,26 @@ export default async function AnalyticsPage() {
               <DepartmentUsageChart data={departments} />
             </CardContent>
           </Card>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>ساعات الذروة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <HourlyActivityChart data={hourly} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>الاستهلاك والتكلفة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CostChart data={cost} />
+              </CardContent>
+            </Card>
+          </div>
         </>
       )}
     </div>
