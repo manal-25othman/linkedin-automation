@@ -187,11 +187,21 @@ export async function ingestDocument(documentId: string): Promise<IngestResult> 
 }
 
 /**
- * تشغيل المعالجة دون انتظار النتيجة.
- * تُستدعى بعد الرفع لتعود الواجهة فورًا وتعرض حالة «جاري التحليل».
+ * تشغيل المعالجة ضمن عمر الطلب نفسه.
+ *
+ * لا تُطلق المعالجة في الخلفية على منصات بلا خوادم دائمة: تُجمَّد الدالة
+ * فور إرسال الرد، فيُقتل العمل في منتصفه ويبقى المستند «جاري التحليل»
+ * إلى الأبد — بلا خطأ ولا تعافٍ. الانتظار داخل الطلب يجعل الفشل ظاهرًا
+ * وقابلًا للإصلاح.
+ *
+ * يُرجع رسالة الفشل إن فشلت المعالجة، وnull إن نجحت. الرفع نفسه ناجح
+ * في الحالتين — الملف مخزَّن، وحالة المستند تحمل النتيجة.
  */
-export function ingestDocumentInBackground(documentId: string): void {
-  void ingestDocument(documentId).catch(() => {
-    // الخطأ مُسجَّل ومُخزَّن في حالة المستند بالفعل
-  });
+export async function ingestDocumentNow(documentId: string): Promise<string | null> {
+  try {
+    await ingestDocument(documentId);
+    return null;
+  } catch (error) {
+    return toAppError(error).message;
+  }
 }
