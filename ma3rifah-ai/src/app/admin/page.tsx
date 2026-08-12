@@ -1,12 +1,22 @@
 import type { Metadata } from 'next';
-import { Building2, Coins, FileStack, MessageCircleQuestion, Users } from 'lucide-react';
+import {
+  Building2,
+  CircleHelp,
+  Coins,
+  FileStack,
+  MessageCircleQuestion,
+  MousePointerClick,
+  Percent,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatNumber, formatPercent, formatRelativeTime, truncate } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'إدارة المنصة' };
 export const dynamic = 'force-dynamic';
@@ -17,7 +27,16 @@ export default async function AdminOverviewPage() {
   // مدير المنصة يرى كل الشركات — نستخدم العميل الإداري بعد تحقق صريح أعلاه
   const admin = createAdminClient();
 
-  const [companies, profiles, documents, messages, usage, contactRequests] = await Promise.all([
+  const [
+    companies,
+    profiles,
+    documents,
+    messages,
+    usage,
+    contactRequests,
+    visitorStats,
+    visitorUnanswered,
+  ] = await Promise.all([
     admin.from('companies').select('id, name, status, is_demo, created_at').order('created_at', {
       ascending: false,
     }),
@@ -35,9 +54,17 @@ export default async function AdminOverviewPage() {
       .select('id, full_name, company_name, email, status, created_at')
       .order('created_at', { ascending: false })
       .limit(8),
+    admin.rpc('platform_visitor_stats', { p_days: 30 }),
+    admin.rpc('platform_visitor_unanswered', { p_limit: 10 }),
   ]);
 
   const companyRows = companies.data ?? [];
+  const visitors = visitorStats.data?.[0];
+  const visitorGaps = visitorUnanswered.data ?? [];
+  const visitorAnswerRate =
+    visitors && visitors.questions_total > 0
+      ? (visitors.answered_count / visitors.questions_total) * 100
+      : null;
   const monthlyCost = (usage.data ?? []).reduce(
     (total, record) => total + Number(record.estimated_cost_usd ?? 0),
     0,
@@ -62,6 +89,74 @@ export default async function AdminOverviewPage() {
           hint="تقديرية بأسعار القائمة"
         />
       </div>
+
+      {/* زوّار الموقع — مسار منفصل تمامًا عن بيانات الشركات */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">زوّار الموقع (آخر 30 يومًا)</h2>
+
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <StatCard
+            label="زوّار استخدموا المحادثة"
+            value={visitors?.visitors_in_period ?? 0}
+            icon={MousePointerClick}
+            hint={`${formatNumber(visitors?.visitors_total ?? 0)} منذ الإطلاق`}
+          />
+          <StatCard
+            label="أسئلة الزوّار"
+            value={visitors?.questions_total ?? 0}
+            icon={MessageCircleQuestion}
+          />
+          <StatCard
+            label="أسئلة بلا إجابة"
+            value={visitors?.unanswered_count ?? 0}
+            icon={CircleHelp}
+            tone={(visitors?.unanswered_count ?? 0) > 0 ? 'warning' : 'default'}
+            hint="ما لا يشرحه الموقع بوضوح"
+          />
+          <StatCard
+            label="معدل الإجابة"
+            value={visitorAnswerRate === null ? '—' : formatPercent(visitorAnswerRate)}
+            icon={Percent}
+            tone={visitorAnswerRate !== null && visitorAnswerRate < 70 ? 'warning' : 'success'}
+          />
+          <StatCard
+            label="زوّار بدأوا التسجيل"
+            value={visitors?.converted_count ?? 0}
+            icon={UserPlus}
+            tone="success"
+          />
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>أسئلة زوّار لم يجد المساعد لها إجابة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {visitorGaps.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                لا توجد أسئلة بلا إجابة — أو لم تبدأ المحادثة بعد.
+              </p>
+            ) : (
+              <>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  كل سطر هنا سؤال يهمّ عميلًا محتملًا ولا يجيب عنه الموقع. أوضح دليل على ما
+                  ينقص صفحات المنصة.
+                </p>
+                <ul className="divide-y">
+                  {visitorGaps.map((gap, index) => (
+                    <li key={`${gap.asked_at}-${index}`} className="py-3 first:pt-0 last:pb-0">
+                      <p className="text-sm leading-relaxed">{truncate(gap.question, 160)}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {formatRelativeTime(gap.asked_at)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

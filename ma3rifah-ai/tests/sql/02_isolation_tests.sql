@@ -398,3 +398,79 @@ begin
 end $$;
 
 commit;
+
+-- =====================================================================
+-- المجموعة 5 — عزل محادثة زوّار الموقع
+--
+-- جداول الزوّار على مستوى المنصة، ولا يجوز أن يراها مستخدم شركة ولا
+-- زائر بلا جلسة. تُقرأ لمدير المنصة وحده، ولا تُكتب إلا بمفتاح الخدمة.
+-- =====================================================================
+
+-- بيانات زائر للاختبار (بدور postgres، فيتجاوز RLS كما يفعل مفتاح الخدمة)
+insert into public.site_visitors (id, visitor_key, message_count)
+values ('cccccccc-0000-4000-8000-000000000001', 'visitor-test-key', 1);
+
+insert into public.site_chat_messages (visitor_id, role, content, status)
+values
+  ('cccccccc-0000-4000-8000-000000000001', 'USER', 'سؤال زائر عن الأسعار', null),
+  ('cccccccc-0000-4000-8000-000000000001', 'ASSISTANT', 'إجابة عن الأسعار', 'ANSWERED');
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'مدير شركة لا يرى زوّار الموقع',
+  'select * from public.site_visitors');
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'مدير شركة لا يرى رسائل زوّار الموقع',
+  'select * from public.site_chat_messages');
+
+select public.record_write_attempt(
+  'عزل الزوّار', 'مدير شركة لا يستطيع الكتابة في جدول الزوّار',
+  $sql$insert into public.site_visitors (visitor_key) values ('forged-key')$sql$);
+
+select public.record_write_attempt(
+  'عزل الزوّار', 'مدير شركة لا يستطيع حذف رسائل الزوّار',
+  'delete from public.site_chat_messages');
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'موظف عادي لا يرى زوّار الموقع',
+  'select * from public.site_visitors');
+
+commit;
+
+begin;
+set local role anon;
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'زائر بلا جلسة لا يقرأ جدول الزوّار',
+  'select * from public.site_visitors');
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'زائر بلا جلسة لا يقرأ رسائل الزوّار',
+  'select * from public.site_chat_messages');
+
+commit;
+
+-- دوال تحليلات المنصة محجوبة عن غير مدير المنصة
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'مدير شركة لا ينفّذ دالة إحصاءات زوّار المنصة',
+  'select * from public.platform_visitor_stats(30)');
+
+select public.record_zero_rows_expected(
+  'عزل الزوّار', 'مدير شركة لا ينفّذ دالة أسئلة الزوّار بلا إجابة',
+  'select * from public.platform_visitor_unanswered(10)');
+
+commit;

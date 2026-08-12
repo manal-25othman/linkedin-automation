@@ -273,6 +273,35 @@ type AuditLogRow = {
   created_at: string;
 };
 
+/**
+ * محادثة زوّار الموقع — على مستوى المنصة لا الشركة.
+ * لاحظ غياب company_id: لا سبيل بنيويًا لربطها ببيانات أي شركة.
+ */
+export type SiteChatStatus = 'ANSWERED' | 'UNANSWERED' | 'REFUSED' | 'ERROR';
+
+type SiteVisitorRow = {
+  id: string;
+  visitor_key: string;
+  message_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  entry_path: string | null;
+  converted: boolean;
+};
+
+type SiteChatMessageRow = {
+  id: string;
+  visitor_id: string;
+  role: MessageRole;
+  content: string;
+  status: SiteChatStatus | null;
+  latency_ms: number | null;
+  model: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  created_at: string;
+};
+
 export type ContactRequestStatus = 'NEW' | 'CONTACTED' | 'CLOSED';
 
 type ContactRequestRow = {
@@ -322,6 +351,8 @@ export interface Database {
       ai_usage_logs: Table<AiUsageLogRow>;
       audit_logs: Table<AuditLogRow>;
       contact_requests: Table<ContactRequestRow>;
+      site_visitors: Table<SiteVisitorRow>;
+      site_chat_messages: Table<SiteChatMessageRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -455,6 +486,56 @@ export interface Database {
           questions_used: number;
           questions_limit: number | null;
         }[];
+      };
+      company_answer_quality: {
+        Args: { p_days?: number };
+        Returns: {
+          answers_total: number;
+          answers_with_source: number;
+          avg_latency_ms: number;
+          feedback_up: number;
+          feedback_down: number;
+          feedback_total: number;
+        }[];
+      };
+      company_active_users: {
+        Args: { p_days?: number };
+        Returns: {
+          active_users: number;
+          total_users: number;
+          new_users: number;
+          top_user_name: string | null;
+          top_user_questions: number | null;
+        }[];
+      };
+      company_hourly_activity: {
+        Args: { p_days?: number };
+        Returns: { hour_of_day: number; questions: number }[];
+      };
+      company_cost_summary: {
+        Args: { p_months?: number };
+        Returns: {
+          period_month: string;
+          questions_count: number;
+          input_tokens: number;
+          output_tokens: number;
+          estimated_cost_usd: number;
+        }[];
+      };
+      platform_visitor_stats: {
+        Args: { p_days?: number };
+        Returns: {
+          visitors_total: number;
+          visitors_in_period: number;
+          questions_total: number;
+          answered_count: number;
+          unanswered_count: number;
+          converted_count: number;
+        }[];
+      };
+      platform_visitor_unanswered: {
+        Args: { p_limit?: number };
+        Returns: { question: string; asked_at: string }[];
       };
     };
     Enums: {

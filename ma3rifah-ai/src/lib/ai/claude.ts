@@ -71,15 +71,19 @@ export async function generateAnswer(params: {
   systemPrompt: string;
   history: ConversationTurn[];
   userMessage: string;
+  /** تجاوز النموذج الافتراضي — لمهام أخف كمساعد الزوّار */
+  model?: string;
+  /** تجاوز سقف الرموز الافتراضي */
+  maxTokens?: number;
 }): Promise<CompletionResult> {
   const anthropic = getClient();
-  const model = serverEnv.anthropicModel;
+  const model = params.model || serverEnv.anthropicModel;
   const startedAt = Date.now();
 
   try {
     const response = await anthropic.messages.create({
       model,
-      max_tokens: serverEnv.anthropicMaxOutputTokens,
+      max_tokens: params.maxTokens ?? serverEnv.anthropicMaxOutputTokens,
       system: [
         {
           type: 'text',

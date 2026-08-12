@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { RegisterForm } from './register-form';
+import { markVisitorConverted } from '@/lib/ai/site-chat';
 
 export const metadata: Metadata = {
   title: 'إنشاء حساب',
@@ -8,7 +10,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RegisterPage() {
+/**
+ * الصفحة ديناميكية لأنها تقرأ كوكي الزائر لتسجيل التحوّل: كم زائرًا
+ * تحدّث إلى مساعد الموقع ثم وصل فعلًا إلى صفحة التسجيل. لا يُقرأ من
+ * الكوكي إلا معرّف عشوائي بلا أي بيانات شخصية.
+ */
+export const dynamic = 'force-dynamic';
+
+export default async function RegisterPage() {
+  const visitorKey = (await cookies()).get('ma3rifah_visitor')?.value;
+  if (visitorKey) await markVisitorConverted(visitorKey);
+
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">أنشئ حساب شركتك</h1>

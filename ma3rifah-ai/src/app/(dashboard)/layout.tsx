@@ -3,6 +3,8 @@ import { getSessionContext } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { SidebarNav } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
+import { FloatingDock } from '@/components/shared/floating-dock';
+import { AssistantWidget } from '@/components/dashboard/assistant-widget';
 
 export default async function DashboardLayout({
   children,
@@ -58,6 +60,11 @@ export default async function DashboardLayout({
         />
         <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
+
+      {/* مساعد الشركة كنافذة عائمة — يمرّ بنفس مسار التحقق والصلاحيات */}
+      <FloatingDock>
+        <AssistantWidget companyName={company.name} />
+      </FloatingDock>
     </div>
   );
 }
