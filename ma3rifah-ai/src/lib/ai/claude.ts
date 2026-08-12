@@ -50,6 +50,28 @@ const MODEL_PRICING_USD_PER_MTOK: Record<string, { input: number; output: number
   'claude-haiku-4-5': { input: 1, output: 5 },
 };
 
+/**
+ * النماذج التي تدعم معامل output_config.effort.
+ *
+ * إرساله إلى نموذج لا يدعمه (مثل haiku-4-5) يُرجع 400 فيسقط الطلب كاملًا.
+ * القائمة صريحة لا نمطية: النمط «كل ما ليس haiku» ينكسر مع أول نموذج جديد.
+ */
+const MODELS_WITH_EFFORT = [
+  'claude-opus-5',
+  'claude-opus-4-8',
+  'claude-opus-4-7',
+  'claude-opus-4-6',
+  'claude-opus-4-5',
+  'claude-sonnet-5',
+  'claude-sonnet-4-6',
+  'claude-fable-5',
+  'claude-mythos-5',
+];
+
+export function supportsEffort(model: string): boolean {
+  return MODELS_WITH_EFFORT.some((supported) => model.startsWith(supported));
+}
+
 export function estimateCostUsd(
   model: string,
   inputTokens: number,
@@ -91,7 +113,9 @@ export async function generateAnswer(params: {
           cache_control: { type: 'ephemeral' },
         },
       ],
-      output_config: { effort: serverEnv.anthropicEffort as 'low' | 'medium' | 'high' },
+      ...(supportsEffort(model)
+        ? { output_config: { effort: serverEnv.anthropicEffort as 'low' | 'medium' | 'high' } }
+        : {}),
       messages: [
         ...params.history.map((turn) => ({
           role: turn.role,
