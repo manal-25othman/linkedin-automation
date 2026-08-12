@@ -27,8 +27,11 @@ const MAX_QUESTION_LENGTH = 500;
 const MAX_HISTORY_TURNS = 6;
 const MAX_MESSAGES_PER_VISITOR = 40;
 
-/** نموذج أخف وأرخص: المهمة تصنيف وإجابة قصيرة من نص ثابت */
-const SITE_MODEL = 'claude-haiku-4-5-20251001';
+/**
+ * نموذج أخف وأرخص: المهمة تصنيف وإجابة قصيرة من نص ثابت.
+ * ملاحظة: haiku لا يدعم output_config.effort — يتكفّل generateAnswer بحذفه.
+ */
+const SITE_MODEL = 'claude-haiku-4-5';
 const SITE_MAX_TOKENS = 700;
 
 export interface SiteChatResult {
