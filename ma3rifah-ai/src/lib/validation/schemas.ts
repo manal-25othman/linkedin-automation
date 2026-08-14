@@ -92,6 +92,8 @@ export const knowledgeGapUpdateSchema = z.object({
   status: z.enum(['OPEN', 'IN_REVIEW', 'RESOLVED', 'DISMISSED']),
   resolutionNote: z.string().trim().max(2000).optional().or(z.literal('')),
   linkedDocumentId: z.string().uuid().nullable().optional(),
+  /** الإجابة المعتمدة — تدخل قاعدة المعرفة فيجدها البحث */
+  answerText: z.string().trim().max(8000).optional().or(z.literal('')),
 });
 
 export const aiSettingsSchema = z.object({

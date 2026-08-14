@@ -10,6 +10,7 @@ import { verifyAnswer, stripCitationMarkers } from '@/lib/rag/verify';
 import type { ConfidenceLevel } from '@/lib/rag/verify';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import { recordAnalyticsEvent } from '@/lib/audit';
+import { notifyCompanyAdmins } from '@/lib/notifications';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { AppError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
@@ -276,11 +277,24 @@ export async function askAssistant(input: {
 
   // --- فجوة معرفة ---
   if (unanswered) {
-    const { error: gapError } = await supabase.rpc('record_knowledge_gap', {
+    const { data: gapId, error: gapError } = await supabase.rpc('record_knowledge_gap', {
       p_question: question,
     });
+
     if (gapError) {
       logger.warn('تعذّر تسجيل فجوة المعرفة', { reason: gapError.message });
+    } else if (gapId) {
+      // تنبيه واحد لكل فجوة لا لكل سؤال: يمنع الفهرس الفريد على
+      // (المستلم، النوع، الكيان) تكرارَه مهما تكرّر السؤال.
+      await notifyCompanyAdmins({
+        companyId: company.id,
+        type: 'GAP_OPENED',
+        title: 'سؤال لم تجد له قاعدة المعرفة إجابة',
+        body: question,
+        link: '/knowledge-gaps',
+        entityType: 'knowledge_gap',
+        entityId: gapId,
+      });
     }
   }
 

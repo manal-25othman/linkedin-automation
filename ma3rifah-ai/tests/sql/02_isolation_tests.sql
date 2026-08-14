@@ -474,3 +474,99 @@ select public.record_zero_rows_expected(
   'select * from public.platform_visitor_unanswered(10)');
 
 commit;
+
+-- =====================================================================
+-- المجموعة 4 — عزل التنبيهات وسائلي الفجوات
+--
+-- التنبيه شخصي لا شركيّ: العزل بين الشركات وحده لا يكفي، إذ لا يصحّ أن
+-- يقرأ زميل تنبيهك ولو كنتما في شركة واحدة — قد يحمل نص سؤال لم تُرد
+-- أن يعرفه أحد.
+-- =====================================================================
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'الموظف يرى تنبيهه هو (ضابط موجب)',
+       count(*) = 1, 'الصفوف العائدة: ' || count(*)
+from public.notifications;
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'الموظف لا يرى تنبيه زميله في الشركة نفسها',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.notifications
+where user_id = 'aaaaaaaa-2000-4000-8000-000000000004'::uuid;
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'الموظف لا يرى تنبيهات الشركة ب',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.notifications
+where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid;
+
+select public.record_write_attempt(
+  'عزل التنبيهات', 'الموظف لا يستطيع إنشاء تنبيه لنفسه ولا لغيره',
+  $sql$insert into public.notifications (company_id, user_id, type, title)
+       values ('aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-2000-4000-8000-000000000003'::uuid,
+               'GAP_ANSWERED', 'تنبيه مزروع')$sql$);
+
+select public.record_write_attempt(
+  'عزل التنبيهات', 'الموظف لا يستطيع تعديل تنبيهه مباشرةً',
+  $sql$update public.notifications set title = 'محرّف' where true$sql$);
+
+select public.record_write_attempt(
+  'عزل التنبيهات', 'الموظف لا يستطيع حذف تنبيهاته',
+  $sql$delete from public.notifications where true$sql$);
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'الموظف يرى صفّه في سائلي الفجوات ولا يرى غيره',
+       count(*) = 1
+         and bool_and(user_id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid),
+       'الصفوف العائدة: ' || count(*)
+from public.knowledge_gap_askers;
+
+select public.record_write_attempt(
+  'عزل التنبيهات', 'الموظف لا يستطيع تسجيل نفسه سائلًا لفجوة',
+  $sql$insert into public.knowledge_gap_askers (gap_id, user_id, company_id)
+       select g.id, 'aaaaaaaa-2000-4000-8000-000000000003'::uuid,
+              'aaaaaaaa-0000-4000-8000-000000000001'::uuid
+       from public.knowledge_gaps g limit 1$sql$);
+
+commit;
+
+-- مدير الشركة أ: يرى سائلي فجوات شركته، ولا يرى شيئًا من الشركة ب
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'مدير الشركة أ لا يرى سائلي فجوات الشركة ب',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.knowledge_gap_askers
+where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid;
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'مدير الشركة أ يرى سائلي فجوات شركته (ضابط موجب)',
+       count(*) = 1, 'الصفوف العائدة: ' || count(*)
+from public.knowledge_gap_askers;
+
+insert into public.test_results (category, name, passed, detail)
+select 'عزل التنبيهات', 'مدير الشركة لا يرى تنبيهات موظفيه',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.notifications;
+
+commit;
+
+begin;
+set local role anon;
+
+select public.record_zero_rows_expected(
+  'عزل التنبيهات', 'زائر بلا جلسة لا يقرأ التنبيهات',
+  'select * from public.notifications');
+
+select public.record_zero_rows_expected(
+  'عزل التنبيهات', 'زائر بلا جلسة لا يقرأ سائلي الفجوات',
+  'select * from public.knowledge_gap_askers');
+
+commit;

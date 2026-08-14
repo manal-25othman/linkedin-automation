@@ -14,6 +14,7 @@ import {
 import { documentMetadataSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { recordAudit } from '@/lib/audit';
+import { notifyCompanyAdmins } from '@/lib/notifications';
 import { AppError, sanitizeTechnicalDetail, toAppError } from '@/lib/errors';
 import { safeStorageObjectName } from '@/lib/storage/object-name';
 import { logger } from '@/lib/logger';
@@ -177,6 +178,20 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
     // تُنتظر المعالجة هنا عمدًا: إطلاقها في الخلفية يُقتل عند تجميد
     // الدالة بعد الرد، فيبقى المستند «جاري التحليل» أبدًا بلا خطأ.
     const failure = await ingestDocumentNow(document.id);
+
+    // مستند فاشل يبقى فاشلًا بصمت لو لم يعد الرافع إلى الصفحة، فتظنّ
+    // الشركة معرفتها مكتملة وهي ناقصة.
+    if (failure) {
+      await notifyCompanyAdmins({
+        companyId: company.id,
+        type: 'DOCUMENT_FAILED',
+        title: `تعذّرت معالجة المستند «${metadata.name}»`,
+        body: failure,
+        link: '/documents',
+        entityType: 'document',
+        entityId: document.id,
+      });
+    }
 
     revalidatePath('/documents');
     revalidatePath('/dashboard');

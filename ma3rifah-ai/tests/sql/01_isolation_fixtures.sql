@@ -142,6 +142,26 @@ insert into public.knowledge_gaps (company_id, question, normalized_question) va
   (:company_a::uuid, 'فجوة معرفة تخص الشركة أ', 'gap company a'),
   (:company_b::uuid, 'فجوة معرفة تخص الشركة ب', 'gap company b');
 
+-- ---------- سائلو الفجوات والتنبيهات ----------
+-- تحمل هذه الجداول بيانات شركة، فتحتاج إثبات عزل كسواها. والتنبيه شخصي
+-- فوق كونه شركيًا: لا يكفي ألّا يراه موظف شركة أخرى، بل لا يراه زميله.
+
+insert into public.knowledge_gap_askers (gap_id, user_id, company_id)
+select g.id, :user_a_hr_emp::uuid, :company_a::uuid
+from public.knowledge_gaps g where g.normalized_question = 'gap company a';
+
+insert into public.knowledge_gap_askers (gap_id, user_id, company_id)
+select g.id, :user_b_admin::uuid, :company_b::uuid
+from public.knowledge_gaps g where g.normalized_question = 'gap company b';
+
+insert into public.notifications (company_id, user_id, type, title, body) values
+  (:company_a::uuid, :user_a_hr_emp::uuid, 'GAP_ANSWERED',
+   'تنبيه موظف الموارد البشرية — الشركة أ', 'سؤالك صار له إجابة'),
+  (:company_a::uuid, :user_a_fin_emp::uuid, 'GAP_ANSWERED',
+   'تنبيه موظف المالية — الشركة أ', 'سؤالك صار له إجابة'),
+  (:company_b::uuid, :user_b_admin::uuid, 'GAP_ANSWERED',
+   'تنبيه مدير الشركة ب', 'سؤالك صار له إجابة');
+
 -- ---------- ملفات التخزين ----------
 
 insert into storage.objects (bucket_id, name) values

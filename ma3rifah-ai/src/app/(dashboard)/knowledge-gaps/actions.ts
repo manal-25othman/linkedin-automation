@@ -5,6 +5,8 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { knowledgeGapUpdateSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { recordAudit } from '@/lib/audit';
+import { upsertCuratedAnswer, removeCuratedAnswer } from '@/lib/rag/curated-answer';
+import { notifyUsers } from '@/lib/notifications';
 import { AppError, toAppError } from '@/lib/errors';
 
 export interface ActionResult {
@@ -28,6 +30,7 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
       status: formData.get('status'),
       resolutionNote: formData.get('resolutionNote'),
       linkedDocumentId: formData.get('linkedDocumentId') || null,
+      answerText: formData.get('answerText'),
     });
 
     if (!parsed.success) {
@@ -37,14 +40,45 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
     const input = parsed.data;
     const isResolved = input.status === 'RESOLVED';
 
-    if (isResolved && !input.resolutionNote && !input.linkedDocumentId) {
+    if (isResolved && !input.answerText && !input.resolutionNote && !input.linkedDocumentId) {
       throw new AppError(
         'VALIDATION',
-        'عند وضع علامة معالَجة، اربط مستندًا أو اكتب ملاحظة توضّح كيف عولجت الفجوة.',
+        'عند وضع علامة معالَجة، اكتب إجابة معتمدة أو اربط مستندًا أو اكتب ملاحظة.',
       );
     }
 
     const supabase = await createClient();
+
+    // الفجوة تخصّ الشركة الحالية — تتكفّل RLS بالمنع، والقراءة هنا
+    // لأننا نحتاج نصّ السؤال وقائمة من سألوه.
+    const { data: gap } = await supabase
+      .from('knowledge_gaps')
+      .select('id, question, answer_document_id')
+      .eq('id', input.gapId)
+      .maybeSingle();
+
+    if (!gap) {
+      throw new AppError('NOT_FOUND', 'الفجوة غير موجودة.');
+    }
+
+    // --- الإجابة المعتمدة: تدخل قاعدة المعرفة فيجدها البحث ---
+    // هذا ما يحوّل الفجوة من تشخيص إلى حلّ. بدونه يُكتب الجواب ويُخزَّن
+    // ولا يراه أحد، ويسمع الموظف «لم أجد معلومات» عن سؤال أُجيب عنه.
+    let answerDocumentId = gap.answer_document_id;
+
+    if (input.answerText) {
+      answerDocumentId = await upsertCuratedAnswer({
+        companyId: company.id,
+        gapId: input.gapId,
+        question: gap.question,
+        answer: input.answerText,
+        authorId: profile.id,
+      });
+    } else if (answerDocumentId && input.status === 'OPEN') {
+      // أُعيدت الفجوة مفتوحة ⇒ لا يصحّ أن يبقى جوابها في قاعدة المعرفة
+      await removeCuratedAnswer(company.id, answerDocumentId);
+      answerDocumentId = null;
+    }
 
     const { error } = await supabase
       .from('knowledge_gaps')
@@ -52,6 +86,8 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
         status: input.status,
         resolution_note: input.resolutionNote || null,
         linked_document_id: input.linkedDocumentId || null,
+        answer_text: input.answerText || null,
+        answer_document_id: answerDocumentId,
         resolved_by: isResolved ? profile.id : null,
         resolved_at: isResolved ? new Date().toISOString() : null,
       })
@@ -66,8 +102,29 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
       action: isResolved ? 'knowledge_gap.resolved' : 'knowledge_gap.status_changed',
       entityType: 'knowledge_gap',
       entityId: input.gapId,
-      metadata: { status: input.status },
+      metadata: { status: input.status, hasCuratedAnswer: Boolean(input.answerText) },
     });
+
+    // --- إغلاق الدائرة مع من سأل ---
+    // بلا هذا يُجاب السؤال ولا يعلم صاحبه، فلا يعود ليسأل، ويبقى
+    // انطباعه أن المنصة لم تعرف الجواب.
+    if (isResolved) {
+      const { data: askers } = await supabase
+        .from('knowledge_gap_askers')
+        .select('user_id')
+        .eq('gap_id', input.gapId);
+
+      await notifyUsers({
+        companyId: company.id,
+        userIds: (askers ?? []).map((row) => row.user_id).filter((id) => id !== profile.id),
+        type: 'GAP_ANSWERED',
+        title: 'سؤالك صار له إجابة',
+        body: gap.question,
+        link: '/assistant',
+        entityType: 'knowledge_gap',
+        entityId: input.gapId,
+      });
+    }
 
     revalidatePath('/knowledge-gaps');
     revalidatePath('/dashboard');
