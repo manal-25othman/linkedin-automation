@@ -1,373 +1,407 @@
 import Link from 'next/link';
 import {
   ArrowLeft,
-  BarChart3,
+  BadgeCheck,
+  BrainCircuit,
+  Building2,
+  ClipboardCheck,
   Clock,
-  FileSearch,
-  FileStack,
+  FileWarning,
   Languages,
   Lock,
   MessagesSquare,
-  Quote,
-  SearchX,
+  Repeat2,
+  ScanSearch,
   ShieldCheck,
   Sparkles,
-  Target,
-  Upload,
-  Users,
+  UserMinus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Section, SectionHeading, FeatureCard } from '@/components/marketing/sections';
+import { Section, SectionHeading } from '@/components/marketing/sections';
+import { Reveal } from '@/components/marketing/reveal';
+import { HeroDemo, Pulse } from '@/components/marketing/hero-demo';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { HOME_FAQ } from '@/content/faq';
+
+/**
+ * الصفحة الرئيسية.
+ *
+ * قاعدة الصياغة هنا: لا جملة تصلح لمنافس. «منصة ذكاء معرفي تساعد فرقك»
+ * يقولها الجميع فلا تُقنع أحدًا. كل قسم أدناه يقول شيئًا واحدًا محدّدًا
+ * يستطيع الزائر التحقق منه أو رؤيته بعينه.
+ *
+ * وليس في الصفحة شهادة عميل ولا شعار شركة ولا إحصاءة سوق — لا عملاء بعد،
+ * واختلاق ذلك يُكتشف في أول اجتماع ويُفقد الصفقة كلها.
+ */
 
 export default function HomePage() {
   return (
     <>
       {/* ------------------------------------------------------------ Hero */}
-      <section className="border-b bg-gradient-to-b from-accent/40 to-background">
+      <section className="relative overflow-hidden border-b bg-gradient-to-b from-accent/50 via-background to-background">
         <div className="container py-20 sm:py-28">
-          <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="outline" className="mb-6 bg-background px-3 py-1">
-              <Sparkles className="size-3.5 text-primary" aria-hidden />
-              ذكاء معرفي مبني على مستندات شركتك
+          <Reveal className="mx-auto max-w-3xl text-center">
+            <Badge variant="outline" className="mb-6 gap-2 bg-background px-3 py-1">
+              <Pulse />
+              مبنيّة للعربية أولًا — لا مترجَمة إليها
             </Badge>
 
-            <h1 className="text-3xl font-semibold leading-[1.3] tracking-tight sm:text-5xl sm:leading-[1.25]">
-              حوّل معرفة شركتك إلى ذكاء يعمل معك.
+            <h1 className="text-balance text-3xl font-semibold leading-[1.3] tracking-tight sm:text-5xl sm:leading-[1.22]">
+              موظفوك يسألون السؤال نفسه كل أسبوع.
+              <br />
+              <span className="text-shimmer">أجب مرة واحدة — إلى الأبد.</span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg sm:leading-relaxed">
-              منصة ذكاء معرفي تساعد فرقك على الوصول إلى سياسات وإجراءات ومستندات الشركة
-              والحصول على إجابات موثوقة في ثوانٍ.
+            <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-loose text-muted-foreground sm:text-lg">
+              ارفع لوائح شركتك وإجراءاتها، فتصير مساعدًا ذكيًا يجيب فريقك بالعربية في ثوانٍ —
+              من مستنداتك أنت، ومع ذكر المستند والصفحة تحت كل إجابة.
             </p>
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg" asChild>
+              <Button size="lg" asChild className="group">
                 <Link href="/register">
-                  ابدأ التجربة
-                  <ArrowLeft className="size-4" aria-hidden />
+                  ابدأ مجانًا
+                  <ArrowLeft
+                    className="size-4 transition-transform group-hover:-translate-x-1"
+                    aria-hidden
+                  />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/contact">اطلب عرضًا للشركات</Link>
+                <Link href="/contact">اطلب عرضًا على مستنداتك</Link>
               </Button>
             </div>
 
             <p className="mt-5 text-sm text-muted-foreground">
-              لا يتطلب بطاقة ائتمانية · جاهز للاستخدام خلال دقائق
+              بلا بطاقة ائتمانية · جاهزة خلال دقائق · بياناتك لا تُدرَّب عليها أي نماذج
             </p>
-          </div>
+          </Reveal>
 
-          {/* معاينة الإجابة — توضّح المنتج بدل وصفه */}
-          <div className="mx-auto mt-16 max-w-3xl">
-            <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-7">
-              <div className="flex items-start gap-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
-                  م
-                </div>
-                <p className="pt-1 text-sm font-medium">ما سياسة الإجازات السنوية في الشركة؟</p>
-              </div>
-
-              <div className="mt-5 flex items-start gap-3 border-t pt-5">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <Sparkles className="size-4 text-primary" aria-hidden />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-relaxed">
-                    رصيد الإجازة السنوية 21 يوم عمل لمن أمضى أقل من خمس سنوات، ويرتفع إلى
-                    30 يومًا بعد إتمام خمس سنوات متصلة. تُقدَّم الطلبات عبر نظام الموارد
-                    البشرية قبل 7 أيام عمل على الأقل.
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
-                      <Quote className="size-3" aria-hidden />
-                      سياسة الإجازات.pdf — صفحة 3
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
-                      <Quote className="size-3" aria-hidden />
-                      دليل الموظف.pdf — صفحة 12
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              مثال توضيحي من بيانات شركة تجريبية
-            </p>
-          </div>
+          <Reveal className="mt-16" variant="scale" delay={120}>
+            <HeroDemo />
+          </Reveal>
         </div>
       </section>
 
       {/* --------------------------------------------------------- المشكلة */}
       <Section>
-        <SectionHeading
-          eyebrow="المشكلة"
-          title="معرفة شركتك موجودة — لكن الوصول إليها مكلف"
-          description="المعلومة مكتوبة فعلًا في مستند ما. المشكلة أن أحدًا لا يعرف في أي مستند، ولا في أي صفحة."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="المشكلة"
+            title="معرفة شركتك مكتوبة فعلًا — لكن لا أحد يجدها"
+            description="المعلومة موجودة في مستند ما. المشكلة أن أحدًا لا يعرف في أي مستند، ولا في أي صفحة، ولا إن كانت النسخة التي يقرأها هي الأحدث."
+          />
+        </Reveal>
 
         <div className="mt-14 grid gap-6 md:grid-cols-3">
           {[
             {
-              icon: FileStack,
-              title: 'معلومات موزّعة',
+              icon: Repeat2,
+              title: 'السؤال نفسه كل أسبوع',
               description:
-                'السياسات في PDF، الإجراءات في Word، البيانات في Excel، والباقي في أدلة ورسائل قديمة. لا مصدر واحد للحقيقة.',
+                'مدير الموارد البشرية يشرح سياسة الإجازات للمرة المئة. وقتُ أغلى موظفيك يذهب في تكرار لا في عمل.',
             },
             {
               icon: Clock,
-              title: 'وقت ضائع في البحث',
+              title: 'موظف جديد ينتظر',
               description:
-                'الموظف يبحث في مجلدات مشتركة، ثم يسأل زميلًا، ثم ينتظر ردًا. سؤال بسيط يستهلك نصف يوم.',
+                'يقضي أسابيعه الأولى يسأل زملاءه ويعتذر عن الإزعاج. والإجابة التي يحصل عليها تعتمد على من سأل.',
             },
             {
-              icon: SearchX,
-              title: 'إجابات متضاربة',
+              icon: UserMinus,
+              title: 'خبير يستقيل',
               description:
-                'كل موظف يجيب من ذاكرته أو من نسخة قديمة من السياسة، فتتباين الإجابات عن نفس السؤال.',
+                'يخرج ومعه ما لم يُكتب قط. تكتشف الشركة بعد شهر أن نصف إجراءاتها كان في رأسه وحده.',
             },
-          ].map((item) => (
-            <FeatureCard key={item.title} {...item} />
+          ].map((item, index) => (
+            <Reveal key={item.title} delay={index * 110}>
+              <article className="lift h-full rounded-xl border bg-card p-6">
+                <div className="flex size-11 items-center justify-center rounded-lg bg-destructive/10">
+                  <item.icon className="size-5 text-destructive" aria-hidden />
+                </div>
+                <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </article>
+            </Reveal>
           ))}
         </div>
       </Section>
 
-      {/* ----------------------------------------------------------- الحل */}
+      {/* ------------------------------------------------------ ما يميّزنا */}
       <Section muted>
-        <SectionHeading
-          eyebrow="الحل"
-          title="مساعد معرفة داخلي يقرأ مستندات شركتك"
-          description="ارفع مستنداتك مرة واحدة. بعدها يسأل موظفوك بلغتهم الطبيعية ويحصلون على إجابة مبنية على مستندات الشركة وحدها — مع ذكر المصدر."
-        />
+        <Reveal>
+          <SectionHeading
+            eyebrow="لماذا نحن"
+            title="ثلاثة أشياء لا تجدها في أداة عامة"
+            description="الفرق ليس في أن المساعد يجيب — كل الأدوات تجيب. الفرق في أن تعرف من أين جاء الجواب، وأن تثق أنه لم يُخترع."
+          />
+        </Reveal>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 space-y-6">
           {[
-            {
-              icon: FileSearch,
-              title: 'إجابات من مستنداتك فقط',
-              description:
-                'المساعد لا يجيب من معرفته العامة عن أسئلة الشركة. إن لم تكن المعلومة في قاعدة المعرفة، يقولها صراحة بدل أن يخترع.',
-            },
-            {
-              icon: Quote,
-              title: 'كل إجابة موثقة بالمصدر',
-              description:
-                'مع كل إجابة يظهر اسم المستند ورقم الصفحة، فيستطيع الموظف التحقق بنفسه والرجوع إلى الأصل.',
-            },
             {
               icon: Languages,
-              title: 'عربي وإنجليزي',
+              badge: 'العربية',
+              title: 'نقرأ العربية كما تُكتب لا كما تُرسم',
               description:
-                'يفهم السؤال بالعربية أو الإنجليزية ويجيب بلغة السائل، حتى لو كان المستند بلغة أخرى.',
+                'كثير من الأدوات تستخرج نص PDF العربي بترتيبه البصري، فتُخزَّن «خلافات» بصيغة «خالفات» — ثم تعطي إجابات خاطئة بثقة تامة دون أن يظهر أي خطأ. عالجنا ترتيب الحروف وروابط لام-ألف واستنتاج المسافات، وثبّتنا ذلك باختبارات تقارن النص بنقاط الترميز لا بشكله.',
             },
-          ].map((item) => (
-            <FeatureCard key={item.title} {...item} />
+            {
+              icon: BadgeCheck,
+              badge: 'التحقق',
+              title: 'كل رقم يُقارن بالمستند قبل أن يصلك',
+              description:
+                'رقم مخترَع في لائحة ليس خطأً تقنيًا بل مخالفة. لذلك تُقارن أرقام الإجابة — المُدد والمهل والمبالغ — بنص المصادر، وما لا أصل له يظهر عليه تحذير باسمه. ومع كل إجابة درجة ثقة ظاهرة، والمصادر المعروضة هي التي استُعملت فعلًا لا كل ما بحثنا فيه.',
+            },
+            {
+              icon: ScanSearch,
+              badge: 'الفجوات',
+              title: 'تكشف ما لا توثّقه شركتك — ثم تسدّه',
+              description:
+                'كل سؤال لا تجد له إجابة يُسجَّل «فجوة معرفية». يفتحها المدير ويكتب الجواب، فيدخل قاعدة المعرفة فورًا ويصل تنبيه لمن سأل. المنصة تصير أذكى بمعرفة شركتك نفسها كلما استُعملت.',
+            },
+          ].map((item, index) => (
+            <Reveal key={item.title} delay={index * 90}>
+              <article className="lift rounded-2xl border bg-card p-6 sm:p-8">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                    <item.icon className="size-6 text-primary" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Badge variant="secondary" className="mb-2">
+                      {item.badge}
+                    </Badge>
+                    <h3 className="text-lg font-semibold leading-snug">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-loose text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
           ))}
         </div>
       </Section>
 
-      {/* ------------------------------------------------------- كيف يعمل */}
-      <Section id="how-it-works">
-        <SectionHeading eyebrow="كيف يعمل" title="أربع خطوات من المستند إلى الإجابة" />
+      {/* ------------------------------------------------------- كيف تعمل */}
+      <Section>
+        <Reveal>
+          <SectionHeading eyebrow="كيف تعمل" title="من المستند إلى الإجابة في أربع خطوات" />
+        </Reveal>
 
-        <div className="mx-auto mt-14 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              step: '1',
-              icon: Upload,
+              step: '١',
               title: 'ارفع مستنداتك',
-              description: 'PDF وWord وExcel وCSV ونصوص. صنّفها حسب الجهة: موارد بشرية، مالية، تشغيل.',
+              description: 'PDF و Word و Excel — لوائح، إجراءات، سياسات، أدلة تشغيل.',
             },
             {
-              step: '2',
-              icon: Sparkles,
-              title: 'المنصة تفهرسها',
-              description: 'استخراج النص، تقسيمه إلى مقاطع، وبناء فهرس دلالي يفهم المعنى لا الكلمات فقط.',
+              step: '٢',
+              title: 'تُفهرَس تلقائيًا',
+              description: 'تُقرأ وتُقسَّم وتُفهرس للبحث بالمعنى لا بمطابقة الكلمة.',
             },
             {
-              step: '3',
-              icon: MessagesSquare,
-              title: 'الموظف يسأل',
-              description: 'سؤال بلغة طبيعية عبر واجهة محادثة، دون الحاجة لمعرفة اسم المستند.',
+              step: '٣',
+              title: 'يسأل فريقك',
+              description: 'بالعربية الطبيعية، ويحصل على جواب مع مصدره وصفحته.',
             },
             {
-              step: '4',
-              icon: BarChart3,
-              title: 'أنت تتعلّم',
-              description: 'تحليلات تُظهر أكثر الأسئلة تكرارًا، والأسئلة التي لم تجد إجابة في مستنداتك.',
+              step: '٤',
+              title: 'تتعلّم أنت',
+              description: 'تقرير يقول لك ما يسأل عنه فريقك وما لا يجيب عنه توثيقك.',
             },
-          ].map((item) => (
-            <div key={item.step} className="relative">
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+          ].map((item, index) => (
+            <Reveal key={item.step} delay={index * 100}>
+              <div className="lift relative h-full rounded-xl border bg-card p-6">
+                <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                   {item.step}
                 </span>
-                <item.icon className="size-5 text-muted-foreground" aria-hidden />
+                <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
               </div>
-              <h3 className="text-base font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {item.description}
-              </p>
-            </div>
+            </Reveal>
           ))}
+        </div>
+      </Section>
+
+      {/* --------------------------------------------------------- الأمان */}
+      <Section muted>
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <Reveal>
+            <SectionHeading
+              align="start"
+              eyebrow="الأمان"
+              title="العزل بين الشركات مُثبَت لا موعود"
+              description="كل مزوّد يقول «بياناتك آمنة». نقول بدلها ما يمكن التحقق منه: العزل مفروض في قاعدة البيانات نفسها لا في الواجهة، ومعه اختبارات تُنفَّذ بصلاحيات مستخدم حقيقي."
+            />
+            <div className="mt-8">
+              <Button variant="outline" asChild>
+                <Link href="/security">
+                  اقرأ تفاصيل الأمان
+                  <ArrowLeft className="size-4" aria-hidden />
+                </Link>
+              </Button>
+            </div>
+          </Reveal>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                icon: Building2,
+                title: 'عزل تام بين الشركات',
+                description: 'لا مسار برمجي يصل ببيانات شركة إلى أخرى.',
+              },
+              {
+                icon: Lock,
+                title: 'صلاحيات على مستوى المستند',
+                description: 'ما لا يحق للموظف قراءته لا يدخل سياق المساعد أصلًا.',
+              },
+              {
+                icon: ClipboardCheck,
+                title: 'سجل تدقيق كامل',
+                description: 'كل عملية حساسة مسجَّلة بفاعلها ووقتها.',
+              },
+              {
+                icon: BrainCircuit,
+                title: 'وثائقك لا تُدرَّب عليها',
+                description: 'مستنداتك تُستعمل للإجابة عليك وحدك، ولا تُغذّي أي نموذج.',
+              },
+            ].map((item, index) => (
+              <Reveal key={item.title} delay={index * 90}>
+                <div className="lift h-full rounded-xl border bg-card p-5">
+                  <item.icon className="size-5 text-primary" aria-hidden />
+                  <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </Section>
 
       {/* -------------------------------------------------------- المميزات */}
-      <Section muted>
-        <SectionHeading
-          eyebrow="المميزات"
-          title="ليس روبوت محادثة — منصة لإدارة المعرفة"
-        />
+      <Section>
+        <Reveal>
+          <SectionHeading
+            eyebrow="المنصة"
+            title="ليست روبوت محادثة — منصة لإدارة المعرفة"
+          />
+        </Reveal>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[
             {
               icon: MessagesSquare,
-              title: 'مساعد ذكي',
+              title: 'مساعد يعترف بجهله',
               description:
-                'واجهة محادثة مع سجل كامل للمحادثات، نسخ الإجابات، وتقييمها لتحسين جودة المعرفة.',
+                'يقول «لم أجد» بدل أن يخترع. سياسة مُختلَقة أضرّ على شركتك من سؤال بلا إجابة.',
             },
             {
-              icon: FileStack,
-              title: 'إدارة المستندات',
+              icon: Sparkles,
+              title: 'إجابات معتمدة',
               description:
-                'رفع، تصنيف، إصدارات، وحالة معالجة واضحة لكل مستند مع سبب الفشل عند حدوثه.',
+                'يكتب المدير الجواب مرة واحدة فيدخل قاعدة المعرفة، ويجده كل من يسأل بعده.',
+            },
+            {
+              icon: FileWarning,
+              title: 'فجوات المعرفة',
+              description:
+                'تقرير بما يسأل عنه فريقك ولا يجده — أوضح دليل على ما ينقص توثيقكم.',
+            },
+            {
+              icon: ShieldCheck,
+              title: 'مقياس جودة الإجابات',
+              description:
+                'متوسط رسوخ الإجابات في المصادر، وعدد الإجابات التي حملت رقمًا غير مؤكد.',
+            },
+            {
+              icon: Languages,
+              title: 'عربي وإنجليزي',
+              description: 'يجيب بلغة السؤال، وواجهة عربية RTL أصلية لا معكوسة بحيلة.',
             },
             {
               icon: Lock,
-              title: 'صلاحيات دقيقة',
-              description:
-                'مستند لقسم واحد، أو لدور محدد، أو للشركة كاملة. التحقق يتم في قاعدة البيانات لا في الواجهة.',
+              title: 'أربعة أدوار وصلاحيات دقيقة',
+              description: 'مالك المنصة، مدير الشركة، مدير القسم، وموظف — لكل حدوده.',
             },
-            {
-              icon: Target,
-              title: 'فجوات المعرفة',
-              description:
-                'كل سؤال لم يجد إجابة يُسجَّل ويُجمَّع مع مثيله. تعرف بالضبط ما ينقص توثيقك.',
-            },
-            {
-              icon: BarChart3,
-              title: 'تحليلات الاستخدام',
-              description:
-                'معدل الإجابة، أكثر الأسئلة تداولًا، أكثر المستندات استخدامًا، والنشاط حسب القسم.',
-            },
-            {
-              icon: Users,
-              title: 'إدارة المستخدمين',
-              description:
-                'أدوار وأقسام وحالات تفعيل. أضف موظفًا وحدّد ما يراه في دقيقة واحدة.',
-            },
-          ].map((item) => (
-            <FeatureCard key={item.title} {...item} />
+          ].map((item, index) => (
+            <Reveal key={item.title} delay={(index % 3) * 90}>
+              <div className="lift h-full rounded-xl border bg-card p-6">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                  <item.icon className="size-5 text-primary" aria-hidden />
+                </div>
+                <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+            </Reveal>
           ))}
-        </div>
-      </Section>
-
-      {/* ---------------------------------------------------------- الأمان */}
-      <Section>
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div>
-            <SectionHeading
-              align="start"
-              eyebrow="الأمان"
-              title="بيانات كل شركة معزولة تمامًا"
-              description="العزل ليس شرطًا في كود التطبيق يمكن نسيانه — بل مطبَّق في قاعدة البيانات نفسها عبر Row Level Security. لا يمكن لاستعلام أن يعبر حدود الشركة حتى لو أخطأ المطوّر."
-            />
-            <ul className="mt-8 space-y-4">
-              {[
-                'عزل كامل بين الشركات على مستوى كل صف في قاعدة البيانات',
-                'تحقق من الصلاحيات على الخادم، ولا يُعتمد على الواجهة إطلاقًا',
-                'تشفير البيانات أثناء النقل والتخزين',
-                'سجل تدقيق لكل عملية حساسة: من فعل ماذا ومتى',
-                'مفاتيح الخدمة لا تصل إلى المتصفح إطلاقًا',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-                  <span className="text-sm leading-relaxed text-muted-foreground">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <Button variant="outline" className="mt-8" asChild>
-              <Link href="/security">
-                تفاصيل الأمان
-                <ArrowLeft className="size-4" aria-hidden />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="rounded-xl border bg-muted/30 p-8">
-            <h3 className="text-base font-semibold">قاعدة المساعد الأساسية</h3>
-            <div className="mt-5 rounded-lg border bg-background p-5">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                عندما لا تكفي المصادر، لا يُخمّن المساعد. يقول:
-              </p>
-              <p className="mt-3 rounded-md bg-muted/60 p-3 text-sm font-medium leading-relaxed">
-                «لم أجد معلومات كافية في قاعدة معرفة الشركة للإجابة عن هذا السؤال.»
-              </p>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                هذا ليس قصورًا — بل تصميم مقصود. سياسة مُختلَقة تكلّف الشركة أكثر بكثير من
-                سؤال بلا إجابة. وكل سؤال كهذا يُسجَّل تلقائيًا في «فجوات المعرفة» ليصبح مهمة
-                توثيق واضحة.
-              </p>
-            </div>
-          </div>
         </div>
       </Section>
 
       {/* --------------------------------------------------------- الأسعار */}
       <Section muted id="pricing">
-        <SectionHeading
-          eyebrow="الأسعار"
-          title="خطط واضحة تنمو مع فريقك"
-          description="جميع الخطط تشمل المساعد الذكي وقاعدة المعرفة والتحليلات الأساسية."
-        />
-        <div className="mt-14">
+        <Reveal>
+          <SectionHeading
+            eyebrow="الأسعار"
+            title="خطط واضحة تنمو مع فريقك"
+            description="بالريال السعودي شهريًا، غير شاملة ضريبة القيمة المضافة."
+          />
+        </Reveal>
+        <Reveal className="mt-14" delay={100}>
           <PricingTable />
-        </div>
+        </Reveal>
       </Section>
 
-      {/* ------------------------------------------------- الأسئلة الشائعة */}
+      {/* --------------------------------------------------- أسئلة شائعة */}
       <Section>
-        <SectionHeading eyebrow="الأسئلة الشائعة" title="أسئلة يطرحها فرق التقنية والموارد البشرية" />
-        <div className="mx-auto mt-12 max-w-3xl">
+        <Reveal>
+          <SectionHeading
+            eyebrow="الأسئلة الشائعة"
+            title="ما يسأل عنه مديرو التقنية والموارد البشرية"
+          />
+        </Reveal>
+        <Reveal className="mx-auto mt-12 max-w-3xl" delay={80}>
           <FaqList items={HOME_FAQ} />
-        </div>
-        <div className="mt-10 text-center">
-          <Button variant="outline" asChild>
-            <Link href="/faq">
-              كل الأسئلة
-              <ArrowLeft className="size-4" aria-hidden />
-            </Link>
-          </Button>
-        </div>
+        </Reveal>
       </Section>
 
-      {/* ------------------------------------------------------ CTA أخير */}
-      <section className="border-t bg-primary">
-        <div className="container py-16 text-center sm:py-20">
-          <h2 className="text-2xl font-semibold tracking-tight text-primary-foreground sm:text-3xl">
-            ابدأ بمستند واحد. اسأل سؤالًا واحدًا.
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-primary-foreground/85">
-            لا تحتاج مشروع تحوّل رقمي. ارفع سياسة الإجازات فقط، واسأل عنها، وقرّر بعدها.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" variant="secondary" asChild>
-              <Link href="/register">ابدأ التجربة</Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-              asChild
-            >
-              <Link href="/contact">اطلب عرضًا للشركات</Link>
-            </Button>
-          </div>
+      {/* ------------------------------------------------------ دعوة ختامية */}
+      <section className="border-t bg-gradient-to-b from-background to-accent/40">
+        <div className="container py-20 sm:py-24">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              جرّبها على مستند واحد من مستنداتك
+            </h2>
+            <p className="mt-4 text-base leading-loose text-muted-foreground">
+              ارفع لائحة أو دليل إجراءات، واسأله سؤالًا تعرف إجابته. عشر دقائق تكفي لتعرف
+              إن كانت المنصة تفهم عربيتك أم لا.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button size="lg" asChild className="group">
+                <Link href="/register">
+                  ابدأ مجانًا
+                  <ArrowLeft
+                    className="size-4 transition-transform group-hover:-translate-x-1"
+                    aria-hidden
+                  />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/contact">تحدّث إلينا</Link>
+              </Button>
+            </div>
+          </Reveal>
         </div>
       </section>
     </>
