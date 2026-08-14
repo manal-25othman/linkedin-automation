@@ -18,6 +18,7 @@ export interface AskResponse {
     answer: string;
     sources: AnswerSource[];
     isUnanswered: boolean;
+    confidenceLevel: 'HIGH' | 'MEDIUM' | 'LOW' | null;
   };
 }
 
@@ -48,6 +49,7 @@ export async function askAction(input: {
         answer: result.answer,
         sources: result.sources,
         isUnanswered: result.isUnanswered,
+        confidenceLevel: result.confidenceLevel,
       },
     };
   } catch (error) {

@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, CompanyAiSettings } from '@/types/database';
 import { embedQuery, toPgVector } from '@/lib/rag/embeddings';
 import { estimateTokens } from '@/lib/rag/chunk';
+import { contentTokens, jaccard } from '@/lib/rag/verify';
 import { logger } from '@/lib/logger';
 
 export interface RetrievedChunk {
@@ -25,6 +26,34 @@ export interface RetrievalResult {
 
 /** حد أعلى لحجم السياق المُرسل إلى النموذج — تحكّم مباشر في التكلفة */
 const MAX_CONTEXT_TOKENS = 6000;
+
+/**
+ * العتبة النسبية: يُسقَط كل مقطع تشابهه أقل من نسبة من أفضل مقطع.
+ *
+ *     τ = max(τ_مطلقة، α × أعلى_تشابه)
+ *
+ * العتبة المطلقة وحدها لا تكفي. حين يجيب مقطع واحد عن السؤال بدقة،
+ * تمرّ معه مقاطع «مقبولة» لا صلة لها، فتُغري النموذج بحشو الإجابة
+ * منها — وهذا مصدر هلوسة لا يرجع إلى النموذج بل إلى ما أطعمناه.
+ */
+const RELATIVE_THRESHOLD_RATIO = 0.75;
+
+/**
+ * معامل التنويع في MMR (Maximal Marginal Relevance):
+ *
+ *     MMR(c) = λ × تشابه(س، c) − (1−λ) × أقصى_تشابه(c، المختار)
+ *
+ * بلا تنويع تُختار مقاطع متجاورة تكرّر النص نفسه، فتُستهلك ميزانية
+ * السياق في تكرار ويضيع مقطع مكمّل كان سيغيّر الإجابة.
+ *
+ * التشابه بين المقاطع يُقاس معجميًا لا بالمتجهات: إعادة المتجهات من
+ * قاعدة البيانات تنقل ١٠٢٤ عددًا لكل مقطع في كل سؤال، وثمنها لا
+ * يوازي دقة أعلى في كشف التكرار النصّي تحديدًا.
+ */
+const MMR_LAMBDA = 0.7;
+
+/** فوق هذا التشابه المعجمي يُعدّ المقطعان نسخة واحدة */
+const NEAR_DUPLICATE = 0.82;
 
 /**
  * استرجاع المقاطع الأقرب دلاليًا للسؤال.
@@ -58,33 +87,90 @@ export async function retrieveRelevantChunks(
 
   const rows = data ?? [];
 
-  // نأخذ الأعلى تشابهًا مع احترام سقف الرموز
+  const candidates: RetrievedChunk[] = rows.map((row) => ({
+    chunkId: row.chunk_id,
+    documentId: row.document_id,
+    documentName: row.document_name,
+    content: row.content,
+    pageNumber: row.page_number,
+    sectionTitle: row.section_title,
+    similarity: row.similarity,
+  }));
+
   const maxChunks = aiSettings.max_context_chunks ?? 6;
-  const selected: RetrievedChunk[] = [];
-  let tokenBudget = MAX_CONTEXT_TOKENS;
-
-  for (const row of rows) {
-    if (selected.length >= maxChunks) break;
-    const cost = estimateTokens(row.content);
-    if (cost > tokenBudget && selected.length > 0) break;
-    tokenBudget -= cost;
-
-    selected.push({
-      chunkId: row.chunk_id,
-      documentId: row.document_id,
-      documentName: row.document_name,
-      content: row.content,
-      pageNumber: row.page_number,
-      sectionTitle: row.section_title,
-      similarity: row.similarity,
-    });
-  }
+  const selected = selectContextChunks(candidates, maxChunks);
 
   return {
     chunks: selected,
     isEmpty: selected.length === 0,
     latencyMs: Date.now() - startedAt,
   };
+}
+
+/**
+ * اختيار مقاطع السياق: عتبة نسبية، ثم تنويع MMR، ثم ميزانية الرموز.
+ *
+ * مصدَّرة للاختبار — هذه هي المعادلات التي تحدّد ما يراه النموذج،
+ * وما يراه النموذج يحدّد ما يهلوس به.
+ */
+export function selectContextChunks(
+  candidates: RetrievedChunk[],
+  maxChunks: number,
+): RetrievedChunk[] {
+  if (candidates.length === 0) return [];
+
+  // --- ١) العتبة النسبية ---
+  const bestSimilarity = candidates.reduce(
+    (max, chunk) => Math.max(max, chunk.similarity),
+    0,
+  );
+  const relativeFloor = bestSimilarity * RELATIVE_THRESHOLD_RATIO;
+  const pool = candidates.filter((chunk) => chunk.similarity >= relativeFloor);
+
+  // --- ٢) التنويع (MMR) مع ميزانية الرموز ---
+  const selected: RetrievedChunk[] = [];
+  const selectedTokens: Set<string>[] = [];
+  const remaining = [...pool];
+  let tokenBudget = MAX_CONTEXT_TOKENS;
+
+  while (selected.length < maxChunks && remaining.length > 0) {
+    let bestIndex = -1;
+    let bestScore = Number.NEGATIVE_INFINITY;
+    let bestRedundancy = 0;
+
+    for (const [index, candidate] of remaining.entries()) {
+      const tokens = contentTokens(candidate.content);
+      const redundancy = selectedTokens.reduce(
+        (max, chosen) => Math.max(max, jaccard(tokens, chosen)),
+        0,
+      );
+
+      const score = MMR_LAMBDA * candidate.similarity - (1 - MMR_LAMBDA) * redundancy;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+        bestRedundancy = redundancy;
+      }
+    }
+
+    if (bestIndex < 0) break;
+
+    const [chosen] = remaining.splice(bestIndex, 1);
+
+    // نسخة مكرّرة لا تضيف معلومة وتستهلك ميزانية السياق
+    if (bestRedundancy >= NEAR_DUPLICATE) continue;
+
+    const cost = estimateTokens(chosen.content);
+    if (cost > tokenBudget && selected.length > 0) break;
+    tokenBudget -= cost;
+
+    selected.push(chosen);
+    selectedTokens.push(contentTokens(chosen.content));
+  }
+
+  // يُعاد الترتيب بالتشابه: الأقرب أولًا في نافذة النموذج
+  return selected.sort((a, b) => b.similarity - a.similarity);
 }
 
 /**

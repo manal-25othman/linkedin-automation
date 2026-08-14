@@ -148,6 +148,14 @@ type MessageRow = {
   model: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
+  /** درجة ثقة مركّبة ∈ [0,1] — تُحسب بعد التوليد بالتحقق من المصادر */
+  confidence: number | null;
+  /** نسبة رموز الإجابة الموجودة في المصادر ∈ [0,1] */
+  groundedness: number | null;
+  /** عدد الأرقام في الإجابة بلا أصل في المصادر */
+  unverified_numbers: number;
+  /** استُنتجت المصادر معجميًا لغياب استشهاد صريح من النموذج */
+  citations_inferred: boolean;
   created_at: string;
 };
 
@@ -496,6 +504,10 @@ export interface Database {
           feedback_up: number;
           feedback_down: number;
           feedback_total: number;
+          avg_confidence: number;
+          avg_groundedness: number;
+          low_confidence_count: number;
+          unverified_number_answers: number;
         }[];
       };
       company_active_users: {
