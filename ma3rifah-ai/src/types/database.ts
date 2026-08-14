@@ -244,6 +244,34 @@ type WhatsAppLinkRow = {
   created_at: string;
 };
 
+export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type TicketPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+
+type SupportTicketRow = {
+  id: string;
+  company_id: string;
+  created_by: string | null;
+  subject: string;
+  category: string | null;
+  status: TicketStatus;
+  priority: TicketPriority;
+  last_reply_at: string;
+  /** آخر رسالة من العميل ⇒ التذكرة تنتظر ردّ المنصة */
+  awaiting_platform: boolean;
+  resolved_at: string | null;
+  created_at: string;
+};
+
+type SupportMessageRow = {
+  id: string;
+  ticket_id: string;
+  company_id: string;
+  author_id: string | null;
+  from_platform: boolean;
+  body: string;
+  created_at: string;
+};
+
 type AnalyticsEventRow = {
   id: string;
   company_id: string;
@@ -408,6 +436,8 @@ export interface Database {
       knowledge_gap_askers: Table<KnowledgeGapAskerRow>;
       notifications: Table<NotificationRow>;
       whatsapp_links: Table<WhatsAppLinkRow>;
+      support_tickets: Table<SupportTicketRow>;
+      support_messages: Table<SupportMessageRow>;
       analytics_events: Table<AnalyticsEventRow>;
       plans: Table<PlanRow>;
       subscriptions: Table<SubscriptionRow>;
@@ -549,6 +579,24 @@ export interface Database {
           documents_limit: number | null;
           questions_used: number;
           questions_limit: number | null;
+        }[];
+      };
+      platform_companies_report: {
+        Args: Record<string, never>;
+        Returns: {
+          company_id: string;
+          company_name: string;
+          status: CompanyStatus;
+          is_demo: boolean;
+          plan_name: string | null;
+          subscription_status: SubscriptionStatus | null;
+          users_count: number;
+          documents_count: number;
+          questions_count: number;
+          unanswered_count: number;
+          open_tickets: number;
+          last_activity_at: string | null;
+          created_at: string;
         }[];
       };
       request_whatsapp_link_code: {

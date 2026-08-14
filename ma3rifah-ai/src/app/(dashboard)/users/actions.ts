@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { randomBytes } from 'node:crypto';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -13,6 +14,24 @@ import { serverEnv } from '@/lib/env';
 export interface ActionResult {
   ok: boolean;
   message?: string;
+  /** كلمة مرور مؤقتة تُعرض مرة واحدة حين يتعذّر إرسال البريد */
+  temporaryPassword?: string;
+}
+
+/**
+ * كلمة مرور مؤقتة قابلة للنطق والنقل يدويًا.
+ *
+ * تُبنى من مجموعة بلا محارف ملتبسة (0/O و1/l/I): المدير سينقلها إلى
+ * الموظف برسالة أو شفاهةً، والالتباس هنا يعني محاولة دخول فاشلة وشكوى.
+ * والطول والعشوائية من crypto كافيان لكلمة تُبدَّل عند أول دخول.
+ */
+function generateTemporaryPassword(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const bytes = randomBytes(14);
+  let password = '';
+  for (const byte of bytes) password += alphabet[byte % alphabet.length];
+  // رمز واحد على الأقل — بعض السياسات تشترطه
+  return `${password}#7`;
 }
 
 /**
@@ -68,21 +87,48 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
       );
     }
 
-    const { data: created, error: createError } = await admin.auth.admin.inviteUserByEmail(
-      input.email,
-      {
-        data: { full_name: input.fullName },
-        redirectTo: `${serverEnv.appUrl}/login`,
-      },
-    );
+    // ---------------------------------------------------------------
+    // إنشاء الحساب.
+    //
+    // تُجرَّب الدعوة بالبريد أولًا؛ فإن تعذّرت — وهو الغالب قبل ضبط
+    // مزوّد بريد — يُنشأ الحساب بكلمة مرور مؤقتة تُعرض للمدير مرة
+    // واحدة لينقلها للموظف. الاعتماد على البريد وحده يعني أن الشركة
+    // لا تستطيع إضافة موظف واحد حتى يُضبط SMTP، وهذا يوقف التبنّي
+    // كله عند أول خطوة.
+    // ---------------------------------------------------------------
+    let userId: string | null = null;
+    let temporaryPassword: string | undefined;
 
-    if (createError || !created.user) {
-      logger.warn('تعذّرت دعوة المستخدم', { reason: createError?.message });
-      throw new AppError(
-        'INTERNAL',
-        'تعذّر إرسال الدعوة. تأكد من إعداد البريد في Supabase، أو أضف المستخدم يدويًا.',
-      );
+    const invited = await admin.auth.admin.inviteUserByEmail(input.email, {
+      data: { full_name: input.fullName },
+      redirectTo: `${serverEnv.appUrl}/login`,
+    });
+
+    if (invited.data?.user && !invited.error) {
+      userId = invited.data.user.id;
+    } else {
+      logger.info('تعذّرت الدعوة بالبريد — يُنشأ الحساب بكلمة مرور مؤقتة', {
+        reason: invited.error?.message,
+      });
+
+      temporaryPassword = generateTemporaryPassword();
+      const { data: createdUser, error: createError } = await admin.auth.admin.createUser({
+        email: input.email,
+        password: temporaryPassword,
+        // يُؤكَّد البريد صراحةً: بلا مزوّد بريد لا تصل رسالة التأكيد،
+        // فيبقى الحساب معلّقًا لا يستطيع صاحبه الدخول.
+        email_confirm: true,
+        user_metadata: { full_name: input.fullName },
+      });
+
+      if (createError || !createdUser.user) {
+        logger.warn('تعذّر إنشاء المستخدم', { reason: createError?.message });
+        throw new AppError('INTERNAL', 'تعذّر إنشاء الحساب. تأكد أن البريد غير مستخدم.');
+      }
+      userId = createdUser.user.id;
     }
+
+    const created = { user: { id: userId } };
 
     const { error: profileError } = await admin
       .from('profiles')
@@ -93,7 +139,9 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
         email: input.email,
         job_title: input.jobTitle || null,
         role: input.role,
-        status: 'INVITED',
+        // بكلمة مرور مؤقتة يستطيع الموظف الدخول فورًا، فحالته نشطة لا
+        // «مدعو» — و«مدعو» تعني في هذا النظام حسابًا لم يُفعَّل بعد.
+        status: temporaryPassword ? 'ACTIVE' : 'INVITED',
       })
       .eq('id', created.user.id);
 
@@ -113,6 +161,16 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
     });
 
     revalidatePath('/users');
+    if (temporaryPassword) {
+      return {
+        ok: true,
+        temporaryPassword,
+        message:
+          `أُنشئ حساب ${input.email}. انسخ كلمة المرور المؤقتة وسلّمها للموظف — ` +
+          'لن تظهر مرة أخرى.',
+      };
+    }
+
     return { ok: true, message: `تم إرسال دعوة إلى ${input.email}.` };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };

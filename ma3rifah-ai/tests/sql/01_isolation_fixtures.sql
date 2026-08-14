@@ -169,6 +169,20 @@ insert into public.whatsapp_links (company_id, user_id, phone, verified_at) valu
   (:company_a::uuid, :user_a_hr_emp::uuid, '966500000001', now()),
   (:company_b::uuid, :user_b_admin::uuid,  '966500000002', now());
 
+-- ---------- تذاكر الدعم ----------
+
+insert into public.support_tickets (id, company_id, created_by, subject) values
+  ('aaaaaaaa-7000-4000-8000-000000000001'::uuid, :company_a::uuid, :user_a_hr_emp::uuid,
+   'تذكرة الشركة أ'),
+  ('bbbbbbbb-7000-4000-8000-000000000001'::uuid, :company_b::uuid, :user_b_admin::uuid,
+   'تذكرة الشركة ب — سرّية');
+
+insert into public.support_messages (ticket_id, company_id, author_id, from_platform, body) values
+  ('aaaaaaaa-7000-4000-8000-000000000001'::uuid, :company_a::uuid, :user_a_hr_emp::uuid, false,
+   'نص مشكلة الشركة أ'),
+  ('bbbbbbbb-7000-4000-8000-000000000001'::uuid, :company_b::uuid, :user_b_admin::uuid, false,
+   'نص مشكلة الشركة ب — سرّي');
+
 -- ---------- ملفات التخزين ----------
 
 insert into storage.objects (bucket_id, name) values

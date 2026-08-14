@@ -5,6 +5,7 @@ import {
   FileStack,
   FolderTree,
   LayoutDashboard,
+  LifeBuoy,
   MessagesSquare,
   Settings,
   Sparkles,
@@ -98,6 +99,14 @@ export const DASHBOARD_NAV: NavGroup[] = [
         label: 'الأقسام',
         icon: Building2,
         permission: 'departments.view',
+      },
+      {
+        href: '/support',
+        label: 'الدعم الفني',
+        icon: LifeBuoy,
+        // متاح لكل مستخدم نشط: العطل قد يصيب موظفًا لا مديرًا، ومن
+        // يواجه المشكلة أقدر على وصفها ممن يسمع عنها.
+        permission: 'assistant.use',
       },
       {
         href: '/settings',

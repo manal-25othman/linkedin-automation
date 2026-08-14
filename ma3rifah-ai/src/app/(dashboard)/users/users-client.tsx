@@ -56,6 +56,8 @@ export function UsersClient({
   currentUserId: string;
 }) {
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  // يُعرض مرة واحدة ولا يُخزَّن: إغلاق النافذة يمحوه
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const [editing, setEditing] = useState<UserRowData | null>(null);
 
   return (
@@ -151,12 +153,45 @@ export function UsersClient({
 
       <CrudDialog
         open={isInviteOpen}
-        onOpenChange={setIsInviteOpen}
+        onOpenChange={(open) => {
+          setIsInviteOpen(open);
+          if (!open) setTemporaryPassword(null);
+        }}
         title="إضافة مستخدم"
-        description="ستُرسل دعوة إلى بريده الإلكتروني لتعيين كلمة المرور."
-        submitLabel="إرسال الدعوة"
+        description="تُرسل دعوة بالبريد إن كان مزوّد البريد مضبوطًا. وإلا تظهر كلمة مرور مؤقتة تسلّمها للموظف."
+        submitLabel="إضافة"
         action={inviteUserAction}
+        onRetain={(result) => {
+          if (!result.temporaryPassword) return false;
+          setTemporaryPassword(result.temporaryPassword);
+          return true;
+        }}
       >
+        {temporaryPassword ? (
+          <div className="rounded-lg border border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/10 p-4">
+            <p className="text-sm font-semibold">كلمة المرور المؤقتة</p>
+            <div className="mt-2 flex items-center gap-2">
+              <code
+                dir="ltr"
+                className="flex-1 rounded-md border bg-background px-3 py-2 text-sm font-semibold"
+              >
+                {temporaryPassword}
+              </code>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigator.clipboard.writeText(temporaryPassword)}
+              >
+                نسخ
+              </Button>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              انسخها الآن وسلّمها للموظف — لن تظهر مرة أخرى. اطلب منه تغييرها بعد أول دخول.
+            </p>
+          </div>
+        ) : null}
+
         <div className="space-y-2">
           <Label htmlFor="fullName">الاسم الكامل *</Label>
           <Input id="fullName" name="fullName" required maxLength={120} />
