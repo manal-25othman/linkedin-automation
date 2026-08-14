@@ -5,6 +5,8 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProfileForm } from '../settings-forms';
+import { WhatsAppLinkCard } from '@/components/dashboard/whatsapp-link-card';
+import { WHATSAPP_NUMBER } from '@/lib/config/contact';
 import { ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/auth/rbac';
 
 export const metadata: Metadata = { title: 'الملف الشخصي' };
@@ -13,9 +15,10 @@ export const dynamic = 'force-dynamic';
 export default async function ProfileSettingsPage() {
   const { profile } = await requireCompanySession();
 
+  const supabase = await createClient();
+
   let departmentName: string | null = null;
   if (profile.department_id) {
-    const supabase = await createClient();
     const { data } = await supabase
       .from('departments')
       .select('name')
@@ -23,6 +26,13 @@ export default async function ProfileSettingsPage() {
       .maybeSingle();
     departmentName = data?.name ?? null;
   }
+
+  // تتكفّل RLS بقصر الصف على صاحبه
+  const { data: whatsappLink } = await supabase
+    .from('whatsapp_links')
+    .select('phone, verified_at')
+    .eq('user_id', profile.id)
+    .maybeSingle();
 
   return (
     <div className="space-y-6">
@@ -38,6 +48,18 @@ export default async function ProfileSettingsPage() {
               fullName={profile.full_name}
               jobTitle={profile.job_title}
               email={profile.email}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>واتساب</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WhatsAppLinkCard
+              businessNumber={WHATSAPP_NUMBER}
+              linkedPhone={whatsappLink?.verified_at ? whatsappLink.phone : null}
             />
           </CardContent>
         </Card>

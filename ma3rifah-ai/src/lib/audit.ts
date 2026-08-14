@@ -20,6 +20,8 @@ export type AuditAction =
   | 'category.created'
   | 'category.updated'
   | 'category.deleted'
+  | 'whatsapp.link_code_requested'
+  | 'whatsapp.unlinked'
   | 'document.uploaded'
   | 'document.processed'
   | 'document.processing_failed'

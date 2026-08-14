@@ -229,6 +229,21 @@ type NotificationRow = {
   created_at: string;
 };
 
+type WhatsAppLinkRow = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  /** E.164 بلا رموز */
+  phone: string | null;
+  link_code: string | null;
+  code_expires_at: string | null;
+  verified_at: string | null;
+  last_used_at: string | null;
+  messages_today: number;
+  messages_day: string | null;
+  created_at: string;
+};
+
 type AnalyticsEventRow = {
   id: string;
   company_id: string;
@@ -392,6 +407,7 @@ export interface Database {
       knowledge_gaps: Table<KnowledgeGapRow>;
       knowledge_gap_askers: Table<KnowledgeGapAskerRow>;
       notifications: Table<NotificationRow>;
+      whatsapp_links: Table<WhatsAppLinkRow>;
       analytics_events: Table<AnalyticsEventRow>;
       plans: Table<PlanRow>;
       subscriptions: Table<SubscriptionRow>;
@@ -533,6 +549,29 @@ export interface Database {
           documents_limit: number | null;
           questions_used: number;
           questions_limit: number | null;
+        }[];
+      };
+      request_whatsapp_link_code: {
+        Args: Record<string, never>;
+        Returns: { code: string; expires_at: string }[];
+      };
+      match_chunks_for_user: {
+        Args: {
+          p_user_id: string;
+          p_query_embedding: string;
+          p_match_count?: number;
+          p_min_similarity?: number;
+          p_category_ids?: string[] | null;
+        };
+        Returns: {
+          chunk_id: string;
+          document_id: string;
+          document_name: string;
+          category_id: string | null;
+          content: string;
+          page_number: number | null;
+          section_title: string | null;
+          similarity: number;
         }[];
       };
       unread_notification_count: {

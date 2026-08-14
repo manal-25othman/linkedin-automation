@@ -162,6 +162,13 @@ insert into public.notifications (company_id, user_id, type, title, body) values
   (:company_b::uuid, :user_b_admin::uuid, 'GAP_ANSWERED',
    'تنبيه مدير الشركة ب', 'سؤالك صار له إجابة');
 
+-- ---------- روابط واتساب ----------
+-- ربط موثّق لموظف الموارد البشرية في الشركة أ، وآخر لمدير الشركة ب.
+
+insert into public.whatsapp_links (company_id, user_id, phone, verified_at) values
+  (:company_a::uuid, :user_a_hr_emp::uuid, '966500000001', now()),
+  (:company_b::uuid, :user_b_admin::uuid,  '966500000002', now());
+
 -- ---------- ملفات التخزين ----------
 
 insert into storage.objects (bucket_id, name) values
