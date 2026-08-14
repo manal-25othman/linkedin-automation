@@ -6,6 +6,8 @@ import { requireCompanySession } from '@/lib/auth/session';
 import { retrieveRelevantChunks, summarizeSources } from '@/lib/rag/retrieval';
 import { generateAnswer, generateConversationTitle, estimateCostUsd } from '@/lib/ai/claude';
 import { buildSystemPrompt, buildUserMessage, isUnansweredResponse } from '@/lib/ai/prompts';
+import { verifyAnswer, stripCitationMarkers } from '@/lib/rag/verify';
+import type { ConfidenceLevel } from '@/lib/rag/verify';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import { recordAnalyticsEvent } from '@/lib/audit';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -31,9 +33,26 @@ export interface AskResult {
   answer: string;
   sources: AnswerSource[];
   isUnanswered: boolean;
+  /** درجة ثقة مركّبة ∈ [0,1] — null حين لا توجد إجابة تُقاس */
+  confidence: number | null;
+  confidenceLevel: ConfidenceLevel | null;
+  /** أرقام وردت في الإجابة بلا أصل في المصادر */
+  unverifiedNumbers: string[];
 }
 
 const MAX_QUESTION_LENGTH = 2000;
+
+/**
+ * إلحاق التحذيرات بنص الإجابة.
+ *
+ * تُلحق بالنص لا تُعرض في حقل منفصل عمدًا: الحقل المنفصل يُنسى عند
+ * النسخ واللصق، والإجابة تُنقل إلى واتساب أو بريد بلا تحذيرها فتُقرأ
+ * كأنها مؤكَّدة.
+ */
+function appendWarnings(answer: string, warnings: string[]): string {
+  if (warnings.length === 0) return answer;
+  return `${answer}\n\n${warnings.map((warning) => `⚠️ ${warning}`).join('\n')}`;
+}
 
 /**
  * دورة السؤال الكاملة:
@@ -170,9 +189,29 @@ export async function askAssistant(input: {
   });
 
   const unanswered = retrieval.isEmpty || isUnansweredResponse(completion.text);
-  const answerText =
+  const rawAnswer =
     completion.text.trim() ||
     'لم أجد معلومات كافية في قاعدة معرفة الشركة للإجابة عن هذا السؤال.';
+
+  // --- التحقق من رسوخ الإجابة في مصادرها ---
+  // يُجرى بعد التوليد لا قبله: الموجّه يطلب ألّا يخترع النموذج، وهذا
+  // يتحقق أنه لم يفعل. القياس معجمي محلي بلا استدعاء نموذج ثانٍ.
+  const verification = verifyAnswer({ answer: rawAnswer, chunks: retrieval.chunks });
+
+  // تُحذف علامات [مصدر ن] بعد استخلاصها: أفادت في الربط ولا تفيد القارئ
+  const answerText = appendWarnings(
+    stripCitationMarkers(rawAnswer),
+    unanswered ? [] : verification.warnings,
+  );
+
+  if (verification.numbers.unverified.length > 0) {
+    // لا يُسجَّل السؤال ولا الإجابة — الأرقام وحدها كافية للتتبّع
+    logger.warn('أرقام في الإجابة بلا أصل في المصادر', {
+      companyId: company.id,
+      count: verification.numbers.unverified.length,
+      groundedness: verification.groundedness,
+    });
+  }
 
   // --- حفظ الإجابة ---
   const { data: assistantMessage, error: assistantError } = await supabase
@@ -188,6 +227,10 @@ export async function askAssistant(input: {
       model: completion.model,
       input_tokens: completion.inputTokens,
       output_tokens: completion.outputTokens,
+      confidence: unanswered ? null : verification.confidence,
+      groundedness: unanswered ? null : verification.groundedness,
+      unverified_numbers: unanswered ? 0 : verification.numbers.unverified.length,
+      citations_inferred: unanswered ? false : verification.citationsInferred,
     })
     .select('id')
     .single();
@@ -198,7 +241,14 @@ export async function askAssistant(input: {
   }
 
   // --- المصادر ---
-  const summarized = unanswered ? [] : summarizeSources(retrieval.chunks);
+  // تُعرض المقاطع التي استند إليها الجواب فعلًا، لا كل ما استُرجع.
+  // عرض ستة مصادر لإجابة بُنيت على واحد ادّعاء رسوخ لم يحدث، ويجعل
+  // التحقق اليدوي مستحيلًا على من يريد أن يراجع.
+  const citedChunks = verification.citedIndexes
+    .map((index) => retrieval.chunks[index])
+    .filter((chunk): chunk is NonNullable<typeof chunk> => Boolean(chunk));
+
+  const summarized = unanswered ? [] : summarizeSources(citedChunks);
   const sources: AnswerSource[] = summarized.map((chunk) => ({
     documentId: chunk.documentId,
     documentName: chunk.documentName,
@@ -255,6 +305,9 @@ export async function askAssistant(input: {
     answer: answerText,
     sources,
     isUnanswered: unanswered,
+    confidence: unanswered ? null : verification.confidence,
+    confidenceLevel: unanswered ? null : verification.level,
+    unverifiedNumbers: unanswered ? [] : verification.numbers.unverified,
   };
 }
 

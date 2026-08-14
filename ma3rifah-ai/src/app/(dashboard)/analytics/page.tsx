@@ -6,6 +6,7 @@ import {
   MessageCircleQuestion,
   MessagesSquare,
   Percent,
+  ShieldCheck,
   ThumbsUp,
   Timer,
   Users,
@@ -72,6 +73,7 @@ export default async function AnalyticsPage() {
   const citationRate =
     answersTotal > 0 ? ((quality?.answers_with_source ?? 0) / answersTotal) * 100 : null;
 
+  const unverifiedNumberAnswers = quality?.unverified_number_answers ?? 0;
   const feedbackTotal = quality?.feedback_total ?? 0;
   const satisfaction =
     feedbackTotal > 0 ? ((quality?.feedback_up ?? 0) / feedbackTotal) * 100 : null;
@@ -133,7 +135,7 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* تبنّي النظام وجودة إجاباته — ما لا تكشفه أعداد الأسئلة وحدها */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <StatCard
           label="مستخدمون نشطون"
           value={activeUsers?.active_users ?? 0}
@@ -162,6 +164,25 @@ export default async function AnalyticsPage() {
               : `${formatNumber(feedbackTotal)} تقييمًا`
           }
           tone={satisfaction !== null && satisfaction < 60 ? 'warning' : 'success'}
+        />
+        <StatCard
+          label="رسوخ الإجابات في المصادر"
+          value={answersTotal === 0 ? '—' : formatPercent((quality?.avg_groundedness ?? 0) * 100)}
+          icon={ShieldCheck}
+          hint={
+            answersTotal === 0
+              ? 'لا توجد إجابات بعد'
+              : unverifiedNumberAnswers > 0
+                ? `${formatNumber(unverifiedNumberAnswers)} إجابة فيها رقم بلا أصل في المصادر`
+                : 'لا أرقام مخترَعة في هذه المدة'
+          }
+          tone={
+            answersTotal === 0
+              ? 'default'
+              : unverifiedNumberAnswers > 0 || (quality?.avg_groundedness ?? 0) < 0.5
+                ? 'warning'
+                : 'success'
+          }
         />
         <StatCard
           label="متوسط زمن الرد"

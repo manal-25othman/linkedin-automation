@@ -4,6 +4,7 @@ import { isAiConfigured } from '@/lib/ai/claude';
 import { Chat, type ChatMessage } from '@/components/dashboard/assistant/chat';
 import { ConversationList, type ConversationSummary } from './conversation-list';
 import type { AnswerSource } from '@/lib/ai/chat-service';
+import { CONFIDENCE_THRESHOLDS } from '@/lib/rag/verify';
 
 /**
  * الهيكل المشترك بين /assistant و /assistant/[conversationId].
@@ -42,7 +43,7 @@ export async function AssistantShell({
   if (conversationId) {
     const { data: rows } = await supabase
       .from('messages')
-      .select('id, role, content, feedback, answer_status')
+      .select('id, role, content, feedback, answer_status, confidence')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -80,6 +81,7 @@ export async function AssistantShell({
       feedback: row.feedback,
       isUnanswered: row.answer_status === 'UNANSWERED',
       sources: sourcesByMessage.get(row.id) ?? [],
+      confidenceLevel: toConfidenceLevel(row.confidence),
     }));
   }
 
@@ -100,4 +102,17 @@ export async function AssistantShell({
       </div>
     </div>
   );
+}
+
+/**
+ * تحويل الدرجة المخزّنة إلى مستوى معروض.
+ *
+ * العتبات مطابقة لـCONFIDENCE_THRESHOLDS في lib/rag/verify — تُقرأ هنا
+ * من مصدر واحد كي لا يفترق ما يراه المستخدم عمّا حُسب وقت التوليد.
+ */
+function toConfidenceLevel(value: number | null): 'HIGH' | 'MEDIUM' | 'LOW' | null {
+  if (value === null || value === undefined) return null;
+  if (value >= CONFIDENCE_THRESHOLDS.high) return 'HIGH';
+  if (value >= CONFIDENCE_THRESHOLDS.medium) return 'MEDIUM';
+  return 'LOW';
 }

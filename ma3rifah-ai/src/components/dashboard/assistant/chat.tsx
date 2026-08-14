@@ -20,6 +20,31 @@ import { cn, formatNumber } from '@/lib/utils';
 import { askAction, feedbackAction } from '@/app/(dashboard)/assistant/actions';
 import type { AnswerSource } from '@/lib/ai/chat-service';
 
+/**
+ * شارة درجة الثقة.
+ *
+ * تُعرض بجانب المصادر لا فوق الإجابة: القارئ يحتاجها وهو يقرّر إن كان
+ * سيتحقّق من المستند الأصلي، لا وهو يقرأ الجواب.
+ *
+ * «منخفضة» لا تعني خطأً، بل أن الإجابة لم يقابلها نص صريح كافٍ في
+ * المصادر — وهذا موضع المراجعة اليدوية.
+ */
+function ConfidenceBadge({ level }: { level?: 'HIGH' | 'MEDIUM' | 'LOW' | null }) {
+  if (!level) return null;
+
+  const config = {
+    HIGH: { label: 'ثقة عالية', variant: 'success' as const },
+    MEDIUM: { label: 'ثقة متوسطة', variant: 'muted' as const },
+    LOW: { label: 'ثقة منخفضة — راجع المصدر', variant: 'warning' as const },
+  }[level];
+
+  return (
+    <Badge variant={config.variant} title="تُحسب من تطابق الإجابة مع نص المصادر ومن تحقّق أرقامها">
+      {config.label}
+    </Badge>
+  );
+}
+
 export interface ChatMessage {
   id: string;
   role: 'USER' | 'ASSISTANT';
@@ -27,6 +52,8 @@ export interface ChatMessage {
   feedback: 'UP' | 'DOWN' | null;
   isUnanswered: boolean;
   sources: AnswerSource[];
+  /** درجة ثقة مركّبة ∈ [0,1] — null للرسائل القديمة أو غير المُجابة */
+  confidenceLevel?: 'HIGH' | 'MEDIUM' | 'LOW' | null;
   /** رسالة مؤقتة معروضة قبل وصول رد الخادم */
   pending?: boolean;
 }
@@ -129,6 +156,7 @@ export function Chat({
                 feedback: null,
                 isUnanswered: data.isUnanswered,
                 sources: data.sources,
+                confidenceLevel: data.confidenceLevel,
               }
             : message,
         ),
@@ -359,7 +387,12 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
 
         {message.sources.length > 0 ? (
           <div className="mt-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">المصادر</p>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                المصادر التي بُنيت عليها الإجابة
+              </p>
+              <ConfidenceBadge level={message.confidenceLevel} />
+            </div>
             <ul className="space-y-2">
               {message.sources.map((source, index) => (
                 <li
