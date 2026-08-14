@@ -185,6 +185,27 @@ export default async function SetupPage() {
       ),
     },
     {
+      label: 'إرسال البريد (SMTP مخصّص)',
+      // لا يمكن فحصه آليًا: Supabase لا تكشف حالة SMTP عبر واجهة عامة.
+      // يُعرض تذكيرًا دائمًا لأن أثره لا يظهر إلا حين يعجز موظف عن الدخول.
+      ok: false,
+      detail:
+        'بلا مزوّد بريد: لا تصل دعوات الموظفين، ولا تعمل استعادة كلمة المرور. ' +
+        'الحسابات تُنشأ بكلمة مرور مؤقتة كحلّ مؤقت.',
+      fix: (
+        <>
+          أنشئي حسابًا في <Ext href="https://resend.com">Resend</Ext> (٣٠٠٠ رسالة شهريًا
+          مجانًا)، ثم افتحي{' '}
+          <Ext href="https://supabase.com/dashboard/project/_/settings/auth">
+            إعدادات المصادقة في Supabase
+          </Ext>{' '}
+          ← <b>SMTP Settings</b> ← فعّلي <b>Custom SMTP</b> وأدخلي بيانات المزوّد.
+          <br />
+          هذه الخطوة تُصلح الدعوات واستعادة كلمة المرور معًا، ولا تحتاج أي تعديل في الكود.
+        </>
+      ),
+    },
+    {
       label: 'مفتاح Claude',
       ok: isAiConfigured(),
       detail: isAiConfigured() ? 'مضبوط.' : 'غير مضبوط — المساعد الذكي معطّل.',

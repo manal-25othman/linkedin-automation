@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
@@ -53,7 +55,15 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">كلمة المرور</Label>
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="password">كلمة المرور</Label>
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            نسيت كلمة المرور؟
+          </Link>
+        </div>
         <Input
           id="password"
           name="password"
