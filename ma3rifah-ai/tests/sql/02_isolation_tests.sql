@@ -638,3 +638,84 @@ select public.record_zero_rows_expected(
   'select * from public.whatsapp_links');
 
 commit;
+
+-- =====================================================================
+-- المجموعة 6 — عزل الدعم الفني
+--
+-- التذكرة تحمل وصف عطل، وقد تحمل معه اسم مستند أو نص سياسة. تسريبها
+-- عبر الشركات تسريب معرفة لا شكوى فحسب. وفوق ذلك: لا يصحّ أن يوسم عميل
+-- رسالته بأنها «من المنصة»، فتبدو لزملائه ردًّا رسميًا.
+-- =====================================================================
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+insert into public.test_results (category, name, passed, detail)
+select 'الدعم', 'الموظف يرى تذاكر شركته (ضابط موجب)',
+       count(*) = 1 and bool_and(subject = 'تذكرة الشركة أ'),
+       'الصفوف العائدة: ' || count(*)
+from public.support_tickets;
+
+insert into public.test_results (category, name, passed, detail)
+select 'الدعم', 'الموظف لا يرى تذاكر الشركة ب',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.support_tickets
+where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid;
+
+insert into public.test_results (category, name, passed, detail)
+select 'الدعم', 'الموظف لا يقرأ رسائل تذاكر الشركة ب',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.support_messages
+where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid;
+
+select public.record_write_attempt(
+  'الدعم', 'الموظف لا يفتح تذكرة باسم شركة أخرى',
+  $sql$insert into public.support_tickets (company_id, created_by, subject)
+       values ('bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-2000-4000-8000-000000000003'::uuid, 'تذكرة مزروعة')$sql$);
+
+select public.record_write_attempt(
+  'الدعم', 'الموظف لا ينتحل جهة المنصة في رسالة',
+  $sql$insert into public.support_messages (ticket_id, company_id, author_id, from_platform, body)
+       values ('aaaaaaaa-7000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-2000-4000-8000-000000000003'::uuid, true, 'ردّ رسمي مزيّف')$sql$);
+
+select public.record_write_attempt(
+  'الدعم', 'الموظف لا يكتب رسالة باسم مستخدم آخر',
+  $sql$insert into public.support_messages (ticket_id, company_id, author_id, from_platform, body)
+       values ('aaaaaaaa-7000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-2000-4000-8000-000000000001'::uuid, false, 'انتحال')$sql$);
+
+commit;
+
+-- مدير الشركة ليس مالك المنصة: لا يغيّر حالة تذكرته ولا ينفّذ تقرير المنصة
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+select public.record_write_attempt(
+  'الدعم', 'مدير الشركة لا يغيّر حالة تذكرته',
+  $sql$update public.support_tickets set status = 'CLOSED'
+       where id = 'aaaaaaaa-7000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_zero_rows_expected(
+  'الدعم', 'مدير الشركة لا ينفّذ تقرير كل الشركات',
+  'select * from public.platform_companies_report()');
+
+commit;
+
+begin;
+set local role anon;
+
+select public.record_zero_rows_expected(
+  'الدعم', 'زائر بلا جلسة لا يقرأ تذاكر الدعم',
+  'select * from public.support_tickets');
+
+select public.record_zero_rows_expected(
+  'الدعم', 'زائر بلا جلسة لا يقرأ رسائل الدعم',
+  'select * from public.support_messages');
+
+commit;

@@ -17,6 +17,8 @@ import {
 export interface CrudDialogResult {
   ok: boolean;
   message?: string;
+  /** سرّ يُعرض مرة واحدة — كلمة مرور مؤقتة مثلًا */
+  temporaryPassword?: string;
 }
 
 /**
@@ -32,6 +34,7 @@ export function CrudDialog({
   description,
   submitLabel,
   action,
+  onRetain,
   children,
 }: {
   open: boolean;
@@ -40,6 +43,11 @@ export function CrudDialog({
   description?: string;
   submitLabel: string;
   action: (formData: FormData) => Promise<CrudDialogResult>;
+  /**
+   * نتيجة تُعرض في النافذة بدل إغلاقها — لسرّ يُعرض مرة واحدة.
+   * إغلاق النافذة بعد توليد كلمة مرور مؤقتة يفقدها إلى الأبد.
+   */
+  onRetain?: (result: CrudDialogResult) => boolean;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -56,9 +64,13 @@ export function CrudDialog({
         return;
       }
       toast.success(result.message ?? 'تم الحفظ.');
+      router.refresh();
+
+      // نتيجة تحمل سرًّا يُعرض مرة واحدة ⇒ تبقى النافذة مفتوحة ليقرأه
+      if (onRetain?.(result)) return;
+
       onOpenChange(false);
       formRef.current?.reset();
-      router.refresh();
     });
   };
 

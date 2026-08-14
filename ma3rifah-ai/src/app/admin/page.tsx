@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import {
   Building2,
+  Download,
+  LifeBuoy,
   CircleHelp,
   Coins,
   FileStack,
@@ -16,6 +19,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatNumber, formatPercent, formatRelativeTime, truncate } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'إدارة المنصة' };
@@ -75,6 +79,23 @@ export default async function AdminOverviewPage() {
       <PageHeader
         title="نظرة عامة على المنصة"
         description="مؤشرات الاستخدام عبر جميع الشركات المشتركة."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/admin/support">
+                <LifeBuoy className="size-4" aria-hidden />
+                الدعم الفني
+              </Link>
+            </Button>
+            {/* تنزيل مباشر لا صفحة وسيطة — الملف يُولَّد عند الطلب */}
+            <Button asChild>
+              <a href="/admin/export">
+                <Download className="size-4" aria-hidden />
+                تصدير Excel
+              </a>
+            </Button>
+          </div>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
