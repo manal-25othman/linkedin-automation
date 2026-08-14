@@ -570,3 +570,71 @@ select public.record_zero_rows_expected(
   'select * from public.knowledge_gap_askers');
 
 commit;
+
+-- =====================================================================
+-- المجموعة 5 — ربط واتساب والاسترجاع بمعرّف صريح
+--
+-- القناة الخارجية تفتح بابين للخطر: أن يرى أحد ربط غيره فيعرف رقمه،
+-- وأن ينفّذ أحد دالة الاسترجاع بمعرّف مستخدم آخر فينتحل هويته. كلاهما
+-- يُفحص هنا.
+-- =====================================================================
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+insert into public.test_results (category, name, passed, detail)
+select 'واتساب', 'الموظف يرى ربطه هو (ضابط موجب)',
+       count(*) = 1 and bool_and(phone = '966500000001'),
+       'الصفوف العائدة: ' || count(*)
+from public.whatsapp_links;
+
+insert into public.test_results (category, name, passed, detail)
+select 'واتساب', 'الموظف لا يرى روابط الشركة ب',
+       count(*) = 0, 'الصفوف العائدة: ' || count(*)
+from public.whatsapp_links
+where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid;
+
+select public.record_write_attempt(
+  'واتساب', 'الموظف لا يستطيع ربط رقم بنفسه بلا إثبات حيازة الهاتف',
+  $sql$insert into public.whatsapp_links (company_id, user_id, phone, verified_at)
+       values ('aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+               'aaaaaaaa-2000-4000-8000-000000000003'::uuid,
+               '966599999999', now())$sql$);
+
+select public.record_write_attempt(
+  'واتساب', 'الموظف لا يستطيع تعديل ربط قائم',
+  $sql$update public.whatsapp_links set phone = '966588888888' where true$sql$);
+
+-- الاسترجاع بمعرّف صريح محجوب عن المستخدمين: لو نُفِّذ لأمكن انتحال أي هوية
+select public.record_zero_rows_expected(
+  'واتساب', 'الموظف لا ينفّذ دالة الاسترجاع بمعرّف مستخدم آخر',
+  $sql$select * from public.match_chunks_for_user(
+         'aaaaaaaa-2000-4000-8000-000000000001'::uuid,
+         (select ('[' || rtrim(repeat('0.1,', 1024), ',') || ']')::vector(1024)),
+         5, 0.0, null)$sql$);
+
+commit;
+
+-- مدير الشركة أ يرى روابط شركته ولا يرى روابط الشركة ب
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+insert into public.test_results (category, name, passed, detail)
+select 'واتساب', 'مدير الشركة أ يرى روابط شركته وحدها',
+       count(*) = 1
+         and bool_and(company_id = 'aaaaaaaa-0000-4000-8000-000000000001'::uuid),
+       'الصفوف العائدة: ' || count(*)
+from public.whatsapp_links;
+
+commit;
+
+begin;
+set local role anon;
+
+select public.record_zero_rows_expected(
+  'واتساب', 'زائر بلا جلسة لا يقرأ روابط واتساب',
+  'select * from public.whatsapp_links');
+
+commit;
