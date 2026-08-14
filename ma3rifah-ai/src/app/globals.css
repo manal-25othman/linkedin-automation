@@ -161,3 +161,183 @@
     background: transparent;
   }
 }
+
+/* =====================================================================
+   طبقة الحركة
+   =====================================================================
+   حركة الواجهة هنا وظيفتها التوجيه لا الزخرفة: تسلسل الظهور يقود العين
+   إلى ترتيب القراءة الصحيح، والحركة الصغيرة تدلّ على التفاعل. لذلك
+   المدد قصيرة والمسافات صغيرة — الحركة الطويلة تُبهر مرة ثم تُبطئ كل
+   زيارة بعدها.
+
+   وكل ما يلي يتوقف كليًا عند تفعيل «تقليل الحركة» في نظام المستخدم:
+   الحركة عند بعض الناس ليست ذوقًا بل دوار وصداع.
+   ===================================================================== */
+
+@layer utilities {
+  @keyframes reveal-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes reveal-scale {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes soft-float {
+    0%, 100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -8px, 0);
+    }
+  }
+
+  /* توهّج بطيء خلف البطل — يعطي عمقًا بلا صورة تُحمَّل */
+  @keyframes aurora {
+    0%, 100% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translate3d(3%, -4%, 0) scale(1.12);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes caret-blink {
+    0%, 45% { opacity: 1; }
+    50%, 95% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* اللمعان يبدأ بلا قصّ وينتهي بلا قصّ: لو بقي التدرّج مطبّقًا بعد
+     انتهاء الحركة لتجمّد نصف العبارة بلون ونصفها بآخر، فبدا خللًا لا
+     تأكيدًا. لذلك يُركَّب القصّ داخل الحركة نفسها ويُرفع في آخر إطار. */
+  @keyframes shimmer {
+    0% {
+      background-image: linear-gradient(
+        100deg,
+        currentColor 42%,
+        hsl(var(--primary)) 50%,
+        currentColor 58%
+      );
+      background-size: 200% 100%;
+      background-position: 200% 0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    99% {
+      background-image: linear-gradient(
+        100deg,
+        currentColor 42%,
+        hsl(var(--primary)) 50%,
+        currentColor 58%
+      );
+      background-size: 200% 100%;
+      background-position: -100% 0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    100% {
+      background-image: none;
+      -webkit-text-fill-color: currentColor;
+    }
+  }
+
+  /* الحالة الابتدائية قبل دخول العنصر إطار الشاشة */
+  .reveal {
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+
+  .reveal-in {
+    animation: reveal-up 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .reveal-in-scale {
+    animation: reveal-scale 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-soft-float {
+    animation: soft-float 6s ease-in-out infinite;
+  }
+
+  .animate-aurora {
+    animation: aurora 18s ease-in-out infinite;
+  }
+
+  .animate-caret {
+    animation: caret-blink 1.05s step-end infinite;
+  }
+
+  /* لمعان يمرّ مرة واحدة عبر العبارة — للتأكيد لا للزينة.
+     الحالة الساكنة لون واحد صريح، فلو عُطّلت الحركة ظهرت العبارة سليمة. */
+  .text-shimmer {
+    color: hsl(var(--primary));
+    animation: shimmer 2.4s ease-out 0.45s 1 forwards;
+  }
+
+  /* ارتفاع لطيف عند المرور — يُلغى على أجهزة اللمس */
+  @media (hover: hover) {
+    .lift {
+      transition:
+        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.28s ease;
+    }
+    .lift:hover {
+      transform: translate3d(0, -4px, 0);
+      box-shadow: 0 12px 32px -12px hsl(var(--foreground) / 0.18);
+      border-color: hsl(var(--primary) / 0.35);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-in,
+  .reveal-in-scale {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .animate-soft-float,
+  .animate-aurora,
+  .animate-caret,
+  .text-shimmer {
+    animation: none !important;
+  }
+
+  .text-shimmer {
+    color: hsl(var(--primary));
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .lift:hover {
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
