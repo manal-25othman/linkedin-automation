@@ -23,9 +23,10 @@ export default async function DashboardLayout({
 
   const { profile, company } = session;
 
+  const supabase = await createClient();
+
   let departmentName: string | null = null;
   if (profile.department_id) {
-    const supabase = await createClient();
     const { data } = await supabase
       .from('departments')
       .select('name')
@@ -33,6 +34,23 @@ export default async function DashboardLayout({
       .maybeSingle();
     departmentName = data?.name ?? null;
   }
+
+  // تتكفّل RLS بقصر التنبيهات على صاحبها — لا حاجة لتصفية بالمعرّف هنا
+  const { data: notificationRows } = await supabase
+    .from('notifications')
+    .select('id, type, title, body, link, read_at, created_at')
+    .order('created_at', { ascending: false })
+    .limit(15);
+
+  const notifications = (notificationRows ?? []).map((row) => ({
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    link: row.link,
+    readAt: row.read_at,
+    createdAt: row.created_at,
+  }));
 
   const sidebarCompany = {
     name: company.name,
@@ -57,6 +75,7 @@ export default async function DashboardLayout({
             departmentName,
           }}
           company={sidebarCompany}
+          notifications={notifications}
         />
         <main className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>

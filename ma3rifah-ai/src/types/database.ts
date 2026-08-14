@@ -12,6 +12,7 @@ export type UserRole = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'EMPLOYEE';
 export type CompanyStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING';
 export type ProfileStatus = 'ACTIVE' | 'INVITED' | 'DISABLED';
 export type DocumentStatus = 'PROCESSING' | 'READY' | 'FAILED' | 'ARCHIVED';
+export type DocumentSource = 'UPLOAD' | 'CURATED_ANSWER';
 export type DocumentVisibility = 'COMPANY' | 'DEPARTMENT' | 'ROLE';
 export type MessageRole = 'USER' | 'ASSISTANT';
 export type AnswerStatus = 'ANSWERED' | 'UNANSWERED' | 'ERROR';
@@ -89,6 +90,8 @@ type DocumentRow = {
   category_id: string | null;
   name: string;
   description: string | null;
+  /** UPLOAD = ملف مرفوع، CURATED_ANSWER = إجابة معتمدة لسدّ فجوة */
+  source_kind: DocumentSource;
   storage_path: string | null;
   file_url: string | null;
   file_type: string;
@@ -183,12 +186,47 @@ type KnowledgeGapRow = {
   status: GapStatus;
   resolution_note: string | null;
   linked_document_id: string | null;
+  /** الإجابة المعتمدة كما كتبها المدير */
+  answer_text: string | null;
+  /** المستند المشتقّ من الإجابة — هو ما يجده البحث الدلالي */
+  answer_document_id: string | null;
   first_asked_at: string;
   last_asked_at: string;
   resolved_by: string | null;
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+type KnowledgeGapAskerRow = {
+  gap_id: string;
+  user_id: string;
+  company_id: string;
+  asked_at: string;
+  notified_at: string | null;
+};
+
+export type NotificationType =
+  | 'GAP_ANSWERED'
+  | 'GAP_OPENED'
+  | 'DOCUMENT_FAILED'
+  | 'DOCUMENT_READY'
+  | 'QUOTA_WARNING'
+  | 'LOW_CONFIDENCE';
+
+type NotificationRow = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  /** مسار داخلي فقط — تفرض قاعدة البيانات ذلك */
+  link: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  read_at: string | null;
+  created_at: string;
 };
 
 type AnalyticsEventRow = {
@@ -352,6 +390,8 @@ export interface Database {
       messages: Table<MessageRow>;
       message_sources: Table<MessageSourceRow>;
       knowledge_gaps: Table<KnowledgeGapRow>;
+      knowledge_gap_askers: Table<KnowledgeGapAskerRow>;
+      notifications: Table<NotificationRow>;
       analytics_events: Table<AnalyticsEventRow>;
       plans: Table<PlanRow>;
       subscriptions: Table<SubscriptionRow>;
@@ -494,6 +534,14 @@ export interface Database {
           questions_used: number;
           questions_limit: number | null;
         }[];
+      };
+      unread_notification_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      mark_notifications_read: {
+        Args: { p_ids?: string[] };
+        Returns: number;
       };
       company_answer_quality: {
         Args: { p_days?: number };

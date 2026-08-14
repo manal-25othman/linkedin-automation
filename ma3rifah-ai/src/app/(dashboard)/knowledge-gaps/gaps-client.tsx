@@ -30,6 +30,7 @@ export interface GapRowData {
   lastAskedAt: string;
   resolutionNote: string | null;
   linkedDocumentId: string | null;
+  answerText: string | null;
 }
 
 const STATUS_META: Record<
@@ -148,7 +149,24 @@ export function GapsClient({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="linkedDocumentId">المستند الذي يجيب عن السؤال</Label>
+          <Label htmlFor="answerText">الإجابة المعتمدة</Label>
+          <Textarea
+            id="answerText"
+            name="answerText"
+            rows={5}
+            maxLength={8000}
+            defaultValue={editing?.answerText ?? ''}
+            placeholder="اكتب الجواب كما تريد أن يصل موظفيك. مثال: تُقدَّم طلبات العمل الإضافي عبر مدير القسم قبل يومين على الأقل، وتُحتسب بواقع 150% من الأجر."
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            هذه الإجابة <b>تدخل قاعدة المعرفة فورًا</b>، فيجدها المساعد حين يسأل أي موظف السؤال
+            نفسه — ولن يسمع «لم أجد معلومات» بعد اليوم. تُعرض له باعتبارها إجابة معتمدة من
+            الإدارة، ويصله تنبيه بأن سؤاله صار له جواب.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="linkedDocumentId">أو استشهد بمستند موجود</Label>
           <select
             id="linkedDocumentId"
             name="linkedDocumentId"
@@ -163,7 +181,8 @@ export function GapsClient({
             ))}
           </select>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            إن لم يوجد مستند مناسب، ارفع مستندًا جديدًا من صفحة المستندات ثم عد إلى هنا.
+            للتوثيق الداخلي فقط — ربط مستند لا يضيف شيئًا إلى قاعدة المعرفة، فالمستند مفهرس
+            أصلًا. الإجابة المعتمدة أعلاه هي ما يسدّ الفجوة فعلًا.
           </p>
         </div>
 
@@ -175,7 +194,7 @@ export function GapsClient({
             rows={3}
             maxLength={2000}
             defaultValue={editing?.resolutionNote ?? ''}
-            placeholder="كيف عولجت هذه الفجوة؟ مثال: أُضيف قسم «العمل الإضافي» إلى دليل الموظف."
+            placeholder="ملاحظة إدارية داخلية لا يراها الموظفون. مثال: يُراجع الجواب بعد اعتماد اللائحة الجديدة."
           />
         </div>
       </CrudDialog>

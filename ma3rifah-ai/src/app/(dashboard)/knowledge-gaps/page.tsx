@@ -18,7 +18,7 @@ export default async function KnowledgeGapsPage() {
     supabase
       .from('knowledge_gaps')
       .select(
-        'id, question, times_asked, department_id, status, last_asked_at, resolution_note, linked_document_id',
+        'id, question, times_asked, department_id, status, last_asked_at, resolution_note, linked_document_id, answer_text',
       )
       .order('status', { ascending: true })
       .order('times_asked', { ascending: false })
@@ -37,6 +37,7 @@ export default async function KnowledgeGapsPage() {
     timesAsked: gap.times_asked,
     departmentName: gap.department_id ? departmentNames.get(gap.department_id) ?? null : null,
     status: gap.status,
+    answerText: gap.answer_text,
     lastAskedAt: gap.last_asked_at,
     resolutionNote: gap.resolution_note,
     linkedDocumentId: gap.linked_document_id,

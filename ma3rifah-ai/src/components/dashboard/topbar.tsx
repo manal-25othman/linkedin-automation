@@ -14,6 +14,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/misc';
 import { Badge } from '@/components/ui/badge';
 import { SidebarNav, type SidebarCompany } from '@/components/dashboard/sidebar';
+import {
+  NotificationBell,
+  type NotificationItem,
+} from '@/components/dashboard/notification-bell';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import { initials } from '@/lib/utils';
 import { logoutAction } from '@/app/(auth)/actions';
@@ -30,9 +34,11 @@ export interface TopbarUser {
 export function Topbar({
   user,
   company,
+  notifications,
 }: {
   user: TopbarUser;
   company: SidebarCompany;
+  notifications: NotificationItem[];
 }) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -54,6 +60,8 @@ export function Topbar({
           <Badge variant="muted" className="hidden sm:inline-flex">
             {ROLE_LABELS[user.role]}
           </Badge>
+
+          <NotificationBell initial={notifications} />
 
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
