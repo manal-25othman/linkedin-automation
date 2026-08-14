@@ -5,7 +5,7 @@
  * غير متزامنة — تصدير ثابت منه يفشل البناء.
  */
 export interface AuthFormState {
-  status: 'idle' | 'error' | 'pending_confirmation';
+  status: 'idle' | 'error' | 'pending_confirmation' | 'success';
   message: string;
 }
 

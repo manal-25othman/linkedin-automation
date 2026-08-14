@@ -8,6 +8,7 @@ import { activateInvitedProfile } from '@/lib/auth/activation';
 import { recordAudit } from '@/lib/audit';
 import { loginSchema, registerSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { logger } from '@/lib/logger';
+import { serverEnv } from '@/lib/env';
 
 import type { AuthFormState } from './form-state';
 
@@ -178,4 +179,95 @@ export async function logoutAction(): Promise<void> {
   await supabase.auth.signOut();
   revalidatePath('/', 'layout');
   redirect('/login');
+}
+
+/**
+ * طلب رابط إعادة تعيين كلمة المرور.
+ *
+ * يُعاد النجاح دائمًا مهما كان البريد موجودًا أو لا. الرسالة المختلفة
+ * («هذا البريد غير مسجّل») تحوّل الصفحة إلى أداة تعداد: يجرّب المهاجم
+ * قائمة بريد فيعرف من منها مسجّل في المنصة، وذلك وحده معلومة تُباع.
+ */
+export async function requestPasswordResetAction(
+  _previousState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { status: 'error', message: 'أدخل بريدًا إلكترونيًا صحيحًا.' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${serverEnv.appUrl}/reset-password`,
+    });
+
+    // يُسجَّل الفشل ولا يُعرض: قد يكون البريد غير مضبوط، وهي مشكلتنا
+    // نحن لا مشكلة صاحب البريد.
+    if (error) {
+      logger.warn('تعذّر إرسال رابط إعادة التعيين', { reason: error.message });
+    }
+  } catch (error) {
+    logger.warn('تعذّر إرسال رابط إعادة التعيين', {
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  return {
+    status: 'success',
+    message:
+      'إن كان هذا البريد مسجّلًا لدينا فستصلك رسالة بها رابط إعادة التعيين خلال دقائق. ' +
+      'تحقّق من مجلد الرسائل غير المرغوبة أيضًا.',
+  };
+}
+
+/**
+ * تعيين كلمة مرور جديدة.
+ *
+ * يُستدعى بعد أن يفتح المستخدم الرابط، فتكون Supabase قد أنشأت جلسة
+ * مؤقتة له. غياب الجلسة يعني رابطًا منتهيًا أو مستعملًا.
+ */
+export async function updatePasswordAction(
+  _previousState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const password = String(formData.get('password') ?? '');
+  const confirm = String(formData.get('confirmPassword') ?? '');
+
+  if (password.length < 8) {
+    return { status: 'error', message: 'كلمة المرور يجب ألّا تقل عن ٨ محارف.' };
+  }
+  if (password !== confirm) {
+    return { status: 'error', message: 'كلمتا المرور غير متطابقتين.' };
+  }
+
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (!userData.user) {
+    return {
+      status: 'error',
+      message: 'انتهت صلاحية الرابط أو استُعمل من قبل. اطلب رابطًا جديدًا.',
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { status: 'error', message: translateAuthError(error.message) };
+  }
+
+  await recordAudit({
+    companyId: null,
+    actorId: userData.user.id,
+    actorEmail: userData.user.email ?? null,
+    action: 'auth.password_reset',
+    entityType: 'profile',
+    entityId: userData.user.id,
+  });
+
+  revalidatePath('/', 'layout');
+  redirect('/dashboard');
 }

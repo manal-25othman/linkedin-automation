@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 export type AuditAction =
   | 'auth.register'
   | 'auth.login'
+  | 'auth.password_reset'
   | 'company.updated'
   | 'company.ai_settings_updated'
   | 'user.invited'
