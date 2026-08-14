@@ -100,6 +100,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans">
+        {/*
+          يُعلِم CSS أن جافاسكربت متاح، فيُفعَّل الإخفاء الابتدائي لعناصر
+          الظهور التدريجي. يعمل وقت التحليل قبل الرسم، فلا وميض.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "document.documentElement.classList.add('js')",
+          }}
+        />
         {children}
         <Toaster
           position="top-center"

@@ -62,7 +62,7 @@ export default function AboutPage() {
       <section className="relative overflow-hidden border-b bg-gradient-to-b from-accent/40 to-background">
         <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
         <div className="container relative py-16 sm:py-24">
-          <Reveal className="mx-auto max-w-3xl text-center">
+          <div className="reveal-now mx-auto max-w-3xl text-center">
             <h1 className="text-balance text-3xl font-bold leading-[1.3] sm:text-4xl">
               نبني أداة معرفة عربية نثق نحن بإجاباتها
             </h1>
@@ -70,7 +70,7 @@ export default function AboutPage() {
               معرفة AI منصة سعودية تحوّل لوائح شركتك وإجراءاتها إلى مساعد ذكي يجيب فريقك
               بالعربية في ثوانٍ — من مستنداتك أنت، ومع ذكر المستند والصفحة تحت كل إجابة.
             </p>
-          </Reveal>
+          </div>
         </div>
       </section>
 

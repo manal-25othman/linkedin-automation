@@ -1,8 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
+  BadgeCheck,
   BarChart3,
+  Bell,
   Building2,
+  CircleSlash,
+  Gauge,
+  PenLine,
   FileStack,
   FolderTree,
   Languages,
@@ -17,7 +22,12 @@ import {
   Workflow,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Section, SectionHeading, FeatureCard } from '@/components/marketing/sections';
+import {
+  Section,
+  PageHero,
+  FeatureCard,
+} from '@/components/marketing/sections';
+import { Reveal } from '@/components/marketing/reveal';
 
 export const metadata: Metadata = {
   title: 'المميزات',
@@ -53,6 +63,36 @@ const FEATURE_GROUPS = [
         title: 'سجل المحادثات',
         description:
           'كل محادثة محفوظة وقابلة للاستئناف، مع نسخ الإجابة وتقييمها بإبهام لأعلى أو لأسفل.',
+      },
+    ],
+  },
+  {
+    title: 'الثقة في الإجابة',
+    description: 'ما يفصل أداة تُعتمد عليها في لائحة عن روبوت محادثة لطيف.',
+    features: [
+      {
+        icon: BadgeCheck,
+        title: 'التحقق من الأرقام',
+        description:
+          'كل مدة ومهلة ومبلغ في الإجابة يُقارن بنص المصدر. وما لا أصل له يظهر عليه تحذير يسمّيه.',
+      },
+      {
+        icon: Gauge,
+        title: 'درجة ثقة ظاهرة',
+        description:
+          'مع كل إجابة درجة تُحسب من تطابقها مع نص المصادر ومن تحقّق أرقامها — عالية أو متوسطة أو منخفضة.',
+      },
+      {
+        icon: Quote,
+        title: 'المصادر المستعملة فقط',
+        description:
+          'لا نعرض كل ما بحثنا فيه، بل ما بُنيت عليه الإجابة فعلًا. عرض الزائد ادّعاء رسوخ لم يحدث.',
+      },
+      {
+        icon: CircleSlash,
+        title: 'يعترف بجهله',
+        description:
+          'يقول «لم أجد» بدل أن يخترع، ويُسجَّل السؤال فجوةً معرفية بدل أن يضيع.',
       },
     ],
   },
@@ -124,13 +164,25 @@ const FEATURE_GROUPS = [
         icon: Target,
         title: 'فجوات المعرفة',
         description:
-          'كل سؤال لم يجد إجابة يُسجَّل ويُجمَّع مع مثيله مع عدّاد تكرار. قائمة مهام توثيق مرتبة حسب الأولوية الحقيقية.',
+          'كل سؤال لم يجد إجابة يُسجَّل ويُجمَّع مع مثيله بعدّاد تكرار — قائمة مهام توثيق مرتّبة بأولويتها الحقيقية.',
+      },
+      {
+        icon: PenLine,
+        title: 'إجابات معتمدة',
+        description:
+          'يكتب المدير الجواب مرة واحدة فيدخل قاعدة المعرفة فورًا، ويجده كل من يسأل بعده. الفجوة تُسدّ لا تُوصَف فقط.',
+      },
+      {
+        icon: Bell,
+        title: 'تنبيهات داخل المنصة',
+        description:
+          'يصل الموظف تنبيه حين يصير لسؤاله جواب، ويصل المدير تنبيه بكل فجوة جديدة أو مستند تعذّرت معالجته.',
       },
       {
         icon: BarChart3,
         title: 'تحليلات الاستخدام',
         description:
-          'معدل الإجابة، الأسئلة عبر الزمن، أكثر الأسئلة تداولًا، أكثر المستندات استخدامًا، والنشاط حسب القسم.',
+          'معدل الإجابة، رسوخ الإجابات في مصادرها، الأسئلة عبر الزمن، أكثر المستندات استخدامًا، والنشاط حسب القسم.',
       },
     ],
   },
@@ -139,33 +191,33 @@ const FEATURE_GROUPS = [
 export default function FeaturesPage() {
   return (
     <>
-      <Section className="pb-8">
-        <SectionHeading
-          eyebrow="المميزات"
-          title="كل ما تحتاجه لتشغيل معرفة شركتك"
-          description="من رفع أول مستند إلى قياس أثر المنصة على وقت فريقك."
-        />
-      </Section>
+      <PageHero
+        eyebrow="المميزات"
+        title="كل ما تحتاجه لتشغيل معرفة شركتك"
+        description="من رفع أول مستند، إلى إجابة موثّقة يثق بها موظفك، إلى تقرير يقول لك ما ينقص توثيقك."
+      />
 
       {FEATURE_GROUPS.map((group, index) => (
         <Section key={group.title} muted={index % 2 === 1} className="py-14">
-          <div className="mb-10 max-w-2xl">
-            <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{group.title}</h2>
+          <Reveal className="mb-10 max-w-2xl">
+            <h2 className="text-xl font-bold sm:text-2xl">{group.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {group.description}
             </p>
-          </div>
+          </Reveal>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {group.features.map((feature) => (
-              <FeatureCard key={feature.title} {...feature} />
+            {group.features.map((feature, position) => (
+              <Reveal key={feature.title} delay={(position % 4) * 80}>
+                <FeatureCard {...feature} />
+              </Reveal>
             ))}
           </div>
         </Section>
       ))}
 
       <Section>
-        <div className="rounded-xl border bg-card p-10 text-center">
-          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+        <Reveal className="rounded-xl border bg-card p-10 text-center">
+          <h2 className="text-xl font-bold sm:text-2xl">
             جرّبها على مستند واحد من مستنداتك
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
@@ -180,7 +232,7 @@ export default function FeaturesPage() {
               <Link href="/contact">اطلب عرضًا للشركات</Link>
             </Button>
           </div>
-        </div>
+        </Reveal>
       </Section>
     </>
   );

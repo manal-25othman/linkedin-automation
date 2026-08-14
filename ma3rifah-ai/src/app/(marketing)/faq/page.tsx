@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Section, SectionHeading } from '@/components/marketing/sections';
+import { Section, PageHero } from '@/components/marketing/sections';
+import { Reveal } from '@/components/marketing/reveal';
 import { FaqList } from '@/components/marketing/faq-list';
 import { FULL_FAQ } from '@/content/faq';
 
@@ -32,21 +33,19 @@ export default function FaqPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Section className="pb-10">
-        <SectionHeading
-          eyebrow="الأسئلة الشائعة"
-          title="أسئلة يطرحها العملاء قبل التبنّي"
-          description="لم تجد سؤالك؟ تواصل معنا وسنجيبك خلال يوم عمل."
-        />
-      </Section>
+      <PageHero
+        eyebrow="الأسئلة الشائعة"
+        title="ما يسأل عنه العملاء قبل التبنّي"
+        description="أسئلة الأمان والتكلفة والدقة — مجموعة كما تُطرح فعلًا. لم تجد سؤالك؟ تواصل معنا وسنجيبك خلال يوم عمل."
+      />
 
-      <Section className="pt-0">
+      <Section>
         <div className="mx-auto max-w-3xl space-y-12">
           {FULL_FAQ.map((group) => (
-            <div key={group.category}>
-              <h2 className="mb-5 text-lg font-semibold tracking-tight">{group.category}</h2>
+            <Reveal key={group.category}>
+              <h2 className="mb-5 text-lg font-bold">{group.category}</h2>
               <FaqList items={group.items} />
-            </div>
+            </Reveal>
           ))}
         </div>
       </Section>

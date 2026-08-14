@@ -73,3 +73,45 @@ export function FeatureCard({
     </div>
   );
 }
+
+/**
+ * صدر موحّد لصفحات التسويق الداخلية.
+ *
+ * وجوده يوحّد الإيقاع البصري: كل صفحة تبدأ بالنسيج نفسه والمقاسات
+ * نفسها، فينتقل الزائر بينها دون أن يشعر أنه غادر الموقع. التوحيد هنا
+ * ليس تجميلًا — اختلاف الصفحات في الحجم والتباعد يُقرأ ارتجالًا.
+ */
+export function PageHero({
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section className="relative overflow-hidden border-b bg-gradient-to-b from-accent/40 to-background">
+      <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
+      <div className="container relative py-14 sm:py-20">
+        <div className="reveal-now mx-auto max-w-3xl text-center">
+          {eyebrow ? (
+            <p className="mb-3 flex items-center justify-center gap-2 text-sm font-bold text-primary">
+              <span className="h-px w-5 bg-primary/45" aria-hidden />
+              {eyebrow}
+            </p>
+          ) : null}
+          <h1 className="text-balance text-3xl font-bold leading-[1.3] sm:text-4xl">{title}</h1>
+          {description ? (
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-loose text-muted-foreground">
+              {description}
+            </p>
+          ) : null}
+          {children ? <div className="mt-8">{children}</div> : null}
+        </div>
+      </div>
+    </section>
+  );
+}
