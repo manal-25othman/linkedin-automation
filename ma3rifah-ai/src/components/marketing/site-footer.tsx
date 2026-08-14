@@ -13,6 +13,7 @@ const FOOTER_SECTIONS = [
   {
     title: 'الشركة',
     links: [
+      { href: '/about', label: 'نبذة عنا' },
       { href: '/security', label: 'الأمان والخصوصية' },
       { href: '/faq', label: 'الأسئلة الشائعة' },
       { href: '/contact', label: 'تواصل معنا' },

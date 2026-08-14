@@ -34,7 +34,7 @@ export function SectionHeading({
     <div className={cn('max-w-2xl', align === 'center' ? 'mx-auto text-center' : 'text-start')}>
       {/* لا tracking ولا uppercase على العربية: التباعد يفكّ اتصال
           الحروف بصريًا، وتكبير الأحرف لا معنى له في العربية أصلًا.
-          الطابع التقني يأتي من العلامة الأحادية قبل النص. */}
+          والعلامة شكل هندسي لا محرف بخط آخر — خط واحد في الصفحة. */}
       {eyebrow ? (
         <p
           className={cn(
@@ -42,9 +42,7 @@ export function SectionHeading({
             align === 'center' ? 'justify-center' : 'justify-start',
           )}
         >
-          <span className="font-mono text-xs opacity-70" aria-hidden>
-            {'//'}
-          </span>
+          <span className="h-px w-5 bg-primary/45" aria-hidden />
           {eyebrow}
         </p>
       ) : null}

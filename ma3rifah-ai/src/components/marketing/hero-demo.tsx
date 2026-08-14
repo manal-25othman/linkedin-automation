@@ -116,8 +116,8 @@ export function HeroDemo() {
           <span className="size-2.5 rounded-full bg-warning/50" aria-hidden />
           <span className="size-2.5 rounded-full bg-success/50" aria-hidden />
           <p className="ms-2 text-xs text-muted-foreground">مساعد المعرفة — شركة الأفق</p>
-          <span className="tech-tag ms-auto text-muted-foreground/70" aria-hidden>
-            RAG · voyage-3.5
+          <span className="ms-auto text-[11px] text-muted-foreground/70" aria-hidden>
+            بحث دلالي في مستندات الشركة
           </span>
         </div>
 

@@ -98,7 +98,6 @@
 
   /* الأرقام تبقى لاتينية داخل النص العربي لسهولة القراءة في الجداول */
   .numeric {
-    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     direction: ltr;
     display: inline-block;
@@ -188,13 +187,6 @@
     background-size: 56px 56px;
     -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, #000 30%, transparent 78%);
     mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, #000 30%, transparent 78%);
-  }
-
-  /* وسم تقني قصير — للاتيني والأرقام فقط، لا للعربية */
-  .tech-tag {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.02em;
   }
 
   @keyframes reveal-up {

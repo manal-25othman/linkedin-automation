@@ -137,7 +137,7 @@ export default function HomePage() {
       <Section muted>
         <Reveal>
           <SectionHeading
-            eyebrow="لماذا نحن"
+            eyebrow="ما يميّزنا"
             title="ثلاثة أشياء لا تجدها في أداة عامة"
             description="الفرق ليس في أن المساعد يجيب — كل الأدوات تجيب. الفرق في أن تعرف من أين جاء الجواب، وأن تثق أنه لم يُخترع."
           />
