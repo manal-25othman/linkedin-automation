@@ -77,13 +77,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
         <style
-          // خط النظام كخط احتياطي حتى لو تعذّر تحميل الخط الخارجي
+          /*
+            «تجوال» للنص العربي: حروفه مفتوحة العدادات وأطرافه هندسية،
+            فيقرأ جيدًا في الفقرات ويبقى حادًّا في العناوين الكبيرة.
+            وخط أحادي المسافة للأرقام والوسوم التقنية — الطابع التقني
+            يأتي من تمييز الأرقام والمعرّفات لا من زخرفة تُضاف.
+            وخط النظام احتياطيّ إن تعذّر تحميل الخارجي.
+          */
           dangerouslySetInnerHTML={{
-            __html: `:root{--font-arabic:"IBM Plex Sans Arabic","Noto Sans Arabic","Segoe UI",system-ui,sans-serif}`,
+            __html:
+              ':root{' +
+              '--font-arabic:"Tajawal","Noto Sans Arabic","Segoe UI",system-ui,sans-serif;' +
+              '--font-mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace' +
+              '}',
           }}
         />
       </head>
