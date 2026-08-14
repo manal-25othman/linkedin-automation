@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
+  { href: '/about', label: 'نبذة عنا' },
   { href: '/features', label: 'المميزات' },
   { href: '/how-it-works', label: 'كيف يعمل' },
   { href: '/pricing', label: 'الأسعار' },
