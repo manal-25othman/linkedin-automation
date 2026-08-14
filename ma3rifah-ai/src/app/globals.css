@@ -40,7 +40,8 @@
     --input: 214 26% 90%;
     --ring: 175 77% 26%;
 
-    --radius: 0.625rem;
+    /* نصف قطر أصغر: الحواف الأقرب إلى الحدّة تقرأ «أداة» لا «تطبيق ترفيهي» */
+    --radius: 0.5rem;
   }
 
   .dark {
@@ -97,6 +98,7 @@
 
   /* الأرقام تبقى لاتينية داخل النص العربي لسهولة القراءة في الجداول */
   .numeric {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     direction: ltr;
     display: inline-block;
@@ -175,6 +177,26 @@
    ===================================================================== */
 
 @layer utilities {
+  /* شبكة خفيفة خلف الأقسام البطلة.
+     الطابع التقني في المنتجات الجادّة نسيج لا زخرفة: خطوط بالغة الخفوت
+     تُحسّ ولا تُقرأ، فتوحي بالدقة بلا أن تزاحم النص. وتتلاشى عند الأطراف
+     كي لا تصير إطارًا. */
+  .tech-grid {
+    background-image:
+      linear-gradient(to left, hsl(var(--foreground) / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.045) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, #000 30%, transparent 78%);
+    mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, #000 30%, transparent 78%);
+  }
+
+  /* وسم تقني قصير — للاتيني والأرقام فقط، لا للعربية */
+  .tech-tag {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.02em;
+  }
+
   @keyframes reveal-up {
     from {
       opacity: 0;

@@ -41,7 +41,9 @@ export default function HomePage() {
     <>
       {/* ------------------------------------------------------------ Hero */}
       <section className="relative overflow-hidden border-b bg-gradient-to-b from-accent/50 via-background to-background">
-        <div className="container py-20 sm:py-28">
+        <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
+
+        <div className="container relative py-20 sm:py-28">
           <Reveal className="mx-auto max-w-3xl text-center">
             <Badge variant="outline" className="mb-6 gap-2 bg-background px-3 py-1">
               <Pulse />

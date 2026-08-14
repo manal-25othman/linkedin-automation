@@ -116,6 +116,9 @@ export function HeroDemo() {
           <span className="size-2.5 rounded-full bg-warning/50" aria-hidden />
           <span className="size-2.5 rounded-full bg-success/50" aria-hidden />
           <p className="ms-2 text-xs text-muted-foreground">مساعد المعرفة — شركة الأفق</p>
+          <span className="tech-tag ms-auto text-muted-foreground/70" aria-hidden>
+            RAG · voyage-3.5
+          </span>
         </div>
 
         <div className="p-5 sm:p-6" aria-live="polite">
@@ -164,7 +167,7 @@ export function HeroDemo() {
                           style={{ animationDelay: `${index * 110}ms` }}
                         >
                           <FileText className="size-3" aria-hidden />
-                          {source.name} — صفحة {source.page}
+                          {source.name} — صفحة <span className="numeric">{source.page}</span>
                         </span>
                       ))}
                     </div>
