@@ -44,7 +44,7 @@ export default function HomePage() {
         <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
 
         <div className="container relative py-20 sm:py-28">
-          <Reveal className="mx-auto max-w-3xl text-center">
+          <div className="reveal-now mx-auto max-w-3xl text-center">
             <Badge variant="outline" className="mb-6 gap-2 bg-background px-3 py-1">
               <Pulse />
               مبنيّة للعربية أولًا — لا مترجَمة إليها
@@ -79,11 +79,11 @@ export default function HomePage() {
             <p className="mt-5 text-sm text-muted-foreground">
               بلا بطاقة ائتمانية · جاهزة خلال دقائق · بياناتك لا تُدرَّب عليها أي نماذج
             </p>
-          </Reveal>
+          </div>
 
-          <Reveal className="mt-16" variant="scale" delay={120}>
+          <div className="reveal-now mt-16" style={{ animationDelay: '120ms' }}>
             <HeroDemo />
-          </Reveal>
+          </div>
         </div>
       </section>
 

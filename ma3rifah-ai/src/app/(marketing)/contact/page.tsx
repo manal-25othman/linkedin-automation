@@ -14,15 +14,17 @@ export default function ContactPage() {
     <Section>
       <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-16">
         <div>
-          <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary">
+          {/* لا uppercase ولا tracking على العربية — لا معنى للأولى،
+              والثانية تفكّ اتصال الحروف بصريًا */}
+          <p className="mb-3 flex items-center gap-2 text-sm font-bold text-primary">
+            <span className="h-px w-5 bg-primary/45" aria-hidden />
             تواصل معنا
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            اطلب عرضًا للشركات
-          </h1>
-          <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-            أخبرنا عن مؤسستك ونوع المستندات لديكم، ونرتّب جلسة عملية نعرض فيها المنصة
-            على حالة استخدام حقيقية من عندكم.
+          <h1 className="text-balance text-2xl font-bold sm:text-3xl">اطلب عرضًا على مستنداتك</h1>
+          <p className="mt-4 text-pretty text-base leading-loose text-muted-foreground">
+            أخبرنا عن مؤسستك ونوع المستندات لديكم، ونرتّب جلسة عملية نرفع فيها مستندًا من
+            عندكم — بعد موافقتكم — ونسأله أسئلتكم الفعلية أمامكم. خمس عشرة دقيقة تكفي
+            لتعرفوا إن كانت المنصة تفهم عربيّتكم أم لا.
           </p>
 
           <div className="mt-10 space-y-6">

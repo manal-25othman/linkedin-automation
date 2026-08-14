@@ -12,7 +12,8 @@ import {
   UserCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Section, SectionHeading, FeatureCard } from '@/components/marketing/sections';
+import { Section, PageHero, FeatureCard } from '@/components/marketing/sections';
+import { Reveal } from '@/components/marketing/reveal';
 
 export const metadata: Metadata = {
   title: 'الأمان والخصوصية',
@@ -80,18 +81,18 @@ const CONTROLS = [
 export default function SecurityPage() {
   return (
     <>
-      <Section className="pb-10">
-        <SectionHeading
-          eyebrow="الأمان"
-          title="الأمان مبني في البنية، لا مضاف إليها"
-          description="القرار المعماري الأهم في المنصة: العزل مطبَّق في قاعدة البيانات نفسها، لأن ما يعتمد على انضباط المطوّرين وحده ينكسر يومًا ما."
-        />
-      </Section>
+      <PageHero
+        eyebrow="الأمان"
+        title="الأمان مبنيّ في البنية لا مضاف إليها"
+        description="العزل مطبَّق في قاعدة البيانات نفسها لا في الواجهة، لأن ما يعتمد على انضباط المطوّرين وحده ينكسر يومًا ما. وهذا القرار المعماري الأهم في المنصة."
+      />
 
       <Section className="pt-0">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {CONTROLS.map((control) => (
-            <FeatureCard key={control.title} {...control} />
+          {CONTROLS.map((control, index) => (
+            <Reveal key={control.title} delay={(index % 3) * 80}>
+              <FeatureCard {...control} />
+            </Reveal>
           ))}
         </div>
       </Section>

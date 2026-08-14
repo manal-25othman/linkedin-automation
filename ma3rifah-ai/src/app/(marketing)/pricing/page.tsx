@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Section, SectionHeading } from '@/components/marketing/sections';
+import { Section, SectionHeading, PageHero } from '@/components/marketing/sections';
+import { Reveal } from '@/components/marketing/reveal';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { FULL_FAQ } from '@/content/faq';
@@ -17,16 +18,16 @@ const billingFaq = FULL_FAQ.find((group) => group.category === 'الاشتراك
 export default function PricingPage() {
   return (
     <>
-      <Section className="pb-10">
-        <SectionHeading
-          eyebrow="الأسعار"
-          title="خطط واضحة تنمو مع فريقك"
-          description="ابدأ بفترة تجريبية دون بطاقة ائتمانية، وارتقِ عندما يتوسّع استخدام فريقك."
-        />
-      </Section>
+      <PageHero
+        eyebrow="الأسعار"
+        title="خطط واضحة تنمو مع فريقك"
+        description="ابدأ بلا بطاقة ائتمانية، وارتقِ حين يتوسّع استخدام فريقك. بلا رسوم تأسيس ولا عقد سنة إلزامي."
+      />
 
-      <Section className="pt-0">
-        <PricingTable />
+      <Section>
+        <Reveal>
+          <PricingTable />
+        </Reveal>
         <p className="mt-8 text-center text-sm text-muted-foreground">
           الأسعار بالريال السعودي شهريًا ولا تشمل ضريبة القيمة المضافة.
         </p>

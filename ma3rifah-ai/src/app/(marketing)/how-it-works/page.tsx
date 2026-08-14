@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Section, SectionHeading } from '@/components/marketing/sections';
+import { Section, PageHero } from '@/components/marketing/sections';
+import { Reveal } from '@/components/marketing/reveal';
 
 export const metadata: Metadata = {
   title: 'كيف يعمل',
@@ -66,18 +67,16 @@ const STEPS = [
 export default function HowItWorksPage() {
   return (
     <>
-      <Section className="pb-10">
-        <SectionHeading
-          eyebrow="كيف يعمل"
-          title="من المستند إلى الإجابة الموثقة"
-          description="شرح واضح لما يحدث خلف الواجهة، لأن فرق التقنية تسأل عن هذا أولًا."
-        />
-      </Section>
+      <PageHero
+        eyebrow="كيف تعمل"
+        title="من المستند إلى الإجابة الموثّقة"
+        description="ما يحدث خلف الواجهة بالتفصيل — لأن فريق التقنية يسأل عن هذا أولًا، ولأن من يفهم الآلية يثق بمخرجاتها."
+      />
 
       <Section className="pt-0">
         <div className="mx-auto max-w-4xl">
           {STEPS.map((step, index) => (
-            <div key={step.number} className="relative flex gap-6 pb-12 last:pb-0 sm:gap-8">
+            <Reveal key={step.number} className="relative flex gap-6 pb-12 last:pb-0 sm:gap-8">
               {/* الخط الواصل بين الخطوات */}
               {index < STEPS.length - 1 ? (
                 <div
@@ -105,7 +104,7 @@ export default function HowItWorksPage() {
                   ))}
                 </ul>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </Section>
