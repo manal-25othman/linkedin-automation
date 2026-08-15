@@ -154,6 +154,9 @@ export async function askSiteAssistant(input: {
     })
     .eq('id', visitor.id);
 
+  // تكلفة مساعد الزوّار تقع على المنصة لا على شركة، فتُسجَّل في
+  // site_chat_messages وحدها ويُجمَّعها تقرير المنصة. تحميلها على شركة
+  // ما كان سيشوّه هامشها بتكلفة لم تُحدثها.
   logger.info('سؤال زائر', {
     unanswered: isUnanswered,
     latencyMs: completion.latencyMs,

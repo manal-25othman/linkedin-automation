@@ -5,6 +5,7 @@ import { extractDocumentText } from '@/lib/rag/extract';
 import { buildChunks } from '@/lib/rag/chunk';
 import { embedTexts, toPgVector, getEmbeddingProvider } from '@/lib/rag/embeddings';
 import { recordAudit } from '@/lib/audit';
+import { recordAiUsage, estimateEmbeddingCostUsd } from '@/lib/ai/usage';
 import { logger } from '@/lib/logger';
 import { sanitizeTechnicalDetail, toAppError } from '@/lib/errors';
 
@@ -88,6 +89,22 @@ export async function ingestDocument(documentId: string): Promise<IngestResult> 
     if (embeddings.length !== chunks.length) {
       throw new Error('عدد التضمينات لا يطابق عدد المقاطع');
     }
+
+    // تُحتسب تكلفة التضمين على الشركة فور حدوثها. هذه أكبر تكلفة
+    // مفردة في النظام — رفع أرشيف كامل يستهلك في دقيقة ما تستهلكه مئات
+    // الأسئلة — وكانت لا تُسجَّل إطلاقًا.
+    const provider = getEmbeddingProvider();
+    const embeddedTokens = chunks.reduce((sum, chunk) => sum + chunk.tokenCount, 0);
+
+    await recordAiUsage({
+      companyId: document.company_id,
+      userId: document.uploaded_by,
+      operation: 'embedding',
+      provider: provider.name,
+      model: provider.model,
+      inputTokens: embeddedTokens,
+      costUsd: estimateEmbeddingCostUsd(provider.name, provider.model, embeddedTokens),
+    });
 
     // 5) التخزين — نحذف المقاطع القديمة أولًا لدعم إعادة المعالجة
     await admin.from('document_chunks').delete().eq('document_id', documentId);

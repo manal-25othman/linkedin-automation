@@ -10,6 +10,9 @@ import { verifyAnswer, stripCitationMarkers } from '@/lib/rag/verify';
 import type { ConfidenceLevel } from '@/lib/rag/verify';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import { recordAnalyticsEvent } from '@/lib/audit';
+import { getEmbeddingProvider } from '@/lib/rag/embeddings';
+import { estimateTokens } from '@/lib/rag/chunk';
+import { estimateEmbeddingCostUsd } from '@/lib/ai/usage';
 import { notifyCompanyAdmins } from '@/lib/notifications';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { AppError } from '@/lib/errors';
@@ -309,6 +312,7 @@ export async function askAssistant(input: {
     latencyMs: completion.latencyMs,
     unanswered,
     sourceCount: sources.length,
+    question,
   });
 
   return {
@@ -348,8 +352,19 @@ async function recordUsageAndAnalytics(params: {
   latencyMs: number;
   unanswered: boolean;
   sourceCount: number;
+  question: string;
 }): Promise<void> {
   const cost = estimateCostUsd(params.model, params.inputTokens, params.outputTokens);
+
+  // تضمين السؤال يمرّ على مزوّد خارجي أيضًا. تكلفته ضئيلة للسؤال
+  // الواحد وملموسة عبر آلاف الأسئلة، وإغفالها يجعل الهامش يبدو أوسع.
+  const embeddingProvider = getEmbeddingProvider();
+  const queryTokens = estimateTokens(params.question);
+  const embeddingCost = estimateEmbeddingCostUsd(
+    embeddingProvider.name,
+    embeddingProvider.model,
+    queryTokens,
+  );
 
   try {
     const admin = createAdminClient();
@@ -357,9 +372,9 @@ async function recordUsageAndAnalytics(params: {
     await admin.rpc('record_usage', {
       p_company_id: params.companyId,
       p_questions: 1,
-      p_input_tokens: params.inputTokens,
+      p_input_tokens: params.inputTokens + queryTokens,
       p_output_tokens: params.outputTokens,
-      p_cost_usd: cost,
+      p_cost_usd: cost + embeddingCost,
     });
 
     await admin.from('ai_usage_logs').insert({
@@ -373,6 +388,19 @@ async function recordUsageAndAnalytics(params: {
       estimated_cost_usd: cost,
       latency_ms: params.latencyMs,
     });
+
+    if (embeddingCost > 0) {
+      await admin.from('ai_usage_logs').insert({
+        company_id: params.companyId,
+        user_id: params.userId,
+        operation: 'embedding',
+        provider: embeddingProvider.name,
+        model: embeddingProvider.model,
+        input_tokens: queryTokens,
+        output_tokens: 0,
+        estimated_cost_usd: embeddingCost,
+      });
+    }
   } catch (error) {
     logger.warn('تعذّر تسجيل الاستهلاك', {
       reason: error instanceof Error ? error.message : String(error),
