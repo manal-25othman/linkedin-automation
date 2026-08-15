@@ -19,11 +19,15 @@ export interface ActionResult {
 }
 
 /**
- * كلمة مرور مؤقتة قابلة للنطق والنقل يدويًا.
+ * كلمة مرور أولية للحساب الجديد.
  *
- * تُبنى من مجموعة بلا محارف ملتبسة (0/O و1/l/I): المدير سينقلها إلى
- * الموظف برسالة أو شفاهةً، والالتباس هنا يعني محاولة دخول فاشلة وشكوى.
- * والطول والعشوائية من crypto كافيان لكلمة تُبدَّل عند أول دخول.
+ * في المسار الطبيعي لا يراها أحد إطلاقًا — لا المدير ولا الموظف: الحساب
+ * يُنشأ بها ثم يصل الموظفَ رابطٌ يضع به كلمة مروره بنفسه. وجودها ضرورة
+ * تقنية فحسب، لأن الحساب لا يُنشأ بلا كلمة.
+ *
+ * ولا تُعرض إلا في حالة واحدة: تعذُّر إرسال البريد. عندها تُبنى من
+ * مجموعة بلا محارف ملتبسة (0/O و1/l/I) لأنها ستُنقل يدويًا، والالتباس
+ * هنا يعني محاولة دخول فاشلة وشكوى.
  */
 function generateTemporaryPassword(): string {
   const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
@@ -32,6 +36,38 @@ function generateTemporaryPassword(): string {
   for (const byte of bytes) password += alphabet[byte % alphabet.length];
   // رمز واحد على الأقل — بعض السياسات تشترطه
   return `${password}#7`;
+}
+
+/** وجهة روابط البريد: تبديل الرمز بجلسة ثم صفحة تعيين كلمة المرور */
+const SET_PASSWORD_REDIRECT = () =>
+  `${serverEnv.appUrl}/auth/callback?next=/reset-password`;
+
+/**
+ * إرسال رابط «عيّن كلمة مرورك» إلى صاحب البريد.
+ *
+ * يُستعمل مسار الاستعادة لا مسار الدعوة، وهذا مقصود: الدعوة تُنشئ
+ * حسابًا غير مؤكَّد لا يمكن إعادة إرسالها إليه (المستخدم صار موجودًا)،
+ * فيعلق الموظف الذي ضاعت رسالته الأولى بلا مخرج. أما الاستعادة فتصلح
+ * للحساب نفسه مرارًا، وهي المسار الذي يُختبر في كل نشر.
+ *
+ * يُرجع سبب الفشل نصًّا، أو null عند النجاح.
+ */
+async function sendSetPasswordEmail(email: string): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: SET_PASSWORD_REDIRECT(),
+    });
+    if (error) {
+      logger.warn('تعذّر إرسال رابط تعيين كلمة المرور', { reason: error.message });
+      return error.message;
+    }
+    return null;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.warn('تعذّر إرسال رابط تعيين كلمة المرور', { reason });
+    return reason;
+  }
 }
 
 /**
@@ -90,45 +126,39 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
     // ---------------------------------------------------------------
     // إنشاء الحساب.
     //
-    // تُجرَّب الدعوة بالبريد أولًا؛ فإن تعذّرت — وهو الغالب قبل ضبط
-    // مزوّد بريد — يُنشأ الحساب بكلمة مرور مؤقتة تُعرض للمدير مرة
-    // واحدة لينقلها للموظف. الاعتماد على البريد وحده يعني أن الشركة
-    // لا تستطيع إضافة موظف واحد حتى يُضبط SMTP، وهذا يوقف التبنّي
-    // كله عند أول خطوة.
+    // كلمة المرور لا تمرّ بالمدير: يُنشأ الحساب بكلمة عشوائية لا تُعرض
+    // ولا تُسجَّل، ثم يصل الموظفَ رابطٌ على بريده يضع فيه كلمة مروره
+    // بنفسه. أن ينقل المديرُ كلمةَ مرور بواتساب أو شفاهةً يعني أن سرّ
+    // الحساب مرّ بطرف ثالث وبقي في محادثة لا تُمحى — والموظف قد لا
+    // يغيّرها أبدًا.
+    //
+    // ويُؤكَّد البريد صراحةً (email_confirm) لأن رسالة التأكيد المنفصلة
+    // خطوة زائدة تُربك الموظف وتُوقف حسابه إن ضاعت؛ فتح رابط تعيين
+    // كلمة المرور يثبت ملكية البريد بذاته.
+    //
+    // ولا يُعرض السرّ للمدير إلا إن تعذّر إرسال البريد فعلًا — وإلا لَما
+    // استطاعت شركة إضافة موظف واحد حتى يُضبط SMTP، فيتوقف التبنّي عند
+    // أول خطوة.
     // ---------------------------------------------------------------
-    let userId: string | null = null;
-    let temporaryPassword: string | undefined;
+    const initialPassword = generateTemporaryPassword();
 
-    const invited = await admin.auth.admin.inviteUserByEmail(input.email, {
-      data: { full_name: input.fullName },
-      redirectTo: `${serverEnv.appUrl}/auth/callback?next=/reset-password`,
+    const { data: createdUser, error: createError } = await admin.auth.admin.createUser({
+      email: input.email,
+      password: initialPassword,
+      email_confirm: true,
+      user_metadata: { full_name: input.fullName },
     });
 
-    if (invited.data?.user && !invited.error) {
-      userId = invited.data.user.id;
-    } else {
-      logger.info('تعذّرت الدعوة بالبريد — يُنشأ الحساب بكلمة مرور مؤقتة', {
-        reason: invited.error?.message,
-      });
-
-      temporaryPassword = generateTemporaryPassword();
-      const { data: createdUser, error: createError } = await admin.auth.admin.createUser({
-        email: input.email,
-        password: temporaryPassword,
-        // يُؤكَّد البريد صراحةً: بلا مزوّد بريد لا تصل رسالة التأكيد،
-        // فيبقى الحساب معلّقًا لا يستطيع صاحبه الدخول.
-        email_confirm: true,
-        user_metadata: { full_name: input.fullName },
-      });
-
-      if (createError || !createdUser.user) {
-        logger.warn('تعذّر إنشاء المستخدم', { reason: createError?.message });
-        throw new AppError('INTERNAL', 'تعذّر إنشاء الحساب. تأكد أن البريد غير مستخدم.');
-      }
-      userId = createdUser.user.id;
+    if (createError || !createdUser.user) {
+      logger.warn('تعذّر إنشاء المستخدم', { reason: createError?.message });
+      throw new AppError('INTERNAL', 'تعذّر إنشاء الحساب. تأكد أن البريد غير مستخدم.');
     }
 
-    const created = { user: { id: userId } };
+    const created = { user: { id: createdUser.user.id } };
+
+    const emailFailure = await sendSetPasswordEmail(input.email);
+    // لا تُعرض الكلمة إلا عند فشل البريد — وهي حينها المخرج الوحيد
+    const temporaryPassword = emailFailure ? initialPassword : undefined;
 
     const { error: profileError } = await admin
       .from('profiles')
@@ -139,8 +169,9 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
         email: input.email,
         job_title: input.jobTitle || null,
         role: input.role,
-        // بكلمة مرور مؤقتة يستطيع الموظف الدخول فورًا، فحالته نشطة لا
-        // «مدعو» — و«مدعو» تعني في هذا النظام حسابًا لم يُفعَّل بعد.
+        // «مدعو» حتى يفتح الموظف الرابط ويضع كلمته — عندها يُفعَّل في
+        // مسار /auth/callback. أما إن سلّمه المدير كلمة مؤقتة فهو قادر
+        // على الدخول فورًا، فحالته نشطة.
         status: temporaryPassword ? 'ACTIVE' : 'INVITED',
       })
       .eq('id', created.user.id);
@@ -157,7 +188,7 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
       action: 'user.invited',
       entityType: 'profile',
       entityId: created.user.id,
-      metadata: { role: input.role },
+      metadata: { role: input.role, emailSent: !temporaryPassword },
     });
 
     revalidatePath('/users');
@@ -166,12 +197,81 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
         ok: true,
         temporaryPassword,
         message:
-          `أُنشئ حساب ${input.email}. انسخ كلمة المرور المؤقتة وسلّمها للموظف — ` +
-          'لن تظهر مرة أخرى.',
+          `أُنشئ حساب ${input.email} لكن تعذّر إرسال البريد. ` +
+          'انسخ كلمة المرور المؤقتة وسلّمها للموظف — لن تظهر مرة أخرى.',
       };
     }
 
-    return { ok: true, message: `تم إرسال دعوة إلى ${input.email}.` };
+    return {
+      ok: true,
+      message: `أُنشئ الحساب وأُرسل إلى ${input.email} رابط يضع به كلمة مروره.`,
+    };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+/**
+ * إعادة إرسال رابط تعيين كلمة المرور إلى موظف.
+ *
+ * الرسالة الأولى تضيع كثيرًا — مجلد المزعج، بريد كُتب بخطأ مطبعي، موظف
+ * أجّل فتحها حتى انتهت صلاحيتها. وبلا هذا الزر يكون الحل الوحيد حذف
+ * الحساب وإعادة إنشائه، أو أن يمرّ الموظف بـ«نسيت كلمة المرور؟» لكلمة
+ * لم يضعها قط.
+ *
+ * لا يُعيد أبدًا كلمة مرور: الغاية أن يبقى السرّ بين المنصة والموظف.
+ */
+export async function resendAccessLinkAction(userId: string): Promise<ActionResult> {
+  try {
+    const { profile, company } = await requirePermission('users.manage');
+
+    const supabase = await createClient();
+
+    // القراءة عبر عميل المستخدم لا مفتاح الخدمة: RLS تمنع بذاتها
+    // استهداف موظف في شركة أخرى، ثم يُتحقق من الشركة صراحةً كطبقة ثانية.
+    const { data: target } = await supabase
+      .from('profiles')
+      .select('id, email, status, company_id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!target || target.company_id !== company.id) {
+      throw new AppError('NOT_FOUND', 'المستخدم غير موجود في شركتك.');
+    }
+
+    if (target.status === 'DISABLED') {
+      throw new AppError(
+        'VALIDATION',
+        'الحساب معطّل. فعّله أولًا ثم أعد إرسال الرابط.',
+      );
+    }
+
+    if (!target.email) {
+      throw new AppError('VALIDATION', 'لا يوجد بريد إلكتروني مسجّل لهذا المستخدم.');
+    }
+
+    const failure = await sendSetPasswordEmail(target.email);
+
+    if (failure) {
+      throw new AppError(
+        'INTERNAL',
+        'تعذّر إرسال البريد الآن. تأكد من إعداد مزوّد البريد ثم أعد المحاولة.',
+      );
+    }
+
+    await recordAudit({
+      companyId: company.id,
+      actorId: profile.id,
+      actorEmail: profile.email,
+      action: 'user.access_link_resent',
+      entityType: 'profile',
+      entityId: target.id,
+    });
+
+    return {
+      ok: true,
+      message: `أُرسل رابط تعيين كلمة المرور إلى ${target.email}.`,
+    };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };
   }

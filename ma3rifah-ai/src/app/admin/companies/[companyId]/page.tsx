@@ -51,6 +51,7 @@ const AUDIT_LABELS: Record<string, string> = {
   'user.role_changed': 'تغيير دور',
   'user.deactivated': 'تعطيل مستخدم',
   'user.reactivated': 'تفعيل مستخدم',
+  'user.access_link_resent': 'إعادة إرسال رابط الدخول',
   'document.uploaded': 'رفع مستند',
   'document.upload_failed': 'محاولة رفع فاشلة',
   'document.processed': 'اكتملت معالجة مستند',

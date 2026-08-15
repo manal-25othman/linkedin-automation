@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { classifyCallbackProfile } from '@/lib/auth/activation';
+
 /**
  * حارس وجهة إعادة التوجيه بعد المصادقة.
  *
@@ -48,5 +50,31 @@ describe('وجهة ما بعد المصادقة', () => {
   it('يسقط إلى الوجهة الافتراضية عند الغياب', () => {
     expect(safeNext(null)).toBe('/dashboard');
     expect(safeNext('')).toBe('/dashboard');
+  });
+});
+
+describe('حكم الملف بعد فتح رابط البريد', () => {
+  it('يطرد الحساب المعطّل ولو صحّ الرابط', () => {
+    // من يملك البريد يطلب رابط استعادة متى شاء؛ لو مرّ بلا فحص لصار
+    // الرابط التفافًا على تعطيل المدير للحساب.
+    expect(classifyCallbackProfile('DISABLED')).toBe('BLOCK');
+  });
+
+  it('يفعّل الموظف المدعو — وإلا دار بين الرابط وصفحة الدخول', () => {
+    // الموظف المدعو يصل عبر هذا المسار ولا يمرّ بنموذج الدخول إطلاقًا،
+    // وحالة INVITED تُسقط جلسته في getSessionContext.
+    expect(classifyCallbackProfile('INVITED')).toBe('ACTIVATE');
+  });
+
+  it('يمرّر النشط بلا تعديل', () => {
+    expect(classifyCallbackProfile('ACTIVE')).toBe('PASS');
+  });
+
+  it('يمرّر ولا يفعّل عند غياب الملف', () => {
+    // ملف مفقود ليس سببًا لمنع الدخول — قد يكون ملفًا لم يُجهَّز بعد،
+    // وطبقات لاحقة (getSessionContext) تتكفّل به. لكن لا يجوز أن يُقرأ
+    // الغياب تفعيلًا.
+    expect(classifyCallbackProfile(null)).toBe('PASS');
+    expect(classifyCallbackProfile(undefined)).toBe('PASS');
   });
 });

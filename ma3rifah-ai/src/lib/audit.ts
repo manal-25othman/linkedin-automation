@@ -15,6 +15,7 @@ export type AuditAction =
   | 'user.role_changed'
   | 'user.deactivated'
   | 'user.reactivated'
+  | 'user.access_link_resent'
   | 'department.created'
   | 'department.updated'
   | 'department.deleted'

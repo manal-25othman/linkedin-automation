@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { activateInvitedProfile, classifyCallbackProfile } from '@/lib/auth/activation';
 import { serverEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
@@ -40,11 +41,46 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     logger.warn('تعذّر تبديل رمز المصادقة بجلسة', { reason: error.message });
     return NextResponse.redirect(`${base}/login?error=link_expired`);
+  }
+
+  // -------------------------------------------------------------------
+  // ما بعد التبديل: الرابط يثبت ملكية البريد، لا أكثر.
+  //
+  // الحساب المعطّل يجب أن يبقى معطّلًا: من كان يملك البريد يستطيع دائمًا
+  // طلب رابط استعادة، فلو مرّ الرابط بلا فحص لصار طريقًا يلتفّ على
+  // تعطيل المدير له.
+  //
+  // والحساب المدعو يجب أن يُفعَّل هنا: الموظف المدعو يصل عبر هذا المسار
+  // ولا يمرّ بنموذج الدخول إطلاقًا، وحالة INVITED تُسقِط الجلسة في
+  // getSessionContext — فيدور بين الرابط وصفحة الدخول بلا سبب ظاهر.
+  // -------------------------------------------------------------------
+  const userId = data.user?.id;
+  if (userId) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('status, company_id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    const verdict = classifyCallbackProfile(profile?.status);
+
+    if (verdict === 'BLOCK') {
+      await supabase.auth.signOut();
+      return NextResponse.redirect(`${base}/login?error=account_disabled`);
+    }
+
+    if (verdict === 'ACTIVATE') {
+      await activateInvitedProfile({
+        userId,
+        status: profile?.status,
+        companyId: profile?.company_id,
+      });
+    }
   }
 
   return NextResponse.redirect(`${base}${next}`);
