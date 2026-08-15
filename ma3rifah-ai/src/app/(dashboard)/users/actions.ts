@@ -10,6 +10,7 @@ import { recordAudit } from '@/lib/audit';
 import { AppError, toAppError } from '@/lib/errors';
 import { logger } from '@/lib/logger';
 import { serverEnv } from '@/lib/env';
+import { enforceUserQuota } from '@/lib/billing/quota';
 
 export interface ActionResult {
   ok: boolean;
@@ -94,6 +95,11 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
     }
 
     const input = parsed.data;
+
+    // المقعد يُحجز قبل إنشاء الحساب: لو أُنشئ ثم رُفض، بقي في auth.users
+    // حسابٌ يتيم يمنع إعادة استعمال البريد.
+    await enforceUserQuota();
+
     const supabase = await createClient();
 
     // القسم يجب أن يكون تابعًا لنفس الشركة — RLS تضمن ذلك عند القراءة

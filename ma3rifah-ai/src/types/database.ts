@@ -476,6 +476,18 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { allowed: boolean; used: number; quota: number }[];
       };
+      check_user_quota: {
+        Args: Record<string, never>;
+        Returns: { allowed: boolean; used: number; quota: number }[];
+      };
+      check_document_quota: {
+        Args: Record<string, never>;
+        Returns: { allowed: boolean; used: number; quota: number }[];
+      };
+      check_storage_quota: {
+        Args: { p_incoming_bytes?: number };
+        Returns: { allowed: boolean; used_mb: number; quota_mb: number }[];
+      };
       record_usage: {
         Args: {
           p_company_id: string;
