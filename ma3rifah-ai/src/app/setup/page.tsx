@@ -88,6 +88,12 @@ export default async function SetupPage() {
 
   const urlLooksRight = /^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(supabase.url);
 
+  // عنوان المنصة: منه تُبنى كل روابط البريد. القيمة الافتراضية محلية،
+  // فتصل الرسالة برابط لا يفتح إلا على جهاز المطوّر — عطل يبدو للمستخدم
+  // كأن البريد لم يصل أصلًا.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const appUrlLooksRight = /^https:\/\/[^\s/]+$/.test(appUrl);
+
   const checks: Check[] = [
     {
       label: 'متغيّرات البيئة في Vercel',
@@ -181,6 +187,24 @@ export default async function SetupPage() {
             إعدادات المصادقة
           </Ext>{' '}
           وفعّلي <b>Allow new users to sign up</b> ثم احفظي.
+        </>
+      ),
+    },
+    {
+      label: 'عنوان المنصة (NEXT_PUBLIC_APP_URL)',
+      ok: appUrlLooksRight,
+      detail: appUrlLooksRight
+        ? `الروابط المُرسَلة بالبريد ستشير إلى: ${appUrl}`
+        : `القيمة الحالية: ${appUrl} — روابط استعادة كلمة المرور والدعوات ستشير إلى هذا العنوان.`,
+      fix: (
+        <>
+          كل رابط يُرسَل بالبريد (استعادة كلمة المرور، دعوة موظف) يُبنى من هذا المتغيّر. إن كان
+          خاطئًا فالرسالة تصل ورابطها لا يعمل — وهو عطل يبدو كأن البريد لم يصل.
+          <br />
+          أضيفي في Vercel:{' '}
+          <code className="rounded bg-white px-1">NEXT_PUBLIC_APP_URL</code> بقيمة عنوان منصتك
+          كاملًا (مثل <code className="rounded bg-white px-1">https://ma3rifah-ai.vercel.app</code>)
+          بلا شرطة في آخره، ثم أعيدي النشر.
         </>
       ),
     },
