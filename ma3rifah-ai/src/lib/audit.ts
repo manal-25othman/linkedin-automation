@@ -24,6 +24,7 @@ export type AuditAction =
   | 'whatsapp.link_code_requested'
   | 'whatsapp.unlinked'
   | 'document.uploaded'
+  | 'document.upload_failed'
   | 'document.processed'
   | 'document.processing_failed'
   | 'document.updated'

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createHash } from 'node:crypto';
-import { requirePermission } from '@/lib/auth/session';
+import { requirePermission, getSessionContext } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ingestDocumentNow, ingestDocument } from '@/lib/rag/ingest';
@@ -203,7 +203,27 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
         : 'تم رفع المستند وإضافته إلى قاعدة المعرفة.',
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    // يُسجَّل الفشل المبكر — قبل إنشاء صفّ المستند — وإلا بدا في السجل
+    // أن الشركة لم تحاول الرفع أصلًا. وغياب الأثر يُقرأ لاحقًا «لم
+    // يجرّبوا»، وهو استنتاج خاطئ يضلّل الدعم بدل أن يعينه.
+    const appError = toAppError(error);
+    try {
+      const session = await getSessionContext();
+      if (session?.company) {
+        await recordAudit({
+          companyId: session.company.id,
+          actorId: session.profile.id,
+          actorEmail: session.profile.email,
+          action: 'document.upload_failed',
+          entityType: 'document',
+          metadata: { code: appError.code },
+        });
+      }
+    } catch {
+      // تسجيل الأثر لا يجوز أن يبتلع سبب الفشل الأصلي
+    }
+
+    return { ok: false, message: appError.message };
   }
 }
 
