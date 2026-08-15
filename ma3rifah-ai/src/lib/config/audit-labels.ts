@@ -4,6 +4,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'auth.login': 'تسجيل دخول',
   'company.updated': 'تحديث بيانات الشركة',
   'company.ai_settings_updated': 'تحديث إعدادات المساعد',
+  'plan.created': 'إضافة خطة',
+  'plan.updated': 'تعديل خطة',
   'user.invited': 'دعوة مستخدم',
   'user.created': 'إضافة مستخدم',
   'user.updated': 'تحديث بيانات مستخدم',

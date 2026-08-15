@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { knowledgeGapUpdateSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { recordAudit } from '@/lib/audit';
 import { upsertCuratedAnswer, removeCuratedAnswer } from '@/lib/rag/curated-answer';
-import { notifyUsers } from '@/lib/notifications';
+import { notifyUsers, clearEntityNotifications } from '@/lib/notifications';
 import { AppError, toAppError } from '@/lib/errors';
 
 export interface ActionResult {
@@ -78,6 +78,14 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
       // أُعيدت الفجوة مفتوحة ⇒ لا يصحّ أن يبقى جوابها في قاعدة المعرفة
       await removeCuratedAnswer(company.id, answerDocumentId);
       answerDocumentId = null;
+
+      // ويُمحى معه تنبيه «صار له إجابة» — إجابةٌ سُحبت لا يجوز أن يبقى
+      // إشعارها قائمًا، ولا أن يسدّ الفهرسُ الفريد طريقَ تنبيهٍ لاحق.
+      await clearEntityNotifications({
+        companyId: company.id,
+        type: 'GAP_ANSWERED',
+        entityId: input.gapId,
+      });
     }
 
     const { error } = await supabase
@@ -108,18 +116,29 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
     // --- إغلاق الدائرة مع من سأل ---
     // بلا هذا يُجاب السؤال ولا يعلم صاحبه، فلا يعود ليسأل، ويبقى
     // انطباعه أن المنصة لم تعرف الجواب.
-    if (isResolved) {
+    //
+    // المُطلِق هو وجود الإجابة لا اسم الحالة. كان التنبيه معلّقًا على
+    // RESOLVED وحدها بينما تفتح النافذة على «قيد المراجعة»، فالمسار
+    // الطبيعي — يفتح المدير الفجوة، يكتب الإجابة، يحفظ — كان ينشر
+    // الإجابة في قاعدة المعرفة ولا يخبر صاحب السؤال أبدًا.
+    const hasAnswer = Boolean(answerDocumentId || input.answerText);
+
+    if (hasAnswer || isResolved) {
       const { data: askers } = await supabase
         .from('knowledge_gap_askers')
         .select('user_id')
         .eq('gap_id', input.gapId);
 
+      // نصّ الإجابة في متن التنبيه: أقصر طريق بين السؤال وجوابه. وإلا
+      // فالملاحظة، وإلا فالسؤال نفسه تذكيرًا بما يُشار إليه.
+      const detail = input.answerText || input.resolutionNote || gap.question;
+
       await notifyUsers({
         companyId: company.id,
         userIds: (askers ?? []).map((row) => row.user_id).filter((id) => id !== profile.id),
         type: 'GAP_ANSWERED',
-        title: 'سؤالك صار له إجابة',
-        body: gap.question,
+        title: `إجابة على سؤالك: ${gap.question}`,
+        body: detail,
         link: '/assistant',
         entityType: 'knowledge_gap',
         entityId: input.gapId,

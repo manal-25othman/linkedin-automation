@@ -134,9 +134,14 @@ export default async function AdminCompaniesPage() {
                       <ActionButton
                         variant="outline"
                         size="sm"
-                        action={() =>
-                          setCompanyStatusAction(company.id, isActive ? 'SUSPENDED' : 'ACTIVE')
-                        }
+                        // ‏bind لا سهم ضمنيّ: الدالة المُنشأة داخل مكوّن خادم لا
+                        // تُسلسَل، فيرمي Next عند العرض ويسقط الصفحة كلها. أما
+                        // الإجراء المربوط فمرجع خادمي صالح للتسلسل.
+                        action={setCompanyStatusAction.bind(
+                          null,
+                          company.id,
+                          isActive ? 'SUSPENDED' : 'ACTIVE',
+                        )}
                         confirmMessage={
                           isActive
                             ? `سيتوقف مستخدمو «${company.name}» عن الوصول إلى المنصة.\n\nهل تريد المتابعة؟`
