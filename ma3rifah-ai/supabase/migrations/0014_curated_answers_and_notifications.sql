@@ -115,10 +115,14 @@ create index if not exists notifications_user_unread_idx
 create index if not exists notifications_user_idx
   on public.notifications (user_id, created_at desc);
 
--- منع إغراق المستخدم بتنبيه مكرر عن الحدث نفسه
+-- منع إغراق المستخدم بتنبيه مكرر عن الحدث نفسه.
+--
+-- بلا شرط WHERE عمدًا: الفهرس الجزئي لا يصلح مُحكِّمًا لـ ON CONFLICT،
+-- فتفشل كل عمليات الإدراج بالخطأ 42P10 ولا يُنشأ تنبيه قط (انظر 0019).
+-- والدلالة واحدة على أي حال، لأن NULL مغاير لِـ NULL افتراضًا، فتبقى
+-- التنبيهات بلا كيان مسموحة بلا حدّ.
 create unique index if not exists notifications_unique_event_idx
-  on public.notifications (user_id, type, entity_id)
-  where entity_id is not null;
+  on public.notifications (user_id, type, entity_id);
 
 alter table public.notifications enable row level security;
 
