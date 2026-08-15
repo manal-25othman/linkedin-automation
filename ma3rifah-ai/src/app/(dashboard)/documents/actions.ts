@@ -13,6 +13,7 @@ import {
 } from '@/lib/rag/extract';
 import { documentMetadataSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { enforceDocumentQuota, enforceStorageQuota } from '@/lib/billing/quota';
 import { recordAudit } from '@/lib/audit';
 import { notifyCompanyAdmins } from '@/lib/notifications';
 import { AppError, sanitizeTechnicalDetail, toAppError } from '@/lib/errors';
@@ -42,6 +43,11 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
         `حجم الملف يتجاوز الحد المسموح (${Math.round(MAX_FILE_SIZE_BYTES / 1024 / 1024)} ميجابايت).`,
       );
     }
+
+    // حدود الخطة قبل أي عمل: الفحص بعد الرفع يترك ملفًا محمَّلًا على
+    // حساب لم يشترِ مساحته، والعدّ يُقاس على صفوف فعلية في قاعدة البيانات.
+    await enforceDocumentQuota();
+    await enforceStorageQuota(file.size);
 
     const kind = detectFileKind(file.name, file.type);
     if (!kind) {
