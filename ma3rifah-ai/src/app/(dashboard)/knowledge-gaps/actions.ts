@@ -122,6 +122,7 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
     // الطبيعي — يفتح المدير الفجوة، يكتب الإجابة، يحفظ — كان ينشر
     // الإجابة في قاعدة المعرفة ولا يخبر صاحب السؤال أبدًا.
     const hasAnswer = Boolean(answerDocumentId || input.answerText);
+    let notice = '';
 
     if (hasAnswer || isResolved) {
       const { data: askers } = await supabase
@@ -129,13 +130,17 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
         .select('user_id')
         .eq('gap_id', input.gapId);
 
+      const askerIds = (askers ?? []).map((row) => row.user_id);
+      // لا يُنبَّه المجيب على إجابة نفسه
+      const recipients = askerIds.filter((id) => id !== profile.id);
+
       // نصّ الإجابة في متن التنبيه: أقصر طريق بين السؤال وجوابه. وإلا
       // فالملاحظة، وإلا فالسؤال نفسه تذكيرًا بما يُشار إليه.
       const detail = input.answerText || input.resolutionNote || gap.question;
 
-      await notifyUsers({
+      const notified = await notifyUsers({
         companyId: company.id,
-        userIds: (askers ?? []).map((row) => row.user_id).filter((id) => id !== profile.id),
+        userIds: recipients,
         type: 'GAP_ANSWERED',
         title: `إجابة على سؤالك: ${gap.question}`,
         body: detail,
@@ -143,12 +148,31 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
         entityType: 'knowledge_gap',
         entityId: input.gapId,
       });
+
+      // --- لماذا يُقال هذا للمدير ---
+      // «تم الحفظ» وحدها تُخفي الفرق بين إجابةٍ بلغت صاحبها وإجابةٍ لم
+      // تبلغ أحدًا. والفرق هو كل الغاية من الشاشة: المدير يظن أنه أغلق
+      // الدائرة بينما الموظف لا يعلم شيئًا — وهذا بالضبط ما لا يُكتشف
+      // إلا بعد أسابيع، إن اكتُشف.
+      if (notified > 0) {
+        notice = ` وصل التنبيه إلى ${notified} ${notified === 1 ? 'سائل' : 'من السائلين'}.`;
+      } else if (askerIds.length > 0 && recipients.length === 0) {
+        notice = ' لم يُرسَل تنبيه — أنت صاحب السؤال الوحيد.';
+      } else if (askerIds.length === 0) {
+        notice =
+          ' لم يُسجَّل صاحب لهذا السؤال، فلم يصل تنبيه. الأسئلة الجديدة تُسجَّل تلقائيًا.';
+      } else {
+        notice = ' تعذّر إرسال التنبيه إلى السائلين.';
+      }
     }
 
     revalidatePath('/knowledge-gaps');
     revalidatePath('/dashboard');
 
-    return { ok: true, message: STATUS_MESSAGES[input.status] ?? 'تم تحديث الفجوة.' };
+    return {
+      ok: true,
+      message: `${STATUS_MESSAGES[input.status] ?? 'تم تحديث الفجوة.'}${notice}`,
+    };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };
   }

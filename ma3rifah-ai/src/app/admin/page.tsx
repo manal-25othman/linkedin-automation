@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatNumber, formatPercent, formatRelativeTime, truncate } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 export const metadata: Metadata = { title: 'إدارة المنصة' };
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,13 @@ export default async function AdminOverviewPage() {
 
   // تقرير الهامش يمرّ بجلسة المستخدم كي تتحقق الدالة من الدور مرة أخرى
   // داخل قاعدة البيانات، لا في طبقة التطبيق وحدها.
-  const { data: margins } = await (await createClient()).rpc('platform_margin_report');
+  //
+  // ودوالّ الزوّار تمرّ بالجلسة نفسها للسبب عينه — وهذا ما كان مكسورًا:
+  // كانت تُستدعى بمفتاح الخدمة، و auth.uid() معه فارغ، فتردّ الدالةُ
+  // `unauthorized` في كل مرة. ثم يبتلع `?? 0` الخطأَ فتظهر البطاقات
+  // أصفارًا مرتّبة — وهي أسوأ من الفراغ، لأنها تُقرأ قياسًا صحيحًا
+  // لغياب الزوّار بينما هي عطل في القياس نفسه.
+  const sessionClient = await createClient();
 
   const [
     companies,
@@ -43,6 +50,7 @@ export default async function AdminOverviewPage() {
     messages,
     usage,
     contactRequests,
+    marginReport,
     visitorStats,
     visitorUnanswered,
   ] = await Promise.all([
@@ -63,17 +71,33 @@ export default async function AdminOverviewPage() {
       .select('id, full_name, company_name, email, status, created_at')
       .order('created_at', { ascending: false })
       .limit(8),
-    admin.rpc('platform_visitor_stats', { p_days: 30 }),
-    admin.rpc('platform_visitor_unanswered', { p_limit: 10 }),
+    sessionClient.rpc('platform_margin_report'),
+    sessionClient.rpc('platform_visitor_stats', { p_days: 30 }),
+    sessionClient.rpc('platform_visitor_unanswered', { p_limit: 10 }),
   ]);
 
   const companyRows = companies.data ?? [];
+  const margins = marginReport.data;
   const visitors = visitorStats.data?.[0];
   const visitorGaps = visitorUnanswered.data ?? [];
+
+  // مؤشر معطّل يجب أن يقول إنه معطّل. الصفر ادّعاء بأن القياس تمّ ولم
+  // يجد شيئًا، والفرق بينه وبين تعذّر القياس هو الفرق بين «لا زوّار»
+  // و«لا نعرف» — وأحدهما يُتخذ عليه قرار والآخر يُصلَح.
+  const visitorsUnavailable = Boolean(visitorStats.error) || !visitors;
+
+  if (visitorStats.error) {
+    logger.warn('تعذّر قراءة مؤشرات الزوّار', { reason: visitorStats.error.message });
+  }
+
   const visitorAnswerRate =
     visitors && visitors.questions_total > 0
       ? (visitors.answered_count / visitors.questions_total) * 100
       : null;
+
+  /** قيمة البطاقة، أو «غير متاح» إن تعذّر القياس */
+  const visitorValue = (value: number | null | undefined): number | string =>
+    visitorsUnavailable ? 'غير متاح' : (value ?? 0);
   const monthlyCost = (usage.data ?? []).reduce(
     (total, record) => total + Number(record.estimated_cost_usd ?? 0),
     0,
@@ -119,39 +143,68 @@ export default async function AdminOverviewPage() {
       {/* زوّار الموقع — مسار منفصل تمامًا عن بيانات الشركات */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">زوّار الموقع (آخر 30 يومًا)</h2>
+        <p className="-mt-2 text-sm text-muted-foreground">
+          محادثة الزوّار على صفحات الموقع — مسار منفصل تمامًا عن بيانات الشركات المشتركة.
+        </p>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard
             label="زوّار استخدموا المحادثة"
-            value={visitors?.visitors_in_period ?? 0}
+            value={visitorValue(visitors?.visitors_in_period)}
             icon={MousePointerClick}
-            hint={`${formatNumber(visitors?.visitors_total ?? 0)} منذ الإطلاق`}
+            hint={
+              visitorsUnavailable
+                ? undefined
+                : `${formatNumber(visitors?.visitors_total ?? 0)} منذ الإطلاق`
+            }
           />
           <StatCard
             label="أسئلة الزوّار"
-            value={visitors?.questions_total ?? 0}
+            value={visitorValue(visitors?.questions_total)}
             icon={MessageCircleQuestion}
           />
           <StatCard
             label="أسئلة بلا إجابة"
-            value={visitors?.unanswered_count ?? 0}
+            value={visitorValue(visitors?.unanswered_count)}
             icon={CircleHelp}
-            tone={(visitors?.unanswered_count ?? 0) > 0 ? 'warning' : 'default'}
+            tone={
+              !visitorsUnavailable && (visitors?.unanswered_count ?? 0) > 0
+                ? 'warning'
+                : 'default'
+            }
             hint="ما لا يشرحه الموقع بوضوح"
           />
           <StatCard
             label="معدل الإجابة"
-            value={visitorAnswerRate === null ? '—' : formatPercent(visitorAnswerRate)}
+            value={
+              visitorsUnavailable
+                ? 'غير متاح'
+                : visitorAnswerRate === null
+                  ? '—'
+                  : formatPercent(visitorAnswerRate)
+            }
             icon={Percent}
-            tone={visitorAnswerRate !== null && visitorAnswerRate < 70 ? 'warning' : 'success'}
+            tone={
+              !visitorsUnavailable && visitorAnswerRate !== null && visitorAnswerRate < 70
+                ? 'warning'
+                : 'success'
+            }
           />
           <StatCard
             label="زوّار بدأوا التسجيل"
-            value={visitors?.converted_count ?? 0}
+            value={visitorValue(visitors?.converted_count)}
             icon={UserPlus}
             tone="success"
           />
         </div>
+
+        {visitorsUnavailable ? (
+          <p className="rounded-lg border border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/10 px-4 py-3 text-sm leading-relaxed">
+            تعذّرت قراءة مؤشرات الزوّار. الأرقام أعلاه غير مقيسة — لا تقرأها أصفارًا. تأكّد من
+            تطبيق ترحيل <code className="font-mono">0012_site_chat_and_analytics.sql</code> على
+            قاعدة البيانات.
+          </p>
+        ) : null}
 
         <Card>
           <CardHeader>
