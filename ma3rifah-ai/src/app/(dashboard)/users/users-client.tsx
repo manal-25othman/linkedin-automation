@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, UserPlus, Users } from 'lucide-react';
+import { MailCheck, Pencil, UserPlus, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,10 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/shared/states';
-import { CrudDialog } from '@/components/dashboard/crud-dialog';
+import { ActionButton, CrudDialog } from '@/components/dashboard/crud-dialog';
 import { ROLE_LABELS, ASSIGNABLE_ROLES } from '@/lib/auth/rbac';
 import { formatRelativeTime, initials } from '@/lib/utils';
-import { inviteUserAction, updateUserAction } from './actions';
+import { inviteUserAction, resendAccessLinkAction, updateUserAction } from './actions';
 import type { ProfileStatus, UserRole } from '@/types/database';
 
 export interface UserRowData {
@@ -87,7 +87,7 @@ export function UsersClient({
                 <TableHead>القسم</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>أُضيف</TableHead>
-                {canManage ? <TableHead className="w-16" /> : null}
+                {canManage ? <TableHead className="w-24" /> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -134,14 +134,31 @@ export function UsersClient({
 
                   {canManage ? (
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => setEditing(user)}
-                        aria-label={`تعديل ${user.fullName || user.email}`}
-                      >
-                        <Pencil className="size-4" aria-hidden />
-                      </Button>
+                      <div className="flex items-center justify-end gap-0.5">
+                        {user.status !== 'DISABLED' ? (
+                          <ActionButton
+                            action={() => resendAccessLinkAction(user.id)}
+                            size="icon-sm"
+                            confirmMessage={
+                              `سيصل ${user.email} رابط يضع به كلمة مرور جديدة. ` +
+                              'هل تريد إرساله؟'
+                            }
+                          >
+                            <MailCheck
+                              className="size-4"
+                              aria-label={`إعادة إرسال رابط الدخول إلى ${user.email}`}
+                            />
+                          </ActionButton>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setEditing(user)}
+                          aria-label={`تعديل ${user.fullName || user.email}`}
+                        >
+                          <Pencil className="size-4" aria-hidden />
+                        </Button>
+                      </div>
                     </TableCell>
                   ) : null}
                 </TableRow>
@@ -158,7 +175,7 @@ export function UsersClient({
           if (!open) setTemporaryPassword(null);
         }}
         title="إضافة مستخدم"
-        description="تُرسل دعوة بالبريد إن كان مزوّد البريد مضبوطًا. وإلا تظهر كلمة مرور مؤقتة تسلّمها للموظف."
+        description="يصل الموظف رابطٌ على بريده يضع به كلمة مروره بنفسه — لن تحتاج إلى تسليمه أي كلمة مرور."
         submitLabel="إضافة"
         action={inviteUserAction}
         onRetain={(result) => {
@@ -169,7 +186,7 @@ export function UsersClient({
       >
         {temporaryPassword ? (
           <div className="rounded-lg border border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/10 p-4">
-            <p className="text-sm font-semibold">كلمة المرور المؤقتة</p>
+            <p className="text-sm font-semibold">تعذّر إرسال البريد — كلمة مرور مؤقتة</p>
             <div className="mt-2 flex items-center gap-2">
               <code
                 dir="ltr"
@@ -187,7 +204,9 @@ export function UsersClient({
               </Button>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              انسخها الآن وسلّمها للموظف — لن تظهر مرة أخرى. اطلب منه تغييرها بعد أول دخول.
+              أُنشئ الحساب لكن لم تصل الرسالة إلى الموظف. انسخ الكلمة الآن وسلّمها له —
+              لن تظهر مرة أخرى — واطلب منه تغييرها بعد أول دخول. ولتفادي ذلك مستقبلًا
+              اضبط مزوّد البريد، ثم استخدم زرّ إعادة إرسال الرابط من جدول المستخدمين.
             </p>
           </div>
         ) : null}

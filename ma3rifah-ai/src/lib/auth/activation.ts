@@ -4,6 +4,25 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 
 /**
+ * حكم ما بعد فتح رابط البريد.
+ *
+ *   BLOCK    — يُطرد ولو صحّ الرابط
+ *   ACTIVATE — يُرفع من «مدعو» إلى «نشط» ثم يُمرَّر
+ *   PASS     — يمرّ كما هو
+ *
+ * دالة خالصة لأنها حدّ أمني: من يملك البريد يستطيع طلب رابط استعادة متى
+ * شاء، فلو مُرِّر الرابط بلا فحص لصار طريقًا يلتفّ على تعطيل المدير
+ * للحساب. وفصلها عن مسار الشبكة يجعل هذا القرار قابلًا للاختبار وحده.
+ */
+export function classifyCallbackProfile(
+  status: string | null | undefined,
+): 'BLOCK' | 'ACTIVATE' | 'PASS' {
+  if (status === 'DISABLED') return 'BLOCK';
+  if (status === 'INVITED') return 'ACTIVATE';
+  return 'PASS';
+}
+
+/**
  * تفعيل ملف مدعو بعد أول تسجيل دخول ناجح.
  *
  * الحالة INVITED تعني أن الملف أُنشئ (بمُحفِّز التسجيل أو بدعوة من مدير

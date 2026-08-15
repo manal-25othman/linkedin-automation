@@ -12,6 +12,20 @@ import { Label } from '@/components/ui/label';
 import { loginAction } from '../actions';
 import { AUTH_INITIAL_STATE } from '../form-state';
 
+/**
+ * أسباب ردّ مسار /auth/callback إلى صفحة الدخول.
+ *
+ * يصل القادم من رابط بريد فاشل إلى هنا، ولو صمتت الصفحة لرأى نموذج دخول
+ * عاديًا بلا تفسير — فيظن أن الرابط عمل وأن كلمة مروره هي التي لا تصح،
+ * ويعيد الكرّة على الخطأ نفسه.
+ */
+const LINK_ERRORS: Record<string, string> = {
+  link_expired:
+    'انتهت صلاحية الرابط أو استُعمل من قبل. اطلب رابطًا جديدًا من «نسيت كلمة المرور؟».',
+  link_invalid: 'الرابط غير صالح. اطلب رابطًا جديدًا من «نسيت كلمة المرور؟».',
+  account_disabled: 'هذا الحساب معطّل. تواصل مع مدير الشركة.',
+};
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -26,9 +40,25 @@ export function LoginForm() {
   const redirectTo = searchParams.get('redirectTo') ?? '/dashboard';
   const [state, formAction] = useActionState(loginAction, AUTH_INITIAL_STATE);
 
+  // خطأ المحاولة الحالية أولى بالعرض من سبب وصولٍ سابق إلى الصفحة
+  const linkError = state.status === 'error' ? null : LINK_ERRORS[searchParams.get('error') ?? ''];
+
   return (
     <form action={formAction} className="space-y-5" noValidate>
       <input type="hidden" name="redirectTo" value={redirectTo} />
+
+      {linkError ? (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/10 p-3.5"
+        >
+          <AlertCircle
+            className="mt-0.5 size-4 shrink-0 text-[hsl(var(--warning))]"
+            aria-hidden
+          />
+          <p className="text-sm">{linkError}</p>
+        </div>
+      ) : null}
 
       {state.status === 'error' ? (
         <div

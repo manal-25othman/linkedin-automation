@@ -10,6 +10,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'user.role_changed': 'تغيير دور مستخدم',
   'user.deactivated': 'تعطيل مستخدم',
   'user.reactivated': 'إعادة تفعيل مستخدم',
+  'user.access_link_resent': 'إعادة إرسال رابط الدخول',
   'department.created': 'إضافة قسم',
   'department.updated': 'تعديل قسم',
   'department.deleted': 'حذف قسم',
