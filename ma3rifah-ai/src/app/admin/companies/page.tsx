@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { requireSuperAdmin } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -94,7 +95,12 @@ export default async function AdminCompaniesPage() {
                   <TableRow key={company.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{company.name}</span>
+                        <Link
+                          href={`/admin/companies/${company.id}`}
+                          className="font-medium hover:text-primary hover:underline"
+                        >
+                          {company.name}
+                        </Link>
                         {company.is_demo ? <Badge variant="warning">تجريبية</Badge> : null}
                       </div>
                       <p className="text-xs text-muted-foreground" dir="ltr">
