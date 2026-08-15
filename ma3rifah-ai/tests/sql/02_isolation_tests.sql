@@ -719,3 +719,46 @@ select public.record_zero_rows_expected(
   'select * from public.support_messages');
 
 commit;
+
+-- =====================================================================
+-- المجموعة 7 — عزل تقارير التكلفة
+--
+-- التكلفة تكشف حجم نشاط الشركة وعدد أسئلتها ومستنداتها. تسريبها عبر
+-- الشركات يكشف حجم منافس، وتسريب تقرير الهامش يكشف قائمة العملاء كلها.
+-- =====================================================================
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+select public.record_zero_rows_expected(
+  'التكلفة', 'مدير الشركة أ لا يقرأ تفصيل تكلفة الشركة ب',
+  $sql$select * from public.company_cost_breakdown(
+         'bbbbbbbb-0000-4000-8000-000000000001'::uuid, 6)$sql$);
+
+select public.record_zero_rows_expected(
+  'التكلفة', 'مدير الشركة لا ينفّذ تقرير هامش المنصة',
+  'select * from public.platform_margin_report()');
+
+commit;
+
+-- الموظف ليس مدير شركة: لا يقرأ تفصيل تكلفة شركته هو
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+select public.record_zero_rows_expected(
+  'التكلفة', 'الموظف لا يقرأ تفصيل تكلفة شركته',
+  $sql$select * from public.company_cost_breakdown(
+         'aaaaaaaa-0000-4000-8000-000000000001'::uuid, 6)$sql$);
+
+commit;
+
+begin;
+set local role anon;
+
+select public.record_zero_rows_expected(
+  'التكلفة', 'زائر بلا جلسة لا يقرأ سجل الاستهلاك',
+  'select * from public.ai_usage_logs');
+
+commit;

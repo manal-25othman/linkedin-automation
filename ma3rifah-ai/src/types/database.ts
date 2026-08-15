@@ -581,6 +581,31 @@ export interface Database {
           questions_limit: number | null;
         }[];
       };
+      company_cost_breakdown: {
+        Args: { p_company_id: string; p_months?: number };
+        Returns: {
+          period_month: string;
+          operation: string;
+          calls: number;
+          input_tokens: number;
+          output_tokens: number;
+          cost_usd: number;
+        }[];
+      };
+      platform_margin_report: {
+        Args: Record<string, never>;
+        Returns: {
+          company_id: string;
+          company_name: string;
+          plan_name: string | null;
+          price_amount: number | null;
+          currency: string | null;
+          cost_usd_month: number;
+          questions_month: number;
+          questions_limit: number | null;
+          cost_ratio: number | null;
+        }[];
+      };
       platform_companies_report: {
         Args: Record<string, never>;
         Returns: {

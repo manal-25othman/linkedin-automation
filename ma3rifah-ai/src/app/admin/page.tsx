@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,10 @@ export default async function AdminOverviewPage() {
 
   // مدير المنصة يرى كل الشركات — نستخدم العميل الإداري بعد تحقق صريح أعلاه
   const admin = createAdminClient();
+
+  // تقرير الهامش يمرّ بجلسة المستخدم كي تتحقق الدالة من الدور مرة أخرى
+  // داخل قاعدة البيانات، لا في طبقة التطبيق وحدها.
+  const { data: margins } = await (await createClient()).rpc('platform_margin_report');
 
   const [
     companies,
@@ -247,6 +252,73 @@ export default async function AdminOverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* -------------------------------------------------------------
+          الهامش لكل عميل.
+
+          المجموع يخفي أهم رقم: شركة تستهلك ضعف اشتراكها تأكل هامش أربع
+          شركات رابحة، ولا يظهر ذلك في «إجمالي التكلفة» أبدًا. لذلك
+          يُعرض التوزيع مرتّبًا بالأعلى تكلفة لا بالاسم.
+          ------------------------------------------------------------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle>التكلفة والهامش — هذا الشهر</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!margins?.length ? (
+            <p className="text-sm text-muted-foreground">لا يوجد استهلاك مسجّل بعد.</p>
+          ) : (
+            <ul className="divide-y">
+              {margins.map((row) => {
+                const ratio = row.cost_ratio;
+                const tone =
+                  ratio === null
+                    ? 'text-muted-foreground'
+                    : ratio >= 60
+                      ? 'text-destructive'
+                      : ratio >= 30
+                        ? 'text-[hsl(var(--warning))]'
+                        : 'text-[hsl(var(--success))]';
+
+                return (
+                  <li
+                    key={row.company_id}
+                    className="flex flex-wrap items-center justify-between gap-3 py-3"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/companies/${row.company_id}`}
+                        className="text-sm font-medium hover:text-primary hover:underline"
+                      >
+                        {row.company_name}
+                      </Link>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {row.plan_name ?? 'بلا اشتراك'} ·{' '}
+                        {formatNumber(row.questions_month)} سؤال
+                        {row.questions_limit ? ` من ${formatNumber(row.questions_limit)}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-end">
+                      <p className="text-sm font-semibold">
+                        ${Number(row.cost_usd_month).toFixed(2)}
+                      </p>
+                      <p className={`text-xs ${tone}`}>
+                        {ratio === null
+                          ? 'تسعير مخصّص'
+                          : `${ratio}% من الاشتراك`}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+            النسبة تقديرية: التكلفة من عدّادات المزوّدين، والاشتراك محوَّل بسعر صرف ثابت.
+            تجاوز <b>٦٠٪</b> يعني أن العميل يأكل هامشه — راجع حدود خطته أو نمط استخدامه.
+          </p>
+        </CardContent>
+      </Card>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
         عدد الأسئلة والتكلفة مؤشرات تشغيلية مجمّعة. محتوى المحادثات ومستندات الشركات لا
