@@ -88,6 +88,35 @@ export async function notifyUsers(input: NotificationInput): Promise<number> {
   }
 }
 
+/**
+ * حذف تنبيهات حدث بطل مسوّغه.
+ *
+ * الفهرس الفريد على (المستخدم، النوع، الكيان) يمنع تكرار التنبيه عن
+ * الحدث نفسه — وهو المطلوب. لكنه يعني أيضًا أن تنبيهًا سُحب سببه يسدّ
+ * الطريق أمام تنبيه لاحق مستحقّ: لو حُذفت إجابةٌ ثم كُتبت أخرى، لَما
+ * وصل صاحب السؤال شيء لأن الصفّ القديم ما زال قائمًا. فيُحذف القديم
+ * ليبقى الفهرس حارسًا ضد التكرار لا ضد الإخبار.
+ */
+export async function clearEntityNotifications(params: {
+  companyId: string;
+  type: NotificationType;
+  entityId: string;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    await admin
+      .from('notifications')
+      .delete()
+      .eq('company_id', params.companyId)
+      .eq('type', params.type)
+      .eq('entity_id', params.entityId);
+  } catch (error) {
+    logger.warn('تعذّر حذف التنبيهات', {
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 /** تنبيه كل من يملك صلاحية إدارية في الشركة */
 export async function notifyCompanyAdmins(
   input: Omit<NotificationInput, 'userIds'>,

@@ -9,6 +9,8 @@ export type AuditAction =
   | 'auth.password_reset'
   | 'company.updated'
   | 'company.ai_settings_updated'
+  | 'plan.created'
+  | 'plan.updated'
   | 'user.invited'
   | 'user.created'
   | 'user.updated'
