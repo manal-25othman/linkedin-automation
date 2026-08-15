@@ -287,6 +287,32 @@ export async function askAssistant(input: {
     if (gapError) {
       logger.warn('تعذّر تسجيل فجوة المعرفة', { reason: gapError.message });
     } else if (gapId) {
+      // --- تسجيل السائل ---
+      // تفعله دالةُ قاعدة البيانات أيضًا، ويُعاد هنا عمدًا: النسخة
+      // القديمة من الدالة (ترحيل 0006) لا تسجّل السائل، فقاعدةُ بيانات
+      // لم تُحدَّث تُنتج فجوات بلا سائل — ثم يكتب المدير الإجابة ولا
+      // تجد المنصةُ أحدًا تُبلّغه، بلا خطأ ولا أثر.
+      //
+      // والتبعية من النوع الذي لا يشتكي: كل شيء «يعمل» إلا الحلقة
+      // الأخيرة. فتُثبَّت هنا حيث تُقرأ، ويصير التطبيق مسؤولًا عن
+      // معرفة من سأل بدل أن يفترضه.
+      // مفتاح الخدمة: لا يملك أي مستخدم سياسة كتابة على هذا الجدول
+      const { error: askerError } = await createAdminClient()
+        .from('knowledge_gap_askers')
+        .upsert(
+          {
+            gap_id: gapId,
+            user_id: profile.id,
+            company_id: company.id,
+            asked_at: new Date().toISOString(),
+          },
+          { onConflict: 'gap_id,user_id' },
+        );
+
+      if (askerError) {
+        logger.warn('تعذّر تسجيل صاحب السؤال', { reason: askerError.message });
+      }
+
       // تنبيه واحد لكل فجوة لا لكل سؤال: يمنع الفهرس الفريد على
       // (المستلم، النوع، الكيان) تكرارَه مهما تكرّر السؤال.
       await notifyCompanyAdmins({
