@@ -201,7 +201,7 @@ export async function requestPasswordResetAction(
   try {
     const supabase = await createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${serverEnv.appUrl}/reset-password`,
+      redirectTo: `${serverEnv.appUrl}/auth/callback?next=/reset-password`,
     });
 
     // يُسجَّل الفشل ولا يُعرض: قد يكون البريد غير مضبوط، وهي مشكلتنا

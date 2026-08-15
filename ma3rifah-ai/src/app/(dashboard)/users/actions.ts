@@ -101,7 +101,7 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
 
     const invited = await admin.auth.admin.inviteUserByEmail(input.email, {
       data: { full_name: input.fullName },
-      redirectTo: `${serverEnv.appUrl}/login`,
+      redirectTo: `${serverEnv.appUrl}/auth/callback?next=/reset-password`,
     });
 
     if (invited.data?.user && !invited.error) {
