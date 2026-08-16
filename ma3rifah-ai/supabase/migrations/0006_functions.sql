@@ -170,6 +170,9 @@ $$;
 -- تُستدعى بجلسة المستخدم (auth.uid موجود). تُطبّق عزل المستأجر
 -- وصلاحيات المستندات داخل الدالة نفسها.
 
+-- يُسقَط أي تعريف سابق أولًا — للسبب نفسه المذكور في 0012.
+drop function if exists public.match_document_chunks(vector, int, real, uuid[]);
+
 create or replace function public.match_document_chunks(
   p_query_embedding vector(1024),
   p_match_count int default 8,
