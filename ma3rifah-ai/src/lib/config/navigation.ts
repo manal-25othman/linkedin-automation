@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   BarChart3,
   Building2,
+  CreditCard,
   FileStack,
   FolderTree,
   LayoutDashboard,
@@ -93,6 +94,12 @@ export const DASHBOARD_NAV: NavGroup[] = [
         label: 'المستخدمون',
         icon: Users,
         permission: 'users.view',
+      },
+      {
+        href: '/settings/billing',
+        label: 'الاشتراك والفواتير',
+        icon: CreditCard,
+        permission: 'billing.view',
       },
       {
         href: '/departments',

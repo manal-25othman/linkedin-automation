@@ -18,6 +18,28 @@ export type MessageRole = 'USER' | 'ASSISTANT';
 export type AnswerStatus = 'ANSWERED' | 'UNANSWERED' | 'ERROR';
 export type FeedbackValue = 'UP' | 'DOWN';
 export type GapStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+export type PaymentStatus = 'INITIATED' | 'PAID' | 'FAILED' | 'REFUNDED';
+
+type PaymentRow = {
+  id: string;
+  company_id: string;
+  plan_id: string;
+  initiated_by: string | null;
+  provider: string;
+  provider_payment_id: string | null;
+  /** بالهللة — عدد صحيح، لا عشري */
+  amount_halalas: number;
+  currency: string;
+  status: PaymentStatus;
+  failure_reason: string | null;
+  provider_payload: Json | null;
+  paid_at: string | null;
+  /** لحظة تحويلها إلى اشتراك — تمنع تطبيقها مرتين */
+  applied_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'EXPIRED';
 export type BillingInterval = 'MONTHLY' | 'YEARLY';
 
@@ -440,6 +462,7 @@ export interface Database {
       support_messages: Table<SupportMessageRow>;
       analytics_events: Table<AnalyticsEventRow>;
       plans: Table<PlanRow>;
+      payments: Table<PaymentRow>;
       subscriptions: Table<SubscriptionRow>;
       usage_records: Table<UsageRecordRow>;
       ai_usage_logs: Table<AiUsageLogRow>;
@@ -475,6 +498,10 @@ export interface Database {
       check_question_quota: {
         Args: Record<string, never>;
         Returns: { allowed: boolean; used: number; quota: number }[];
+      };
+      activate_subscription_for_payment: {
+        Args: { p_payment_id: string };
+        Returns: boolean;
       };
       check_user_quota: {
         Args: Record<string, never>;

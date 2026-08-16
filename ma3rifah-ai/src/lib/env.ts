@@ -125,6 +125,25 @@ export const serverEnv = {
   get internalApiSecret() {
     return optional('INTERNAL_API_SECRET');
   },
+
+  // ---------- بوابة الدفع (Moyasar) ----------
+  // اختيارية: المنصة تعمل بلا دفع، ومسار الاشتراك وحده يتعطّل إن غابت.
+  // إلزامها يمنع تشغيل المشروع محليًا أو نشره قبل فتح حساب البوابة.
+  get moyasarSecretKey() {
+    return optional('MOYASAR_SECRET_KEY');
+  },
+  /**
+   * الرمز المشترك للتحقق من صحة نداء الـwebhook.
+   *
+   * غيابه لا يعني تعطيل التحقق بل رفض كل نداء: webhook بلا تحقق باب
+   * مفتوح يستطيع أي أحد أن يطرق عليه «تم الدفع» فيُفعَّل اشتراك مجانًا.
+   */
+  get moyasarWebhookSecret() {
+    return optional('MOYASAR_WEBHOOK_SECRET');
+  },
+  get isPaymentsConfigured() {
+    return optional('MOYASAR_SECRET_KEY') !== '';
+  },
   get appUrl() {
     return optional('NEXT_PUBLIC_APP_URL', 'http://localhost:3000');
   },
