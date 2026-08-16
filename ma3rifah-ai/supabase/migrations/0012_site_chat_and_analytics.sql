@@ -165,6 +165,10 @@ $$;
 
 -- ---------- جودة الإجابات ----------
 
+-- يُسقَط أي تعريف سابق أولًا: `create or replace` لا يغيّر نوع الإرجاع،
+-- فتفشل إعادة تشغيل ملف الترحيلات المجمَّع على قاعدة قائمة.
+drop function if exists public.company_answer_quality(int);
+
 create or replace function public.company_answer_quality(p_days int default 30)
 returns table (
   answers_total      bigint,

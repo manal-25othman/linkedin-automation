@@ -209,6 +209,9 @@ revoke all on function public.match_chunks_for_user(uuid, vector, int, real, uui
   from public, anon, authenticated;
 
 -- النسخة العامة تصير غلافًا رقيقًا فوق المنطق نفسه
+-- يُسقَط التعريف السابق (0006) أولًا — للسبب نفسه المذكور في 0013.
+drop function if exists public.match_document_chunks(vector, int, real, uuid[]);
+
 create or replace function public.match_document_chunks(
   p_query_embedding vector(1024),
   p_match_count int default 8,

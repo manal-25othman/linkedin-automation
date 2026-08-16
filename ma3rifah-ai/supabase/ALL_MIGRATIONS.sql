@@ -798,6 +798,9 @@ $$;
 -- تُستدعى بجلسة المستخدم (auth.uid موجود). تُطبّق عزل المستأجر
 -- وصلاحيات المستندات داخل الدالة نفسها.
 
+-- يُسقَط أي تعريف سابق أولًا — للسبب نفسه المذكور في 0012.
+drop function if exists public.match_document_chunks(vector, int, real, uuid[]);
+
 create or replace function public.match_document_chunks(
   p_query_embedding vector(1024),
   p_match_count int default 8,
@@ -2171,6 +2174,10 @@ $$;
 
 -- ---------- جودة الإجابات ----------
 
+-- يُسقَط أي تعريف سابق أولًا: `create or replace` لا يغيّر نوع الإرجاع،
+-- فتفشل إعادة تشغيل ملف الترحيلات المجمَّع على قاعدة قائمة.
+drop function if exists public.company_answer_quality(int);
+
 create or replace function public.company_answer_quality(p_days int default 30)
 returns table (
   answers_total      bigint,
@@ -2397,6 +2404,11 @@ create index if not exists messages_low_confidence_idx
 -- تحديث تقرير جودة الإجابات
 -- =====================================================================
 
+drop function if exists public.company_answer_quality(int);
+
+-- يُسقَط التعريف السابق (0012) أولًا: `create or replace` لا يغيّر نوع
+-- الإرجاع، فتفشل إعادة تشغيل الترحيلات على قاعدة قائمة بخطأ
+-- «cannot change return type of existing function».
 drop function if exists public.company_answer_quality(int);
 
 create or replace function public.company_answer_quality(p_days int default 30)
@@ -2920,6 +2932,9 @@ revoke all on function public.match_chunks_for_user(uuid, vector, int, real, uui
   from public, anon, authenticated;
 
 -- النسخة العامة تصير غلافًا رقيقًا فوق المنطق نفسه
+-- يُسقَط التعريف السابق (0006) أولًا — للسبب نفسه المذكور في 0013.
+drop function if exists public.match_document_chunks(vector, int, real, uuid[]);
+
 create or replace function public.match_document_chunks(
   p_query_embedding vector(1024),
   p_match_count int default 8,

@@ -31,6 +31,11 @@ create index if not exists messages_low_confidence_idx
 
 drop function if exists public.company_answer_quality(int);
 
+-- يُسقَط التعريف السابق (0012) أولًا: `create or replace` لا يغيّر نوع
+-- الإرجاع، فتفشل إعادة تشغيل الترحيلات على قاعدة قائمة بخطأ
+-- «cannot change return type of existing function».
+drop function if exists public.company_answer_quality(int);
+
 create or replace function public.company_answer_quality(p_days int default 30)
 returns table (
   answers_total        bigint,
