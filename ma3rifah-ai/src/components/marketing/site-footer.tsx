@@ -26,6 +26,13 @@ const FOOTER_SECTIONS = [
       { href: '/register', label: 'إنشاء حساب' },
     ],
   },
+  {
+    title: 'قانوني',
+    links: [
+      { href: '/privacy', label: 'سياسة الخصوصية' },
+      { href: '/terms', label: 'شروط الاستخدام' },
+    ],
+  },
 ];
 
 export function SiteFooter() {
