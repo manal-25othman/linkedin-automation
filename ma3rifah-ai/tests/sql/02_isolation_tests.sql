@@ -762,3 +762,103 @@ select public.record_zero_rows_expected(
   'select * from public.ai_usage_logs');
 
 commit;
+
+-- =====================================================================
+-- الفوترة والمدفوعات
+--
+-- سجلّ الدفع بيان مالي: يكشف ما تدفعه الشركة وخطتها وتاريخ اشتراكها.
+-- تسريبه إلى شركة أخرى تسريبٌ تجاري مباشر، وتسريبه إلى موظفي الشركة
+-- نفسها كشفٌ لما لا يخصّهم.
+--
+-- والأخطر من القراءة: الكتابة. من يستطيع إدراج صفّ دفع بحالة PAID
+-- يمنح نفسه اشتراكًا بلا مال — فلا سياسة كتابة لأي مستخدم إطلاقًا.
+-- =====================================================================
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+-- ضابط موجب: مدير الشركة أ يرى دفعة شركته
+insert into public.test_results (category, name, passed, detail)
+select 'الفوترة', 'مدير الشركة أ يرى مدفوعات شركته (ضابط موجب)',
+       count(*) = 1, 'الصفوف العائدة: ' || count(*)
+from public.payments;
+
+select public.record_zero_rows_expected(
+  'الفوترة', 'مدير الشركة أ لا يرى مدفوعات الشركة ب',
+  $sql$select * from public.payments
+        where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_zero_rows_expected(
+  'الفوترة', 'مدير الشركة أ لا يرى اشتراك الشركة ب',
+  $sql$select * from public.subscriptions
+        where company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid$sql$);
+
+-- الكتابة ممنوعة حتى على مدير الشركة: صفّ دفع يُكتب يدويًا = اشتراك مجاني
+select public.record_write_attempt(
+  'الفوترة', 'مدير الشركة لا يُدرج دفعة لنفسه',
+  $sql$insert into public.payments
+         (company_id, plan_id, amount_halalas, currency, status)
+       values ('aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+               'cccccccc-5000-4000-8000-000000000001'::uuid, 100, 'SAR', 'PAID')$sql$);
+
+select public.record_write_attempt(
+  'الفوترة', 'مدير الشركة لا يحوّل دفعة قائمة إلى مدفوعة',
+  $sql$update public.payments set status = 'PAID', applied_at = null
+        where company_id = 'aaaaaaaa-0000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_write_attempt(
+  'الفوترة', 'مدير الشركة لا يمدّد اشتراكه بنفسه',
+  $sql$update public.subscriptions
+          set current_period_end = now() + interval '10 years'
+        where company_id = 'aaaaaaaa-0000-4000-8000-000000000001'::uuid$sql$);
+
+-- دالة التفعيل محجوبة عن كل المستخدمين: هي الباب من «دفع» إلى «اشتراك»
+select public.record_zero_rows_expected(
+  'الفوترة', 'مدير الشركة لا ينفّذ دالة تفعيل الاشتراك',
+  $sql$select public.activate_subscription_for_payment(
+         'aaaaaaaa-5000-4000-8000-000000000001'::uuid)$sql$);
+
+commit;
+
+-- الموظف ليس مدير شركة: لا يرى مدفوعات شركته أصلًا
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+select public.record_zero_rows_expected(
+  'الفوترة', 'الموظف لا يرى مدفوعات شركته',
+  'select * from public.payments');
+
+select public.record_zero_rows_expected(
+  'الفوترة', 'الموظف لا ينفّذ دالة تفعيل الاشتراك',
+  $sql$select public.activate_subscription_for_payment(
+         'aaaaaaaa-5000-4000-8000-000000000001'::uuid)$sql$);
+
+commit;
+
+-- مدير الشركة ب: الضابط المرآتي — يرى دفعته هو ولا يرى دفعة أ
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"bbbbbbbb-2000-4000-8000-000000000001"}';
+
+insert into public.test_results (category, name, passed, detail)
+select 'الفوترة', 'مدير الشركة ب يرى دفعته هو وحدها (ضابط مرآتي)',
+       count(*) = 1 and bool_and(company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid),
+       'الصفوف العائدة: ' || count(*)
+from public.payments;
+
+commit;
+
+begin;
+set local role anon;
+
+select public.record_zero_rows_expected(
+  'الفوترة', 'زائر بلا جلسة لا يقرأ المدفوعات',
+  'select * from public.payments');
+
+select public.record_zero_rows_expected(
+  'الفوترة', 'زائر بلا جلسة لا يقرأ الاشتراكات',
+  'select * from public.subscriptions');
+
+commit;

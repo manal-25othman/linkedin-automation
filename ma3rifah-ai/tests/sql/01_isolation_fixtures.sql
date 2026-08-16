@@ -29,6 +29,10 @@
 \set doc_a_admin  '''aaaaaaaa-3000-4000-8000-000000000003'''
 \set doc_b_secret '''bbbbbbbb-3000-4000-8000-000000000001'''
 
+\set plan_test  '''cccccccc-5000-4000-8000-000000000001'''
+\set pay_a      '''aaaaaaaa-5000-4000-8000-000000000001'''
+\set pay_b      '''bbbbbbbb-5000-4000-8000-000000000001'''
+
 \set conv_a '''aaaaaaaa-4000-4000-8000-000000000001'''
 \set conv_b '''bbbbbbbb-4000-4000-8000-000000000001'''
 
@@ -207,6 +211,27 @@ grant all on sequence public.test_results_id_seq to authenticated, anon;
 -- (سياسة USING لا تطابق) أو خطأ صريح (سياسة WITH CHECK). كلاهما نجاح.
 -- الالتقاط داخل كتلة exception يمنع إجهاض المعاملة فتكمل بقية الاختبارات.
 -- الدالة بصلاحيات المُستدعي (security invoker) فتبقى RLS سارية عليها.
+
+-- ---------- الفوترة: خطة واشتراكان ودفعتان ----------
+-- الدفعة سجلّ مالي: تراها إدارة الشركة صاحبته وحدها. ووجود دفعة لكل
+-- شركة شرطٌ لاختبار العزل — بلا نظير في الشركة الأخرى يصير «لا يرى
+-- شيئًا» نتيجةً فارغة لا دليلًا.
+
+insert into public.plans (id, code, name, price_amount, currency, billing_interval, is_public)
+values (:plan_test::uuid, 'TESTPLAN', 'خطة اختبار', 499, 'SAR', 'MONTHLY', true)
+on conflict (id) do nothing;
+
+insert into public.subscriptions (company_id, plan_id, status)
+values (:company_a::uuid, :plan_test::uuid, 'ACTIVE'),
+       (:company_b::uuid, :plan_test::uuid, 'ACTIVE')
+on conflict (company_id) do nothing;
+
+insert into public.payments
+  (id, company_id, plan_id, provider_payment_id, amount_halalas, currency, status)
+values
+  (:pay_a::uuid, :company_a::uuid, :plan_test::uuid, 'pay_fixture_a', 49900, 'SAR', 'PAID'),
+  (:pay_b::uuid, :company_b::uuid, :plan_test::uuid, 'pay_fixture_b', 49900, 'SAR', 'PAID')
+on conflict (id) do nothing;
 
 create or replace function public.record_write_attempt(
   p_category text,

@@ -9,6 +9,8 @@ import { recordAudit } from '@/lib/audit';
 import { loginSchema, registerSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { logger } from '@/lib/logger';
 import { serverEnv } from '@/lib/env';
+import { headers } from 'next/headers';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 import type { AuthFormState } from './form-state';
 
@@ -34,6 +36,31 @@ function translateAuthError(message: string): string {
   return 'تعذّر إتمام العملية. حاول مرة أخرى.';
 }
 
+
+/**
+ * حدّ محاولات المصادقة.
+ *
+ * يُحسب على البريد وعلى عنوان الشبكة معًا: الحدّ على العنوان وحده يمرّ
+ * منه مهاجمٌ موزَّع على عناوين كثيرة يجرّب كلمات على حساب واحد، والحدّ
+ * على البريد وحده يمرّ منه من يرشّ كلمة واحدة على آلاف الحسابات. وكلا
+ * النمطين واقعي.
+ *
+ * ولا يُفرَّق في الرسالة بين بريد موجود وغير موجود — الرسالة واحدة —
+ * كي لا يصير الحدّ نفسه أداة تعداد للحسابات.
+ */
+async function authRateLimited(email: string): Promise<boolean> {
+  const headerList = await headers();
+  const ip = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+
+  const byEmail = checkRateLimit(`auth-email:${email}`, RATE_LIMITS.auth);
+  const byIp = checkRateLimit(`auth-ip:${ip}`, RATE_LIMITS.auth);
+
+  return !byEmail.allowed || !byIp.allowed;
+}
+
+const RATE_LIMIT_MESSAGE =
+  'محاولات كثيرة خلال وقت قصير. انتظر بضع دقائق ثم حاول مجددًا.';
+
 export async function loginAction(
   _previousState: AuthFormState,
   formData: FormData,
@@ -45,6 +72,11 @@ export async function loginAction(
 
   if (!parsed.success) {
     return { status: 'error', message: firstIssueMessage(parsed.error) };
+  }
+
+  if (await authRateLimited(parsed.data.email)) {
+    logger.warn('تجاوز حدّ محاولات الدخول');
+    return { status: 'error', message: RATE_LIMIT_MESSAGE };
   }
 
   const supabase = await createClient();
@@ -117,6 +149,12 @@ export async function registerAction(
   }
 
   const { fullName, email, password, companyName, jobTitle } = parsed.data;
+
+  if (await authRateLimited(email)) {
+    logger.warn('تجاوز حدّ محاولات التسجيل');
+    return { status: 'error', message: RATE_LIMIT_MESSAGE };
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.auth.signUp({
@@ -196,6 +234,18 @@ export async function requestPasswordResetAction(
 
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { status: 'error', message: 'أدخل بريدًا إلكترونيًا صحيحًا.' };
+  }
+
+  // يُطبَّق الحدّ بصمت: تغيير الرسالة عند التجاوز يكشف أن البريد جُرّب
+  // كثيرًا، وهي معلومة لا داعي لمنحها.
+  if (await authRateLimited(email)) {
+    logger.warn('تجاوز حدّ طلبات استعادة كلمة المرور');
+    return {
+      status: 'success',
+      message:
+        'إن كان هذا البريد مسجّلًا لدينا فستصلك رسالة بها رابط إعادة التعيين خلال دقائق. ' +
+        'تحقّق من مجلد الرسائل غير المرغوبة أيضًا.',
+    };
   }
 
   try {
