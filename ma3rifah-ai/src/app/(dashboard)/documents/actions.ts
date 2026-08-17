@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { requirePermission, getSessionContext } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -17,7 +17,7 @@ import { enforceDocumentQuota, enforceStorageQuota } from '@/lib/billing/quota';
 import { recordAudit } from '@/lib/audit';
 import { notifyCompanyAdmins } from '@/lib/notifications';
 import { AppError, sanitizeTechnicalDetail, toAppError } from '@/lib/errors';
-import { safeStorageObjectName } from '@/lib/storage/object-name';
+import { safeStorageObjectName, isPathWithinCompany } from '@/lib/storage/object-name';
 import { logger } from '@/lib/logger';
 import type { DocumentVisibility, UserRole } from '@/types/database';
 
@@ -27,34 +27,120 @@ export interface ActionResult {
 }
 
 
-export async function uploadDocumentAction(formData: FormData): Promise<ActionResult> {
+/**
+ * ---------------------------------------------------------------------
+ * الرفع لا يمرّ بالخادم
+ *
+ * تحدّ Vercel حجم أي طلب يصل دوالّها بـ٤٫٥ ميغابايت، ولا يمكن تجاوزها
+ * بإعداد — `bodySizeLimit` في next.config لا أثر له هناك. فأي ملف أكبر
+ * يُردّ بـ413 قبل أن تعمل شيفرتنا أصلًا، فلا تُنتَج رسالة خطأ ولا معرّف
+ * حدث: تسقط الصفحة كلها بخطأ لا أثر له في السجل.
+ *
+ * وهذا ما أخفى العلة طويلًا: كل إصلاح سابق (بيئة PDF، والعامل، والاسم
+ * العربي) يقع **بعد** وصول الملف — والملف لم يكن يصل.
+ *
+ * فصار المتصفح يرفع مباشرةً إلى Supabase Storage برابط موقّع، ولا يمرّ
+ * الملف بـVercel إطلاقًا. ويبقى الخادم صاحب القرار في كل ما يهمّ:
+ * الصلاحية، والحدود، ومسار التخزين، وقبول المستند في قاعدة المعرفة.
+ * ---------------------------------------------------------------------
+ */
+
+export interface UploadTicket {
+  ok: boolean;
+  message?: string;
+  ticket?: {
+    /** المسار الذي سيُرفع إليه — يختاره الخادم لا العميل */
+    path: string;
+    /** رمز الرفع الموقّع، صالح لهذا المسار وحده */
+    token: string;
+  };
+}
+
+/**
+ * تذكرة رفع: يتحقق الخادم من كل شيء عدا البايتات، ثم يأذن بمسار واحد.
+ *
+ * لا يُنشأ صفّ مستند هنا عمدًا: لو أغلق المستخدم اللسان بعد التذكرة
+ * وقبل الرفع، لبقي صفّ «جاري التحليل» أبديّ لا ملف له. فيُنشأ الصفّ في
+ * الخطوة الثانية حين يصير الملف موجودًا فعلًا.
+ */
+export async function createUploadTicketAction(input: {
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+}): Promise<UploadTicket> {
   try {
     const { profile, company } = await requirePermission('documents.manage');
     enforceRateLimit(`upload:${profile.id}`, RATE_LIMITS.upload);
 
-    const file = formData.get('file');
-    if (!(file instanceof File) || file.size === 0) {
+    if (!input.fileName || !Number.isFinite(input.fileSize) || input.fileSize <= 0) {
       throw new AppError('VALIDATION', 'اختر ملفًا للرفع.');
     }
 
-    if (file.size > MAX_FILE_SIZE_BYTES) {
+    if (input.fileSize > MAX_FILE_SIZE_BYTES) {
       throw new AppError(
         'FILE_TOO_LARGE',
         `حجم الملف يتجاوز الحد المسموح (${Math.round(MAX_FILE_SIZE_BYTES / 1024 / 1024)} ميجابايت).`,
       );
     }
 
-    // حدود الخطة قبل أي عمل: الفحص بعد الرفع يترك ملفًا محمَّلًا على
-    // حساب لم يشترِ مساحته، والعدّ يُقاس على صفوف فعلية في قاعدة البيانات.
-    await enforceDocumentQuota();
-    await enforceStorageQuota(file.size);
-
-    const kind = detectFileKind(file.name, file.type);
+    const kind = detectFileKind(input.fileName, input.fileType);
     if (!kind) {
       throw new AppError(
         'UNSUPPORTED_FILE',
         `نوع الملف غير مدعوم. الأنواع المدعومة: ${SUPPORTED_EXTENSIONS.join('، ')}`,
       );
+    }
+
+    // الحدود تُفحص هنا بالحجم المُعلَن من العميل — وهو فحص مبكر للراحة
+    // لا للأمان. الفحص الملزِم يقع في الإنهاء على الحجم الفعلي للكائن.
+    await enforceDocumentQuota();
+    await enforceStorageQuota(input.fileSize);
+
+    // المسار يبدأ بمعرّف الشركة دائمًا، ويُولَّد جزؤه الأوسط عشوائيًا.
+    // لا يشارك العميل في تكوينه، فلا يستطيع الكتابة في مسار شركة أخرى
+    // ولا الكتابة فوق ملف قائم.
+    const storagePath =
+      `${company.id}/${randomUUID()}/${safeStorageObjectName(input.fileName)}`;
+
+    const admin = createAdminClient();
+    const { data, error } = await admin.storage
+      .from('documents')
+      .createSignedUploadUrl(storagePath);
+
+    if (error || !data) {
+      logger.error('تعذّر إنشاء رابط رفع موقّع', { reason: error?.message });
+      throw new AppError(
+        'INTERNAL',
+        `تعذّر تجهيز الرفع.\n\nتفصيل تقني: ${sanitizeTechnicalDetail(error?.message ?? '')}`,
+      );
+    }
+
+    return { ok: true, ticket: { path: data.path, token: data.token } };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+/**
+ * إنهاء الرفع: يصير الملف مستندًا في قاعدة المعرفة.
+ *
+ * يُستدعى بعد أن يرفع المتصفح الملف إلى المسار المأذون. وحمولته صغيرة
+ * (مسار وبيانات وصفية) فلا تصطدم بحدّ Vercel.
+ */
+export async function finalizeUploadAction(formData: FormData): Promise<ActionResult> {
+  let storagePath = '';
+
+  try {
+    const { profile, company } = await requirePermission('documents.manage');
+    storagePath = String(formData.get('storagePath') ?? '');
+
+    // --- أهم فحص في هذا المسار ---
+    // المسار يأتي من العميل، ولو قُبل كما هو لأمكن لمن يعرف مسار مستند
+    // في شركة أخرى أن «ينهي رفعه» فينسخه إلى قاعدة معرفته هو. الاشتراط
+    // أن يبدأ بمعرّف شركته يقطع ذلك من أصله.
+    if (!isPathWithinCompany(storagePath, company.id)) {
+      logger.warn('محاولة إنهاء رفع لمسار خارج الشركة', { actorId: profile.id });
+      throw new AppError('FORBIDDEN', 'مسار الملف غير صالح.');
     }
 
     const rawVisibility = String(formData.get('visibility') ?? 'COMPANY') as DocumentVisibility;
@@ -65,7 +151,7 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
     const allowedRoles = formData.getAll('allowedRoles').map(String).filter(Boolean) as UserRole[];
 
     const parsed = documentMetadataSchema.safeParse({
-      name: String(formData.get('name') || file.name),
+      name: String(formData.get('name') || ''),
       description: formData.get('description'),
       categoryId: formData.get('categoryId') || null,
       visibility: rawVisibility,
@@ -86,7 +172,6 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
       throw new AppError('VALIDATION', 'اختر دورًا واحدًا على الأقل عند تقييد الوصول بالأدوار.');
     }
 
-    // الأقسام المختارة يجب أن تنتمي لنفس الشركة
     if (metadata.allowedDepartmentIds.length > 0) {
       const supabase = await createClient();
       const { data: departments } = await supabase
@@ -99,12 +184,43 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
       }
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const checksum = createHash('sha256').update(buffer).digest('hex');
-
     const admin = createAdminClient();
 
-    // منع رفع نفس الملف مرتين
+    // الملف يُقرأ من التخزين لا من الطلب: هذا اتصال خادم بخادم لا يخضع
+    // لحدّ حجم الطلب، وهو أيضًا الطريق الوحيد لمعرفة الحجم الحقيقي
+    // والبصمة — والعميل لا يُصدَّق في أيٍّ منهما.
+    const { data: blob, error: downloadError } = await admin.storage
+      .from('documents')
+      .download(storagePath);
+
+    if (downloadError || !blob) {
+      throw new AppError(
+        'VALIDATION',
+        'لم يصل الملف إلى التخزين. أعد المحاولة.',
+      );
+    }
+
+    const buffer = Buffer.from(await blob.arrayBuffer());
+    const checksum = createHash('sha256').update(buffer).digest('hex');
+    const actualSize = buffer.byteLength;
+
+    if (actualSize > MAX_FILE_SIZE_BYTES) {
+      await admin.storage.from('documents').remove([storagePath]);
+      throw new AppError(
+        'FILE_TOO_LARGE',
+        `حجم الملف يتجاوز الحد المسموح (${Math.round(MAX_FILE_SIZE_BYTES / 1024 / 1024)} ميجابايت).`,
+      );
+    }
+
+    // الفحص الملزِم للحدود: على الحجم الفعلي بعد وصول الملف
+    try {
+      await enforceStorageQuota(actualSize);
+      await enforceDocumentQuota();
+    } catch (quotaError) {
+      await admin.storage.from('documents').remove([storagePath]);
+      throw quotaError;
+    }
+
     const { data: duplicate } = await admin
       .from('documents')
       .select('id, name')
@@ -114,11 +230,11 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
       .maybeSingle();
 
     if (duplicate) {
-      throw new AppError(
-        'VALIDATION',
-        `هذا الملف مرفوع مسبقًا باسم «${duplicate.name}».`,
-      );
+      await admin.storage.from('documents').remove([storagePath]);
+      throw new AppError('VALIDATION', `هذا الملف مرفوع مسبقًا باسم «${duplicate.name}».`);
     }
+
+    const fileType = String(formData.get('fileType') || '') || blob.type || 'application/octet-stream';
 
     const { data: document, error: insertError } = await admin
       .from('documents')
@@ -127,10 +243,11 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
         category_id: metadata.categoryId || null,
         name: metadata.name,
         description: metadata.description || null,
-        file_type: file.type || kind,
-        file_size_bytes: file.size,
+        file_type: fileType,
+        file_size_bytes: actualSize,
         checksum,
         status: 'PROCESSING',
+        storage_path: storagePath,
         visibility: metadata.visibility,
         allowed_department_ids: metadata.allowedDepartmentIds,
         allowed_roles: metadata.allowedRoles,
@@ -141,35 +258,9 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
 
     if (insertError || !document) {
       logger.error('تعذّر إنشاء سجل المستند', { reason: insertError?.message });
+      await admin.storage.from('documents').remove([storagePath]);
       throw new AppError('INTERNAL');
     }
-
-    // مسار التخزين يبدأ بمعرّف الشركة — وهذا ما تعتمد عليه سياسات التخزين
-    const storagePath = `${company.id}/${document.id}/${safeStorageObjectName(file.name)}`;
-
-    const { error: uploadError } = await admin.storage
-      .from('documents')
-      .upload(storagePath, buffer, {
-        contentType: file.type || 'application/octet-stream',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      logger.error('تعذّر رفع الملف إلى التخزين', { reason: uploadError.message });
-      await admin
-        .from('documents')
-        .update({ status: 'FAILED', error_message: 'تعذّر رفع الملف إلى التخزين.' })
-        .eq('id', document.id);
-
-      // يُذكر سبب التخزين لا «حاول مرة أخرى»: الإعادة لا تنفع مع سبب
-      // ثابت، وقد أخفت هذه الصياغة رفضًا صريحًا لمفتاح التخزين.
-      throw new AppError(
-        'INTERNAL',
-        `تعذّر رفع الملف إلى التخزين.\n\nتفصيل تقني: ${sanitizeTechnicalDetail(uploadError.message)}`,
-      );
-    }
-
-    await admin.from('documents').update({ storage_path: storagePath }).eq('id', document.id);
 
     await recordAudit({
       companyId: company.id,
@@ -178,7 +269,7 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
       action: 'document.uploaded',
       entityType: 'document',
       entityId: document.id,
-      metadata: { name: metadata.name, sizeBytes: file.size, visibility: metadata.visibility },
+      metadata: { name: metadata.name, sizeBytes: actualSize, visibility: metadata.visibility },
     });
 
     // تُنتظر المعالجة هنا عمدًا: إطلاقها في الخلفية يُقتل عند تجميد
@@ -209,6 +300,7 @@ export async function uploadDocumentAction(formData: FormData): Promise<ActionRe
         : 'تم رفع المستند وإضافته إلى قاعدة المعرفة.',
     };
   } catch (error) {
+
     // يُسجَّل الفشل المبكر — قبل إنشاء صفّ المستند — وإلا بدا في السجل
     // أن الشركة لم تحاول الرفع أصلًا. وغياب الأثر يُقرأ لاحقًا «لم
     // يجرّبوا»، وهو استنتاج خاطئ يضلّل الدعم بدل أن يعينه.
