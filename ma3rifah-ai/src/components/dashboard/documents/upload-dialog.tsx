@@ -24,7 +24,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatBytes } from '@/lib/utils';
-import { uploadDocumentAction } from '@/app/(dashboard)/documents/actions';
+import {
+  createUploadTicketAction,
+  finalizeUploadAction,
+} from '@/app/(dashboard)/documents/actions';
+import { createClient } from '@/lib/supabase/client';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import type { DocumentVisibility, UserRole } from '@/types/database';
 
@@ -47,6 +51,8 @@ export function UploadDialog({
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([]);
   const [error, setError] = useState<string | null>(null);
+  /** المرحلة الجارية — الرفع ثلاث خطوات، وصمتها يُقرأ تعليقًا */
+  const [stage, setStage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -57,6 +63,7 @@ export function UploadDialog({
     setSelectedDepartments([]);
     setSelectedRoles([]);
     setError(null);
+    setStage(null);
     formRef.current?.reset();
   };
 
@@ -94,11 +101,60 @@ export function UploadDialog({
     }
 
     startTransition(async () => {
-      const result = await uploadDocumentAction(formData);
+      // ------------------------------------------------------------
+      // الرفع على ثلاث خطوات، والملف لا يمرّ بخادمنا في أيٍّ منها:
+      //
+      //   ١) تذكرة: يتحقق الخادم من الصلاحية والنوع والحدود، ويأذن
+      //      بمسار واحد بعينه.
+      //   ٢) رفع مباشر من المتصفح إلى التخزين بذلك الإذن — وهنا تُتجاوز
+      //      حدود حجم الطلب على منصة الاستضافة، إذ لا يمرّ بها شيء.
+      //   ٣) إنهاء: يقرأ الخادم الملف من التخزين، فيتحقق من حجمه
+      //      وبصمته بنفسه، ثم يُدخله قاعدة المعرفة.
+      // ------------------------------------------------------------
+      setStage('جارٍ التجهيز…');
+
+      const ticket = await createUploadTicketAction({
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+
+      if (!ticket.ok || !ticket.ticket) {
+        setStage(null);
+        setError(ticket.message ?? 'تعذّر تجهيز الرفع.');
+        return;
+      }
+
+      setStage('جارٍ رفع الملف…');
+
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .uploadToSignedUrl(ticket.ticket.path, ticket.ticket.token, file, {
+          contentType: file.type || 'application/octet-stream',
+        });
+
+      if (uploadError) {
+        setStage(null);
+        setError(`تعذّر رفع الملف إلى التخزين: ${uploadError.message}`);
+        return;
+      }
+
+      setStage('جارٍ التحليل وإضافته إلى قاعدة المعرفة…');
+
+      formData.set('storagePath', ticket.ticket.path);
+      formData.set('fileType', file.type || '');
+      // الملف نفسه لا يُرسل إلى الخادم — رُفع من هنا مباشرةً
+      formData.delete('file');
+
+      const result = await finalizeUploadAction(formData);
+      setStage(null);
+
       if (!result.ok) {
         setError(result.message ?? 'تعذّر رفع المستند.');
         return;
       }
+
       toast.success(result.message ?? 'تم رفع المستند.');
       setIsOpen(false);
       reset();
@@ -290,7 +346,7 @@ export function UploadDialog({
 
           <DialogFooter>
             <Button type="submit" loading={isPending} disabled={!file}>
-              {isPending ? 'جاري الرفع…' : 'رفع ومعالجة'}
+              {isPending ? (stage ?? 'جاري الرفع…') : 'رفع ومعالجة'}
             </Button>
             <Button
               type="button"

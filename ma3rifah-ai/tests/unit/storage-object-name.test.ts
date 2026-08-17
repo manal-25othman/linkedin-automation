@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { safeStorageObjectName } from '@/lib/storage/object-name';
+import { safeStorageObjectName, isPathWithinCompany } from '@/lib/storage/object-name';
 
 /**
  * حارس انحدار لمفاتيح التخزين.
@@ -70,5 +70,34 @@ describe('safeStorageObjectName', () => {
 
   it('يحدّ الطول فلا يتجاوز المفتاح حدود التخزين', () => {
     expect(safeStorageObjectName(`${'a'.repeat(500)}.pdf`)).toHaveLength(84);
+  });
+});
+
+describe('حدّ مسار التخزين بين الشركات', () => {
+  const A = 'aaaaaaaa-0000-4000-8000-000000000001';
+  const B = 'bbbbbbbb-0000-4000-8000-000000000001';
+
+  it('يقبل مسارًا داخل مجلد الشركة', () => {
+    expect(isPathWithinCompany(`${A}/abc/file.pdf`, A)).toBe(true);
+  });
+
+  it('يرفض مسار شركة أخرى — وهو الهجوم المقصود', () => {
+    // من يعرف مسار مستند في شركة أخرى لا يجوز أن «ينهي رفعه» فينسخه
+    expect(isPathWithinCompany(`${B}/abc/secret.pdf`, A)).toBe(false);
+  });
+
+  it('يرفض المطابقة الجزئية للمعرّف', () => {
+    // بلا الشرطة المائلة يمرّ معرّف يبدأ بمعرّف آخر
+    expect(isPathWithinCompany(`${A}extra/file.pdf`, A)).toBe(false);
+    expect(isPathWithinCompany(A, A)).toBe(false);
+  });
+
+  it('يرفض الصعود بالمسار', () => {
+    expect(isPathWithinCompany(`${A}/../${B}/secret.pdf`, A)).toBe(false);
+  });
+
+  it('يرفض الفراغ', () => {
+    expect(isPathWithinCompany('', A)).toBe(false);
+    expect(isPathWithinCompany(`${A}/f.pdf`, '')).toBe(false);
   });
 });

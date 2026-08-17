@@ -29,3 +29,20 @@ export function safeStorageObjectName(original: string): string {
 
   return `${stem || 'document'}${extension}`;
 }
+
+/**
+ * هل يقع مسار التخزين داخل مجلد الشركة؟
+ *
+ * فحصٌ حدوديّ بين المستأجرين. صار لازمًا حين انتقل الرفع إلى المتصفح:
+ * المسار يعود إلينا من العميل عند الإنهاء، ولو قُبل كما هو لأمكن لمن
+ * يعرف مسار مستند في شركة أخرى أن «ينهي رفعه» فينسخه إلى قاعدة معرفته
+ * هو — بلا أن يخترق شيئًا، فقط بأن يذكر مسارًا.
+ *
+ * ويُرفض `..` صراحةً: مفاتيح التخزين لا تُحلّ كمسارات ملفات، لكن الاتكال
+ * على ذلك اتكالٌ على تفصيل في خدمة خارجية قد يتغيّر.
+ */
+export function isPathWithinCompany(path: string, companyId: string): boolean {
+  if (!path || !companyId) return false;
+  if (path.includes('..')) return false;
+  return path.startsWith(`${companyId}/`);
+}
