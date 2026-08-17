@@ -18,6 +18,13 @@ export type MessageRole = 'USER' | 'ASSISTANT';
 export type AnswerStatus = 'ANSWERED' | 'UNANSWERED' | 'ERROR';
 export type FeedbackValue = 'UP' | 'DOWN';
 export type GapStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
+type SiteContentRow = {
+  key: string;
+  value: string;
+  updated_by: string | null;
+  updated_at: string;
+};
+
 export type PaymentStatus = 'INITIATED' | 'PAID' | 'FAILED' | 'REFUNDED';
 
 type PaymentRow = {
@@ -462,6 +469,7 @@ export interface Database {
       support_messages: Table<SupportMessageRow>;
       analytics_events: Table<AnalyticsEventRow>;
       plans: Table<PlanRow>;
+      site_content: Table<SiteContentRow>;
       payments: Table<PaymentRow>;
       subscriptions: Table<SubscriptionRow>;
       usage_records: Table<UsageRecordRow>;

@@ -862,3 +862,56 @@ select public.record_zero_rows_expected(
   'select * from public.subscriptions');
 
 commit;
+
+-- =====================================================================
+-- محتوى الموقع
+--
+-- جدول استثنائي في هذا النظام: يقرؤه الجميع عمدًا، حتى الزائر بلا جلسة —
+-- فهو نصّ صفحة عامة، وحجبه عمّن يراه على الصفحة نفسها عبث.
+--
+-- والاستثناء في القراءة يجعل الكتابة أخطر: من يكتب هنا يكتب على واجهة
+-- المنصة التي يراها كل زائر. فلا سياسة كتابة لأي دور إطلاقًا.
+-- =====================================================================
+
+begin;
+set local role anon;
+
+-- ضابط موجب: الزائر يقرأ — وهذا مقصود لا ثغرة
+insert into public.test_results (category, name, passed, detail)
+select 'محتوى الموقع', 'زائر بلا جلسة يقرأ نصوص الموقع (ضابط موجب)',
+       count(*) > 0, 'الصفوف العائدة: ' || count(*)
+from public.site_content;
+
+select public.record_write_attempt(
+  'محتوى الموقع', 'زائر بلا جلسة لا يكتب نصًّا',
+  $sql$insert into public.site_content (key, value)
+       values ('home.badge', 'نصّ مزروع')$sql$);
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+select public.record_write_attempt(
+  'محتوى الموقع', 'الموظف لا يكتب نصًّا',
+  $sql$insert into public.site_content (key, value)
+       values ('home.hero.line1', 'نصّ مزروع')$sql$);
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+-- حتى مدير الشركة: المحتوى شأن المنصة لا شأن شركة
+select public.record_write_attempt(
+  'محتوى الموقع', 'مدير الشركة لا يكتب نصًّا',
+  $sql$insert into public.site_content (key, value)
+       values ('site.tagline', 'نصّ مزروع')$sql$);
+
+select public.record_write_attempt(
+  'محتوى الموقع', 'مدير الشركة لا يعدّل نصًّا قائمًا',
+  $sql$update public.site_content set value = 'نصّ مزروع'$sql$);
+
+commit;

@@ -24,6 +24,7 @@ import { HeroDemo, Pulse } from '@/components/marketing/hero-demo';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { HOME_FAQ } from '@/content/faq';
+import { getSiteText } from '@/lib/content/site-text';
 
 /**
  * الصفحة الرئيسية.
@@ -36,7 +37,9 @@ import { HOME_FAQ } from '@/content/faq';
  * واختلاق ذلك يُكتشف في أول اجتماع ويُفقد الصفقة كلها.
  */
 
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getSiteText();
+
   return (
     <>
       {/* ------------------------------------------------------------ Hero */}
@@ -47,24 +50,23 @@ export default function HomePage() {
           <div className="reveal-now mx-auto max-w-3xl text-center">
             <Badge variant="outline" className="mb-6 gap-2 bg-background px-3 py-1">
               <Pulse />
-              مبنيّة للعربية أولًا — لا مترجَمة إليها
+              {t('home.badge')}
             </Badge>
 
             <h1 className="text-balance text-3xl font-semibold leading-[1.3] tracking-tight sm:text-5xl sm:leading-[1.22]">
-              موظفوك يسألون السؤال نفسه كل أسبوع.
+              {t('home.hero.line1')}
               <br />
-              <span className="text-shimmer">أجب مرة واحدة — إلى الأبد.</span>
+              <span className="text-shimmer">{t('home.hero.line2')}</span>
             </h1>
 
             <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-loose text-muted-foreground sm:text-lg">
-              ارفع لوائح شركتك وإجراءاتها، فتصير مساعدًا ذكيًا يجيب فريقك بالعربية في ثوانٍ —
-              من مستنداتك أنت، ومع ذكر المستند والصفحة تحت كل إجابة.
+              {t('home.hero.subtitle')}
             </p>
 
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild className="group">
                 <Link href="/register">
-                  ابدأ مجانًا
+                  {t('home.cta.primary')}
                   <ArrowLeft
                     className="size-4 transition-transform group-hover:-translate-x-1"
                     aria-hidden
@@ -72,12 +74,12 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/contact">اطلب عرضًا على مستنداتك</Link>
+                <Link href="/contact">{t('home.cta.secondary')}</Link>
               </Button>
             </div>
 
             <p className="mt-5 text-sm text-muted-foreground">
-              بلا بطاقة ائتمانية · جاهزة خلال دقائق · بياناتك لا تُدرَّب عليها أي نماذج
+              {t('home.cta.note')}
             </p>
           </div>
 
@@ -392,7 +394,7 @@ export default function HomePage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild className="group">
                 <Link href="/register">
-                  ابدأ مجانًا
+                  {t('home.cta.primary')}
                   <ArrowLeft
                     className="size-4 transition-transform group-hover:-translate-x-1"
                     aria-hidden

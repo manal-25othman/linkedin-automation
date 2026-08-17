@@ -6,6 +6,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'company.ai_settings_updated': 'تحديث إعدادات المساعد',
   'plan.created': 'إضافة خطة',
   'plan.updated': 'تعديل خطة',
+  'site_content.updated': 'تحرير محتوى الموقع',
   'subscription.checkout_started': 'بدء اشتراك',
   'subscription.activated': 'تفعيل اشتراك',
   'user.invited': 'دعوة مستخدم',
