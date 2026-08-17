@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { recordAudit } from '@/lib/audit';
 import { AppError, toAppError } from '@/lib/errors';
 import { planUpsertSchema, firstIssueMessage } from '@/lib/validation/schemas';
-import { SITE_TEXT } from '@/content/site-text';
+import { SITE_TEXT, defaultSiteText } from '@/content/site-text';
 
 export interface ActionResult {
   ok: boolean;
@@ -190,6 +190,8 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
     const toUpsert: { key: string; value: string; updated_by: string }[] = [];
     const toReset: string[] = [];
 
+    const defaults = defaultSiteText();
+
     for (const [key, entry] of Object.entries(SITE_TEXT)) {
       const raw = formData.get(`text:${key}`);
       if (raw === null) continue;
@@ -197,12 +199,23 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
       const value = String(raw).replace(/\r\n/g, '\n').trim();
 
       if (value.length > 5000) {
-        throw new AppError('VALIDATION', `النصّ «${entry.label}» أطول من الحد المسموح.`);
+        throw new AppError('VALIDATION', `المحتوى «${entry.label}» أطول من الحد المسموح.`);
+      }
+
+      // القائمة تصل مُسلسَلة — تُتحقَّق قبل الحفظ كي لا يُخزَّن نصّ تالف
+      // يكسر الصفحة لاحقًا. الفشل هنا مرئي، وهناك صامت.
+      if (entry.kind === 'list' && value !== '') {
+        try {
+          const parsed: unknown = JSON.parse(value);
+          if (!Array.isArray(parsed)) throw new Error('not an array');
+        } catch {
+          throw new AppError('VALIDATION', `تعذّر حفظ «${entry.label}» — بنية غير صالحة.`);
+        }
       }
 
       // الفراغ يعني «أعِد الأصلي» لا «اجعله فارغًا»: نصّ فارغ في صفحة
       // عامة عطبٌ ظاهر، والمحرِّرة تمسح الحقل عادةً وهي تقصد التراجع.
-      if (value === '' || value === entry.value.trim()) {
+      if (value === '' || value === (defaults[key] ?? '').trim()) {
         toReset.push(key);
       } else {
         toUpsert.push({ key, value, updated_by: session.profile.id });

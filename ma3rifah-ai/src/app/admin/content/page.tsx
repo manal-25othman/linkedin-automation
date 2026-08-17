@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { requireSuperAdmin } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PageHeader } from '@/components/shared/page-header';
-import { SITE_TEXT } from '@/content/site-text';
+import { SITE_TEXT, defaultSiteText } from '@/content/site-text';
 import { ContentClient, type EditableText } from './content-client';
 
 export const metadata: Metadata = { title: 'محتوى الموقع' };
@@ -18,9 +18,11 @@ export default async function AdminContentPage() {
 
   // النصّ الأصلي هو الأساس، والتجاوز يعلوه — نفس ترتيب القراءة على الموقع،
   // كي يرى المحرِّر في اللوحة ما يراه الزائر على الصفحة بلا فرق.
+  const defaults = defaultSiteText();
+
   const texts: EditableText[] = Object.keys(SITE_TEXT).map((key) => ({
     key,
-    current: overrides.get(key) ?? SITE_TEXT[key].value,
+    current: overrides.get(key) ?? defaults[key] ?? '',
   }));
 
   return (

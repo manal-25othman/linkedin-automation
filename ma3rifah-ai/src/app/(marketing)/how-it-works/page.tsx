@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Section, PageHero } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
+import { getSiteText } from '@/lib/content/site-text';
 
 export const metadata: Metadata = {
   title: 'كيف يعمل',
@@ -64,13 +65,15 @@ const STEPS = [
   },
 ];
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage() {
+  const t = await getSiteText();
+
   return (
     <>
       <PageHero
-        eyebrow="كيف تعمل"
-        title="من المستند إلى الإجابة الموثّقة"
-        description="ما يحدث خلف الواجهة بالتفصيل — لأن فريق التقنية يسأل عن هذا أولًا، ولأن من يفهم الآلية يثق بمخرجاتها."
+        eyebrow={t('how.eyebrow')}
+        title={t('how.title')}
+        description={t('how.description')}
       />
 
       <Section className="pt-0">
