@@ -233,6 +233,13 @@ values
   (:pay_b::uuid, :company_b::uuid, :plan_test::uuid, 'pay_fixture_b', 49900, 'SAR', 'PAID')
 on conflict (id) do nothing;
 
+-- ---------- محتوى الموقع ----------
+-- صفّ واحد يكفي: بدونه يمرّ «الزائر يقرأ» على جدول فارغ فلا يثبت شيئًا.
+
+insert into public.site_content (key, value)
+values ('home.badge', 'نصّ تجريبي للاختبار')
+on conflict (key) do nothing;
+
 create or replace function public.record_write_attempt(
   p_category text,
   p_name     text,

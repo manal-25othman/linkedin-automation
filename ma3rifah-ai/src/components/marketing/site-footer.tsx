@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Logo } from '@/components/shared/brand';
+import { getSiteText } from '@/lib/content/site-text';
 
 const FOOTER_SECTIONS = [
   {
@@ -35,7 +36,9 @@ const FOOTER_SECTIONS = [
   },
 ];
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = await getSiteText();
+
   return (
     <footer className="border-t bg-muted/25">
       <div className="container py-14">
@@ -43,8 +46,7 @@ export function SiteFooter() {
           <div className="max-w-sm">
             <Logo />
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              منصة ذكاء معرفي للشركات: حوّل سياساتك وإجراءاتك ومستنداتك إلى قاعدة معرفة
-              ذكية يصل إليها فريقك في ثوانٍ، بإجابات موثقة بالمصدر.
+              {t('site.tagline')}
             </p>
           </div>
 

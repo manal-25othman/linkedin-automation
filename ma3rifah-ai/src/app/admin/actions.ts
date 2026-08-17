@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { recordAudit } from '@/lib/audit';
 import { AppError, toAppError } from '@/lib/errors';
 import { planUpsertSchema, firstIssueMessage } from '@/lib/validation/schemas';
+import { SITE_TEXT } from '@/content/site-text';
 
 export interface ActionResult {
   ok: boolean;
@@ -167,6 +168,76 @@ export async function setPlanVisibilityAction(
     revalidatePath('/');
 
     return { ok: true, message: isPublic ? 'صارت الخطة معروضة.' : 'أُخفيت الخطة.' };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+/**
+ * حفظ نصوص الموقع.
+ *
+ * تُحفظ التجاوزات وحدها: نصّ يطابق الأصلي يُحذف صفّه بدل أن يُخزَّن،
+ * فيبقى الجدول صغيرًا ويظلّ «العودة إلى الأصل» عمليةً واحدة لا اثنتين.
+ *
+ * وتُبطَل ذاكرة الصفحات بعد الحفظ، وإلا رأت المحرِّرة تغييرها في المحرِّر
+ * ولم تره على الموقع — فتظن أن الحفظ لم يعمل وتعيده مرارًا.
+ */
+export async function saveSiteTextAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    const toUpsert: { key: string; value: string; updated_by: string }[] = [];
+    const toReset: string[] = [];
+
+    for (const [key, entry] of Object.entries(SITE_TEXT)) {
+      const raw = formData.get(`text:${key}`);
+      if (raw === null) continue;
+
+      const value = String(raw).replace(/\r\n/g, '\n').trim();
+
+      if (value.length > 5000) {
+        throw new AppError('VALIDATION', `النصّ «${entry.label}» أطول من الحد المسموح.`);
+      }
+
+      // الفراغ يعني «أعِد الأصلي» لا «اجعله فارغًا»: نصّ فارغ في صفحة
+      // عامة عطبٌ ظاهر، والمحرِّرة تمسح الحقل عادةً وهي تقصد التراجع.
+      if (value === '' || value === entry.value.trim()) {
+        toReset.push(key);
+      } else {
+        toUpsert.push({ key, value, updated_by: session.profile.id });
+      }
+    }
+
+    if (toUpsert.length > 0) {
+      const { error } = await admin.from('site_content').upsert(toUpsert, { onConflict: 'key' });
+      if (error) throw error;
+    }
+
+    if (toReset.length > 0) {
+      const { error } = await admin.from('site_content').delete().in('key', toReset);
+      if (error) throw error;
+    }
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'site_content.updated',
+      entityType: 'site_content',
+      metadata: { changed: toUpsert.length, reset: toReset.length },
+    });
+
+    // كل صفحة قد تحمل نصًّا محرَّرًا
+    revalidatePath('/', 'layout');
+
+    return {
+      ok: true,
+      message:
+        toUpsert.length === 0
+          ? 'أُعيدت كل النصوص إلى صيغتها الأصلية.'
+          : `حُفظ ${toUpsert.length} نصًّا. افتحي الموقع لترَي التغيير.`,
+    };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };
   }
