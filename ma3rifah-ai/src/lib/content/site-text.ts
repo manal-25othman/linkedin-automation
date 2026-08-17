@@ -15,7 +15,12 @@ import { logger } from '@/lib/logger';
  * بدل أن تُظهر صفحة فارغة. وصفحةٌ بنصّ قديم أهون بكثير من صفحةٍ بلا نصّ.
  */
 
-export type SiteText = (key: string) => string;
+export interface SiteText {
+  /** نصّ مفرد */
+  (key: string): string;
+  /** قائمة عناصر — تعود إلى الأصل إن كان المحفوظ غير صالح */
+  list(key: string): Record<string, string>[];
+}
 
 /**
  * يقرأ التجاوزات ويعيد دالة قراءة.
@@ -49,13 +54,42 @@ export async function getSiteText(): Promise<SiteText> {
     }
   }
 
-  return (key: string) => {
+  const read = ((key: string) => {
+    const entry = SITE_TEXT[key];
     const value = values[key];
     if (value !== undefined) return value;
 
     // مفتاح غير مسجّل = خطأ برمجي لا خطأ محتوى. يُعاد المفتاح نفسه كي
     // يظهر في الصفحة فيُلاحَظ فورًا، بدل فراغٍ يمرّ إلى الإنتاج.
     logger.warn('مفتاح نصّ غير معرّف', { key });
-    return SITE_TEXT[key]?.value ?? key;
+    return entry && entry.kind === 'text' ? entry.value : key;
+  }) as SiteText;
+
+  read.list = (key: string) => {
+    const entry = SITE_TEXT[key];
+    const fallback = entry && entry.kind === 'list' ? entry.value : [];
+
+    const raw = values[key];
+    if (raw === undefined) {
+      logger.warn('مفتاح قائمة غير معرّف', { key });
+      return fallback;
+    }
+
+    // القائمة تُخزَّن نصًّا مُسلسَلًا. وتحليلها قد يفشل إن حُرِّر الصفّ
+    // يدويًا في قاعدة البيانات — والعودة إلى الأصل حينها أسلم من صفحة
+    // تنهار، فالقائمة التالفة تكسر العرض كله لا عنصرًا واحدًا.
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return fallback;
+      return parsed.filter(
+        (item): item is Record<string, string> =>
+          typeof item === 'object' && item !== null && !Array.isArray(item),
+      );
+    } catch {
+      logger.warn('قائمة محتوى غير صالحة — عودة إلى الأصل', { key });
+      return fallback;
+    }
   };
+
+  return read;
 }

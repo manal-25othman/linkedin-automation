@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Section, PageHero, FeatureCard } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
+import { getSiteText } from '@/lib/content/site-text';
 
 export const metadata: Metadata = {
   title: 'الأمان والخصوصية',
@@ -78,13 +79,15 @@ const CONTROLS = [
   },
 ];
 
-export default function SecurityPage() {
+export default async function SecurityPage() {
+  const t = await getSiteText();
+
   return (
     <>
       <PageHero
-        eyebrow="الأمان"
-        title="الأمان مبنيّ في البنية لا مضاف إليها"
-        description="العزل مطبَّق في قاعدة البيانات نفسها لا في الواجهة، لأن ما يعتمد على انضباط المطوّرين وحده ينكسر يومًا ما. وهذا القرار المعماري الأهم في المنصة."
+        eyebrow={t('security.eyebrow')}
+        title={t('security.title')}
+        description={t('security.description')}
       />
 
       <Section className="pt-0">

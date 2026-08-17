@@ -5,6 +5,7 @@ import { Section, PageHero } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
 import { FaqList } from '@/components/marketing/faq-list';
 import { FULL_FAQ } from '@/content/faq';
+import { getSiteText } from '@/lib/content/site-text';
 
 export const metadata: Metadata = {
   title: 'الأسئلة الشائعة',
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
     'إجابات عن أكثر الأسئلة تكرارًا حول منصة معرفة AI: دقة الإجابات، عزل البيانات، الصلاحيات، أنواع الملفات المدعومة، والاشتراكات.',
 };
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const t = await getSiteText();
+
   // بيانات مُهيكلة لمحركات البحث
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -34,9 +37,9 @@ export default function FaqPage() {
       />
 
       <PageHero
-        eyebrow="الأسئلة الشائعة"
-        title="ما يسأل عنه العملاء قبل التبنّي"
-        description="أسئلة الأمان والتكلفة والدقة — مجموعة كما تُطرح فعلًا. لم تجد سؤالك؟ تواصل معنا وسنجيبك خلال يوم عمل."
+        eyebrow={t('faq.eyebrow')}
+        title={t('faq.title')}
+        description={t('faq.description')}
       />
 
       <Section>

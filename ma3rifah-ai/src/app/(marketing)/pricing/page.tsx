@@ -6,6 +6,7 @@ import { Reveal } from '@/components/marketing/reveal';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { FULL_FAQ } from '@/content/faq';
+import { getSiteText } from '@/lib/content/site-text';
 
 export const metadata: Metadata = {
   title: 'الأسعار',
@@ -15,13 +16,15 @@ export const metadata: Metadata = {
 
 const billingFaq = FULL_FAQ.find((group) => group.category === 'الاشتراك والفوترة');
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const t = await getSiteText();
+
   return (
     <>
       <PageHero
-        eyebrow="الأسعار"
-        title="خطط واضحة تنمو مع فريقك"
-        description="ابدأ بلا بطاقة ائتمانية، وارتقِ حين يتوسّع استخدام فريقك. بلا رسوم تأسيس ولا عقد سنة إلزامي."
+        eyebrow={t('pricing.eyebrow')}
+        title={t('pricing.title')}
+        description={t('pricing.description')}
       />
 
       <Section>

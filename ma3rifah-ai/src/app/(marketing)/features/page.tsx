@@ -28,6 +28,7 @@ import {
   FeatureCard,
 } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
+import { getSiteText } from '@/lib/content/site-text';
 
 export const metadata: Metadata = {
   title: 'المميزات',
@@ -188,13 +189,15 @@ const FEATURE_GROUPS = [
   },
 ];
 
-export default function FeaturesPage() {
+export default async function FeaturesPage() {
+  const t = await getSiteText();
+
   return (
     <>
       <PageHero
-        eyebrow="المميزات"
-        title="كل ما تحتاجه لتشغيل معرفة شركتك"
-        description="من رفع أول مستند، إلى إجابة موثّقة يثق بها موظفك، إلى تقرير يقول لك ما ينقص توثيقك."
+        eyebrow={t('features.eyebrow')}
+        title={t('features.title')}
+        description={t('features.description')}
       />
 
       {FEATURE_GROUPS.map((group, index) => (
