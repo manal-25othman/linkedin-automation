@@ -1,0 +1,46 @@
+{
+  "name": "masar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "مسار — وكيل ذكي يحلّل إعلان الوظيفة والسيرة الذاتية ويعيد كتابتها",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.116.0",
+    "clsx": "^2.1.1",
+    "docx": "^9.5.1",
+    "lucide-react": "^0.544.0",
+    "mammoth": "^1.11.0",
+    "next": "15.5.23",
+    "pdfjs-dist": "^5.7.284",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "server-only": "^0.0.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.36.0",
+    "eslint-config-next": "15.5.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
