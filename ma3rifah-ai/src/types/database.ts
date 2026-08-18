@@ -25,6 +25,22 @@ type SiteContentRow = {
   updated_at: string;
 };
 
+export type SitePageStatus = 'DRAFT' | 'PUBLISHED';
+
+type SitePageRow = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  body: string;
+  status: SitePageStatus;
+  show_in_nav: boolean;
+  sort_order: number;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type PaymentStatus = 'INITIATED' | 'PAID' | 'FAILED' | 'REFUNDED';
 
 type PaymentRow = {
@@ -470,6 +486,7 @@ export interface Database {
       analytics_events: Table<AnalyticsEventRow>;
       plans: Table<PlanRow>;
       site_content: Table<SiteContentRow>;
+      site_pages: Table<SitePageRow>;
       payments: Table<PaymentRow>;
       subscriptions: Table<SubscriptionRow>;
       usage_records: Table<UsageRecordRow>;

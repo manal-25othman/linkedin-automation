@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Building2, FileText, LayoutDashboard, LifeBuoy, LogOut, Receipt } from 'lucide-react';
+import {
+  Building2,
+  FileText,
+  Files,
+  LayoutDashboard,
+  LifeBuoy,
+  LogOut,
+  Receipt,
+} from 'lucide-react';
 import { getSessionContext } from '@/lib/auth/session';
 import { Logo } from '@/components/shared/brand';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +57,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               <FileText className="me-2 inline size-4" aria-hidden />
               المحتوى
+            </Link>
+            <Link
+              href="/admin/pages"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Files className="me-2 inline size-4" aria-hidden />
+              الصفحات
             </Link>
             <Link
               href="/admin/plans"

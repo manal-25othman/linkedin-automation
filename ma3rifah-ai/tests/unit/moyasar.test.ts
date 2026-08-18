@@ -74,8 +74,8 @@ describe('التحقق من رمز الـwebhook', () => {
     if (secret === undefined) delete process.env.MOYASAR_WEBHOOK_SECRET;
     else process.env.MOYASAR_WEBHOOK_SECRET = secret;
     vi.resetModules();
-    const module = await import('@/lib/billing/moyasar');
-    return module.verifyWebhookSecret;
+    const loaded = await import('@/lib/billing/moyasar');
+    return loaded.verifyWebhookSecret;
   }
 
   it('يقبل الرمز المطابق', async () => {
