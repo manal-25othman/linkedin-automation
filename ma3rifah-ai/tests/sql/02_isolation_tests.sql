@@ -915,3 +915,74 @@ select public.record_write_attempt(
   $sql$update public.site_content set value = 'نصّ مزروع'$sql$);
 
 commit;
+
+-- =====================================================================
+-- صفحات الموقع المصنوعة في اللوحة
+--
+-- خطران هنا لا واحد: أن يقرأ زائرٌ مسوّدةً لم تُنشر بعد، وأن يكتب
+-- مستخدمٌ صفحةً تظهر لكل زائر. والثاني أخطر — من يكتب صفحة عامة يكتب
+-- على واجهة المنصة كلها.
+-- =====================================================================
+
+begin;
+set local role anon;
+
+-- ضابط موجب: المنشورة تُقرأ، وإلا مرّ ما بعده على جدول لا يُقرأ أصلًا
+insert into public.test_results (category, name, passed, detail)
+select 'صفحات الموقع', 'زائر بلا جلسة يقرأ الصفحة المنشورة (ضابط موجب)',
+       count(*) = 1, 'الصفوف العائدة: ' || count(*)
+from public.site_pages where slug = 'صفحة-منشورة';
+
+select public.record_zero_rows_expected(
+  'صفحات الموقع', 'زائر بلا جلسة لا يقرأ المسوّدة',
+  $sql$select 1 from public.site_pages where slug = 'صفحة-مسودة'$sql$);
+
+select public.record_write_attempt(
+  'صفحات الموقع', 'زائر بلا جلسة لا ينشئ صفحة',
+  $sql$insert into public.site_pages (slug, title, body)
+       values ('صفحة-مزروعة', 'مزروعة', 'نصّ')$sql$);
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+select public.record_zero_rows_expected(
+  'صفحات الموقع', 'الموظف لا يقرأ المسوّدة',
+  $sql$select 1 from public.site_pages where status = 'DRAFT'$sql$);
+
+select public.record_write_attempt(
+  'صفحات الموقع', 'الموظف لا ينشئ صفحة',
+  $sql$insert into public.site_pages (slug, title, body)
+       values ('صفحة-موظف', 'مزروعة', 'نصّ')$sql$);
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+-- حتى مدير الشركة: الصفحة العامة شأن المنصة لا شأن شركة
+select public.record_zero_rows_expected(
+  'صفحات الموقع', 'مدير الشركة لا يقرأ المسوّدة',
+  $sql$select 1 from public.site_pages where status = 'DRAFT'$sql$);
+
+select public.record_write_attempt(
+  'صفحات الموقع', 'مدير الشركة لا ينشئ صفحة',
+  $sql$insert into public.site_pages (slug, title, body)
+       values ('صفحة-مدير', 'مزروعة', 'نصّ')$sql$);
+
+select public.record_write_attempt(
+  'صفحات الموقع', 'مدير الشركة لا يعدّل صفحة منشورة',
+  $sql$update public.site_pages set title = 'عنوان مزروع'$sql$);
+
+select public.record_write_attempt(
+  'صفحات الموقع', 'مدير الشركة لا ينشر مسوّدة',
+  $sql$update public.site_pages set status = 'PUBLISHED' where status = 'DRAFT'$sql$);
+
+select public.record_write_attempt(
+  'صفحات الموقع', 'مدير الشركة لا يحذف صفحة',
+  $sql$delete from public.site_pages$sql$);
+
+commit;

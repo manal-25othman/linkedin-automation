@@ -36,8 +36,16 @@ select
   (select count(*) from pg_tables where tablename = 'payments')                       as "جدول المدفوعات",
   (select case when indpred is null then 'كامل ✓' else 'جزئي ✗' end
      from pg_index i join pg_class c on c.oid = i.indexrelid
-    where c.relname = 'notifications_unique_event_idx')                               as "فهرس التنبيهات";
+    where c.relname = 'notifications_unique_event_idx')                               as "فهرس التنبيهات",
+  (select count(*) from pg_tables where tablename = 'site_content')                   as "محتوى الموقع",
+  (select count(*) from pg_tables where tablename = 'site_pages')                     as "صفحات الموقع";
 ```
+
+المتوقّع: كل عمود يعطي `1` عدا «فهرس التنبيهات» فيعطي «كامل ✓».
+
+> **إن كنتِ شغّلتِ الملف قبلُ:** شغّليه ثانيةً. أُضيف بعده ترحيلان —
+> `0023` يوسّع حدّ طول المحتوى المحرَّر، و`0024` ينشئ جدول الصفحات
+> المصنوعة — وبدونهما لا يعمل محرِّر القوائم ولا صفحة «الصفحات».
 
 المطلوب: أربعة أرقام قيمتها ١، وفهرس التنبيهات **كامل**.
 

@@ -7,6 +7,7 @@ import { recordAudit } from '@/lib/audit';
 import { AppError, toAppError } from '@/lib/errors';
 import { planUpsertSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { SITE_TEXT, defaultSiteText } from '@/content/site-text';
+import type { SitePageStatus } from '@/types/database';
 
 export interface ActionResult {
   ok: boolean;
@@ -198,7 +199,11 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
 
       const value = String(raw).replace(/\r\n/g, '\n').trim();
 
-      if (value.length > 5000) {
+      // الحدّ هنا يطابق قيد قاعدة البيانات (0023). والقائمة تُخزَّن مُسلسَلة
+      // في صفّ واحد، فحدُّ النصّ المفرد لا يصلح لها: قائمة الأسئلة وحدها
+      // تتجاوز خمسة آلاف محرف بأجوبتها.
+      const limit = entry.kind === 'list' ? 200_000 : 5_000;
+      if (value.length > limit) {
         throw new AppError('VALIDATION', `المحتوى «${entry.label}» أطول من الحد المسموح.`);
       }
 
@@ -251,6 +256,231 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
           ? 'أُعيدت كل النصوص إلى صيغتها الأصلية.'
           : `حُفظ ${toUpsert.length} نصًّا. افتحي الموقع لترَي التغيير.`,
     };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+// =====================================================================
+// صفحات يصنعها مالك المنصة
+// =====================================================================
+
+/**
+ * الأسماء المحجوزة.
+ *
+ * البادئة `/p/` تمنع حجب مسارات التطبيق أصلًا، لكن هذه أسماء تُنشئ
+ * لبسًا حتى تحتها: صفحة اسمها `login` تحت `/p/login` تبدو صفحة دخول
+ * ثانية، ومن يصلها من رابط منسوخ لا يدري لماذا لا تطلب كلمة سرّ.
+ */
+const RESERVED_SLUGS = new Set([
+  'login',
+  'register',
+  'dashboard',
+  'admin',
+  'api',
+  'auth',
+  'p',
+]);
+
+const SLUG_FORBIDDEN = /[\s/?#%&.]/;
+
+function readPageForm(formData: FormData) {
+  const slug = String(formData.get('slug') ?? '').trim().toLowerCase();
+  const title = String(formData.get('title') ?? '').trim();
+  const description = String(formData.get('description') ?? '').trim();
+  const body = String(formData.get('body') ?? '').replace(/\r\n/g, '\n').trim();
+  const showInNav = formData.get('showInNav') === 'on';
+  const publish = formData.get('status') === 'PUBLISHED';
+  const sortOrder = Number(formData.get('sortOrder') ?? 0);
+
+  if (title === '') throw new AppError('VALIDATION', 'عنوان الصفحة مطلوب.');
+  if (title.length > 200) throw new AppError('VALIDATION', 'العنوان أطول من الحد المسموح.');
+  if (slug.length < 2 || slug.length > 60) {
+    throw new AppError('VALIDATION', 'اسم الرابط يجب أن يكون بين حرفين و٦٠ حرفًا.');
+  }
+  if (SLUG_FORBIDDEN.test(slug)) {
+    throw new AppError(
+      'VALIDATION',
+      'اسم الرابط لا يقبل مسافة ولا الرموز . / ? # % & — استعملي شَرطة بدلها.',
+    );
+  }
+  if (RESERVED_SLUGS.has(slug)) {
+    throw new AppError('VALIDATION', `الاسم «${slug}» محجوز — اختاري غيره.`);
+  }
+  if (description.length > 500) {
+    throw new AppError('VALIDATION', 'الوصف أطول من الحد المسموح.');
+  }
+  if (body.length > 200_000) {
+    throw new AppError('VALIDATION', 'محتوى الصفحة أطول من الحد المسموح.');
+  }
+  if (!Number.isFinite(sortOrder) || sortOrder < 0 || sortOrder > 999) {
+    throw new AppError('VALIDATION', 'ترتيب الصفحة رقم بين ٠ و٩٩٩.');
+  }
+
+  return {
+    slug,
+    title,
+    description: description === '' ? null : description,
+    body,
+    show_in_nav: showInNav,
+    status: (publish ? 'PUBLISHED' : 'DRAFT') as SitePageStatus,
+    sort_order: Math.trunc(sortOrder),
+  };
+}
+
+/** خطأ تفرّد الاسم يصل من قاعدة البيانات برمز 23505 — يُترجم لا يُعرض */
+function toReadableSaveError(error: unknown): never {
+  const code = (error as { code?: string } | null)?.code;
+  if (code === '23505') {
+    throw new AppError('VALIDATION', 'يوجد صفحة بهذا الاسم — اختاري اسمًا آخر.');
+  }
+  throw error;
+}
+
+function revalidateSitePages(slug: string) {
+  revalidatePath('/admin/pages');
+  revalidatePath('/', 'layout');
+  revalidatePath(`/p/${slug}`);
+}
+
+export async function createSitePageAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+    const values = readPageForm(formData);
+    const admin = createAdminClient();
+
+    const { data, error } = await admin
+      .from('site_pages')
+      .insert({ ...values, updated_by: session.profile.id })
+      .select('id')
+      .single();
+
+    if (error) toReadableSaveError(error);
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'site_page.created',
+      entityType: 'site_page',
+      entityId: data?.id ?? null,
+      metadata: { slug: values.slug, status: values.status },
+    });
+
+    revalidateSitePages(values.slug);
+
+    return {
+      ok: true,
+      message:
+        values.status === 'PUBLISHED'
+          ? `نُشرت الصفحة على /p/${values.slug}`
+          : 'حُفظت الصفحة مسوّدة — لا يراها الزوّار حتى تنشريها.',
+    };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+export async function updateSitePageAction(
+  pageId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+    const values = readPageForm(formData);
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from('site_pages')
+      .update({ ...values, updated_by: session.profile.id })
+      .eq('id', pageId);
+
+    if (error) toReadableSaveError(error);
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'site_page.updated',
+      entityType: 'site_page',
+      entityId: pageId,
+      metadata: { slug: values.slug, status: values.status },
+    });
+
+    revalidateSitePages(values.slug);
+
+    return { ok: true, message: 'حُفظت الصفحة.' };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+export async function setSitePageStatusAction(
+  pageId: string,
+  status: 'DRAFT' | 'PUBLISHED',
+): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    const { data, error } = await admin
+      .from('site_pages')
+      .update({ status, updated_by: session.profile.id })
+      .eq('id', pageId)
+      .select('slug')
+      .single();
+
+    if (error) throw error;
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'site_page.updated',
+      entityType: 'site_page',
+      entityId: pageId,
+      metadata: { status },
+    });
+
+    revalidateSitePages(data?.slug ?? '');
+
+    return {
+      ok: true,
+      message: status === 'PUBLISHED' ? 'نُشرت الصفحة.' : 'أُعيدت الصفحة مسوّدة.',
+    };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).message };
+  }
+}
+
+export async function deleteSitePageAction(pageId: string): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    // يُقرأ الاسم قبل الحذف: بعده لا سبيل إلى إبطال ذاكرة مساره
+    const { data: existing } = await admin
+      .from('site_pages')
+      .select('slug')
+      .eq('id', pageId)
+      .maybeSingle();
+
+    const { error } = await admin.from('site_pages').delete().eq('id', pageId);
+    if (error) throw error;
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'site_page.deleted',
+      entityType: 'site_page',
+      entityId: pageId,
+      metadata: { slug: existing?.slug ?? null },
+    });
+
+    revalidateSitePages(existing?.slug ?? '');
+
+    return { ok: true, message: 'حُذفت الصفحة.' };
   } catch (error) {
     return { ok: false, message: toAppError(error).message };
   }

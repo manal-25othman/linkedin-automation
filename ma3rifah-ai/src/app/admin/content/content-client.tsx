@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ExternalLink, Plus, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -100,12 +99,28 @@ export function ContentClient({ texts }: { texts: EditableText[] }) {
         const keys = Object.keys(SITE_TEXT).filter((key) => SITE_TEXT[key].page === page);
         if (keys.length === 0) return null;
 
+        const pageChanged = keys.filter(isChanged).length;
+
         return (
-          <Card key={page}>
-            <CardHeader>
-              <CardTitle>{page}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-7">
+          // الصفحات مطويّة افتراضيًا. صار المحرَّر يشمل كل نصوص الموقع،
+          // فبسطُها كلها يجعل الوصول إلى عنوان واحد رحلةَ تمرير طويلة —
+          // والطيّ يُعيد الصفحة إلى فهرس يُقرأ في نظرة. والعدّاد على
+          // الرأس يُبقي ما غُيِّر ظاهرًا حتى وهو مطويّ.
+          //
+          // و«details» الأصلية لا مكوّن طيّ: الحقول تبقى في الـDOM وهي
+          // مطويّة، فتُرسَل مع النموذج كلها. ولو أُزيلت من الشجرة لَضاع
+          // كل ما حُرِّر في صفحة طُويت قبل الحفظ.
+          <details key={page} className="rounded-xl border bg-card shadow-sm">
+            <summary className="flex cursor-pointer list-none items-center gap-2 p-6 marker:content-none">
+              <span className="font-semibold leading-none tracking-tight">{page}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {keys.length} عنصرًا
+              </span>
+              {pageChanged > 0 ? (
+                <Badge variant="warning">{pageChanged} مُعدَّل</Badge>
+              ) : null}
+            </summary>
+            <div className="space-y-7 p-6 pt-0">
               {keys.map((key) => {
                 const entry = SITE_TEXT[key];
                 const changed = isChanged(key);
@@ -166,8 +181,43 @@ export function ContentClient({ texts }: { texts: EditableText[] }) {
 
                             {entry.fields.map((field) => (
                               <div key={field.name} className="space-y-1.5">
-                                <Label className="text-xs">{field.label}</Label>
-                                {field.multiline ? (
+                                {field.type === 'toggle' ? (
+                                  // مربّع اختيار لا حقل نصّ: القيمة هنا
+                                  // «نعم» أو فراغ، وكتابتها يدويًا تدعو
+                                  // إلى خطأ إملائي يُسقط العنصر صامتًا.
+                                  <label className="flex cursor-pointer items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={(item[field.name] ?? '').trim() !== ''}
+                                      onChange={(event) =>
+                                        write(
+                                          items.map((row, i) =>
+                                            i === index
+                                              ? {
+                                                  ...row,
+                                                  [field.name]: event.target.checked
+                                                    ? 'نعم'
+                                                    : '',
+                                                }
+                                              : row,
+                                          ),
+                                        )
+                                      }
+                                      className="size-4 accent-[hsl(var(--primary))]"
+                                    />
+                                    <span className="text-xs">{field.label}</span>
+                                  </label>
+                                ) : (
+                                  <>
+                                    <Label className="text-xs">{field.label}</Label>
+                                    {field.hint ? (
+                                      <p className="text-[11px] text-muted-foreground">
+                                        {field.hint}
+                                      </p>
+                                    ) : null}
+                                  </>
+                                )}
+                                {field.type === 'toggle' ? null : field.multiline ? (
                                   <textarea
                                     rows={3}
                                     maxLength={2000}
@@ -256,8 +306,8 @@ export function ContentClient({ texts }: { texts: EditableText[] }) {
                   </div>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </details>
         );
       })}
 

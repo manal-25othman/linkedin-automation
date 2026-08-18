@@ -8,7 +8,12 @@ import { Logo } from '@/components/shared/brand';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const NAV_LINKS = [
+interface NavLink {
+  href: string;
+  label: string;
+}
+
+const NAV_LINKS: NavLink[] = [
   { href: '/about', label: 'نبذة عنا' },
   { href: '/features', label: 'المميزات' },
   { href: '/how-it-works', label: 'كيف يعمل' },
@@ -18,9 +23,22 @@ const NAV_LINKS = [
   { href: '/contact', label: 'تواصل معنا' },
 ];
 
-export function SiteHeader() {
+/**
+ * الترويسة.
+ *
+ * الروابط الثابتة مكتوبة هنا، والصفحات التي يصنعها مالك المنصة تصل
+ * `extraLinks` من التخطيط. وترتيبها بعد الثابتة وقبل «تواصل معنا»:
+ * «تواصل معنا» آخر ما تُقرأ عادةً في قائمة، وإقحام صفحة جديدة بعده
+ * يدفعه إلى وسط القائمة فيضيع.
+ */
+export function SiteHeader({ extraLinks = [] }: { extraLinks?: NavLink[] }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+
+  const links =
+    extraLinks.length === 0
+      ? NAV_LINKS
+      : [...NAV_LINKS.slice(0, -1), ...extraLinks, ...NAV_LINKS.slice(-1)];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -28,7 +46,7 @@ export function SiteHeader() {
         <Logo />
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="التنقل الرئيسي">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -67,7 +85,7 @@ export function SiteHeader() {
       {isOpen ? (
         <div className="border-t bg-background lg:hidden">
           <nav className="container flex flex-col py-3" aria-label="التنقل للجوال">
-            {NAV_LINKS.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

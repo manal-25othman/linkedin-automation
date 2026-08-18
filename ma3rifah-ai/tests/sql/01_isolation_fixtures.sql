@@ -240,6 +240,19 @@ insert into public.site_content (key, value)
 values ('home.badge', 'نصّ تجريبي للاختبار')
 on conflict (key) do nothing;
 
+-- ---------- صفحات الموقع ----------
+-- منشورة ومسوّدة معًا: الاختبار المهمّ ليس أن المنشورة تُقرأ، بل أن
+-- المسوّدة **لا** تُقرأ. ولو غابت المسوّدة من التركيبات لمرّ الفحص على
+-- لا شيء وأثبت لا شيء.
+
+insert into public.site_pages (id, slug, title, body, status, show_in_nav)
+values
+  ('cccccccc-4000-4000-8000-000000000001'::uuid,
+   'صفحة-منشورة', 'صفحة منشورة للاختبار', 'نصّ ظاهر', 'PUBLISHED', true),
+  ('cccccccc-4000-4000-8000-000000000002'::uuid,
+   'صفحة-مسودة', 'صفحة مسوّدة للاختبار', 'نصّ مخفيّ', 'DRAFT', false)
+on conflict (id) do nothing;
+
 create or replace function public.record_write_attempt(
   p_category text,
   p_name     text,

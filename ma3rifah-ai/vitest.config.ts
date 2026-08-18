@@ -2,10 +2,11 @@ import { defineConfig } from 'vitest/config';
 import path from 'node:path';
 
 export default defineConfig({
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
     globals: false,
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     // اختبارات العزل تتصل بقاعدة بيانات حقيقية وقد تحتاج وقتًا أطول
     testTimeout: 60_000,
     hookTimeout: 120_000,

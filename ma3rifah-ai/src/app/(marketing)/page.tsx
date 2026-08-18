@@ -23,8 +23,9 @@ import { Reveal } from '@/components/marketing/reveal';
 import { HeroDemo, Pulse } from '@/components/marketing/hero-demo';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
-import { HOME_FAQ } from '@/content/faq';
 import { getSiteText } from '@/lib/content/site-text';
+import { homeFaq } from '@/lib/content/faq';
+import { pickIcon } from '@/components/marketing/icon-cycle';
 
 /**
  * الصفحة الرئيسية.
@@ -35,7 +36,23 @@ import { getSiteText } from '@/lib/content/site-text';
  *
  * وليس في الصفحة شهادة عميل ولا شعار شركة ولا إحصاءة سوق — لا عملاء بعد،
  * واختلاق ذلك يُكتشف في أول اجتماع ويُفقد الصفقة كلها.
+ *
+ * والنصوص كلها تُقرأ من سجلّ المحتوى لا من هذا الملف: ما تكتبه صاحبة
+ * المنتج في اللوحة يظهر هنا مباشرةً. وما بقي في الشيفرة هو الأيقونات
+ * والتخطيط وحدهما.
  */
+
+const PROBLEM_ICONS = [Repeat2, Clock, UserMinus];
+const DIFF_ICONS = [Languages, BadgeCheck, ScanSearch];
+const SECURITY_ICONS = [Building2, Lock, ClipboardCheck, BrainCircuit];
+const PLATFORM_ICONS = [
+  MessagesSquare,
+  Sparkles,
+  FileWarning,
+  ShieldCheck,
+  Languages,
+  Lock,
+];
 
 export default async function HomePage() {
   const t = await getSiteText();
@@ -78,9 +95,7 @@ export default async function HomePage() {
               </Button>
             </div>
 
-            <p className="mt-5 text-sm text-muted-foreground">
-              {t('home.cta.note')}
-            </p>
+            <p className="mt-5 text-sm text-muted-foreground">{t('home.cta.note')}</p>
           </div>
 
           <div className="reveal-now mt-16" style={{ animationDelay: '120ms' }}>
@@ -93,45 +108,29 @@ export default async function HomePage() {
       <Section>
         <Reveal>
           <SectionHeading
-            eyebrow="المشكلة"
-            title="معرفة شركتك مكتوبة فعلًا — لكن لا أحد يجدها"
-            description="المعلومة موجودة في مستند ما. المشكلة أن أحدًا لا يعرف في أي مستند، ولا في أي صفحة، ولا إن كانت النسخة التي يقرأها هي الأحدث."
+            eyebrow={t('home.problem.eyebrow')}
+            title={t('home.problem.title')}
+            description={t('home.problem.description')}
           />
         </Reveal>
 
         <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {[
-            {
-              icon: Repeat2,
-              title: 'السؤال نفسه كل أسبوع',
-              description:
-                'مدير الموارد البشرية يشرح سياسة الإجازات للمرة المئة. وقتُ أغلى موظفيك يذهب في تكرار لا في عمل.',
-            },
-            {
-              icon: Clock,
-              title: 'موظف جديد ينتظر',
-              description:
-                'يقضي أسابيعه الأولى يسأل زملاءه ويعتذر عن الإزعاج. والإجابة التي يحصل عليها تعتمد على من سأل.',
-            },
-            {
-              icon: UserMinus,
-              title: 'خبير يستقيل',
-              description:
-                'يخرج ومعه ما لم يُكتب قط. تكتشف الشركة بعد شهر أن نصف إجراءاتها كان في رأسه وحده.',
-            },
-          ].map((item, index) => (
-            <Reveal key={item.title} delay={index * 110}>
-              <article className="lift h-full rounded-xl border bg-card p-6">
-                <div className="flex size-11 items-center justify-center rounded-lg bg-destructive/10">
-                  <item.icon className="size-5 text-destructive" aria-hidden />
-                </div>
-                <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {item.description}
-                </p>
-              </article>
-            </Reveal>
-          ))}
+          {t.list('home.problem.cards').map((item, index) => {
+            const Icon = pickIcon(PROBLEM_ICONS, index);
+            return (
+              <Reveal key={`${item.title}-${index}`} delay={index * 110}>
+                <article className="lift h-full rounded-xl border bg-card p-6">
+                  <div className="flex size-11 items-center justify-center rounded-lg bg-destructive/10">
+                    <Icon className="size-5 text-destructive" aria-hidden />
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                </article>
+              </Reveal>
+            );
+          })}
         </div>
       </Section>
 
@@ -139,88 +138,50 @@ export default async function HomePage() {
       <Section muted>
         <Reveal>
           <SectionHeading
-            eyebrow="ما يميّزنا"
-            title="ثلاثة أشياء لا تجدها في أداة عامة"
-            description="الفرق ليس في أن المساعد يجيب — كل الأدوات تجيب. الفرق في أن تعرف من أين جاء الجواب، وأن تثق أنه لم يُخترع."
+            eyebrow={t('home.diff.eyebrow')}
+            title={t('home.diff.title')}
+            description={t('home.diff.description')}
           />
         </Reveal>
 
         <div className="mt-14 space-y-6">
-          {[
-            {
-              icon: Languages,
-              badge: 'العربية',
-              title: 'نقرأ العربية كما تُكتب لا كما تُرسم',
-              description:
-                'كثير من الأدوات تستخرج نص PDF العربي بترتيبه البصري، فتُخزَّن «خلافات» بصيغة «خالفات» — ثم تعطي إجابات خاطئة بثقة تامة دون أن يظهر أي خطأ. عالجنا ترتيب الحروف وروابط لام-ألف واستنتاج المسافات، وثبّتنا ذلك باختبارات تقارن النص بنقاط الترميز لا بشكله.',
-            },
-            {
-              icon: BadgeCheck,
-              badge: 'التحقق',
-              title: 'كل رقم يُقارن بالمستند قبل أن يصلك',
-              description:
-                'رقم مخترَع في لائحة ليس خطأً تقنيًا بل مخالفة. لذلك تُقارن أرقام الإجابة — المُدد والمهل والمبالغ — بنص المصادر، وما لا أصل له يظهر عليه تحذير باسمه. ومع كل إجابة درجة ثقة ظاهرة، والمصادر المعروضة هي التي استُعملت فعلًا لا كل ما بحثنا فيه.',
-            },
-            {
-              icon: ScanSearch,
-              badge: 'الفجوات',
-              title: 'تكشف ما لا توثّقه شركتك — ثم تسدّه',
-              description:
-                'كل سؤال لا تجد له إجابة يُسجَّل «فجوة معرفية». يفتحها المدير ويكتب الجواب، فيدخل قاعدة المعرفة فورًا ويصل تنبيه لمن سأل. المنصة تصير أذكى بمعرفة شركتك نفسها كلما استُعملت.',
-            },
-          ].map((item, index) => (
-            <Reveal key={item.title} delay={index * 90}>
-              <article className="lift rounded-2xl border bg-card p-6 sm:p-8">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                    <item.icon className="size-6 text-primary" aria-hidden />
+          {t.list('home.diff.cards').map((item, index) => {
+            const Icon = pickIcon(DIFF_ICONS, index);
+            return (
+              <Reveal key={`${item.title}-${index}`} delay={index * 90}>
+                <article className="lift rounded-2xl border bg-card p-6 sm:p-8">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <Icon className="size-6 text-primary" aria-hidden />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {item.badge ? (
+                        <Badge variant="secondary" className="mb-2">
+                          {item.badge}
+                        </Badge>
+                      ) : null}
+                      <h3 className="text-lg font-semibold leading-snug">{item.title}</h3>
+                      <p className="mt-3 text-sm leading-loose text-muted-foreground">
+                        {item.description}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <Badge variant="secondary" className="mb-2">
-                      {item.badge}
-                    </Badge>
-                    <h3 className="text-lg font-semibold leading-snug">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-loose text-muted-foreground">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </Reveal>
-          ))}
+                </article>
+              </Reveal>
+            );
+          })}
         </div>
       </Section>
 
       {/* ------------------------------------------------------- كيف تعمل */}
       <Section>
         <Reveal>
-          <SectionHeading eyebrow="كيف تعمل" title="من المستند إلى الإجابة في أربع خطوات" />
+          <SectionHeading eyebrow={t('home.steps.eyebrow')} title={t('home.steps.title')} />
         </Reveal>
 
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              step: '١',
-              title: 'ارفع مستنداتك',
-              description: 'PDF و Word و Excel — لوائح، إجراءات، سياسات، أدلة تشغيل.',
-            },
-            {
-              step: '٢',
-              title: 'تُفهرَس تلقائيًا',
-              description: 'تُقرأ وتُقسَّم وتُفهرس للبحث بالمعنى لا بمطابقة الكلمة.',
-            },
-            {
-              step: '٣',
-              title: 'يسأل فريقك',
-              description: 'بالعربية الطبيعية، ويحصل على جواب مع مصدره وصفحته.',
-            },
-            {
-              step: '٤',
-              title: 'تتعلّم أنت',
-              description: 'تقرير يقول لك ما يسأل عنه فريقك وما لا يجيب عنه توثيقك.',
-            },
-          ].map((item, index) => (
-            <Reveal key={item.step} delay={index * 100}>
+          {t.list('home.steps.items').map((item, index) => (
+            <Reveal key={`${item.title}-${index}`} delay={index * 100}>
               <div className="lift relative h-full rounded-xl border bg-card p-6">
                 <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                   {item.step}
@@ -241,14 +202,14 @@ export default async function HomePage() {
           <Reveal>
             <SectionHeading
               align="start"
-              eyebrow="الأمان"
-              title="العزل بين الشركات مُثبَت لا موعود"
-              description="كل مزوّد يقول «بياناتك آمنة». نقول بدلها ما يمكن التحقق منه: العزل مفروض في قاعدة البيانات نفسها لا في الواجهة، ومعه اختبارات تُنفَّذ بصلاحيات مستخدم حقيقي."
+              eyebrow={t('home.security.eyebrow')}
+              title={t('home.security.title')}
+              description={t('home.security.description')}
             />
             <div className="mt-8">
               <Button variant="outline" asChild>
                 <Link href="/security">
-                  اقرأ تفاصيل الأمان
+                  {t('home.security.link')}
                   <ArrowLeft className="size-4" aria-hidden />
                 </Link>
               </Button>
@@ -256,38 +217,20 @@ export default async function HomePage() {
           </Reveal>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              {
-                icon: Building2,
-                title: 'عزل تام بين الشركات',
-                description: 'لا مسار برمجي يصل ببيانات شركة إلى أخرى.',
-              },
-              {
-                icon: Lock,
-                title: 'صلاحيات على مستوى المستند',
-                description: 'ما لا يحق للموظف قراءته لا يدخل سياق المساعد أصلًا.',
-              },
-              {
-                icon: ClipboardCheck,
-                title: 'سجل تدقيق كامل',
-                description: 'كل عملية حساسة مسجَّلة بفاعلها ووقتها.',
-              },
-              {
-                icon: BrainCircuit,
-                title: 'وثائقك لا تُدرَّب عليها',
-                description: 'مستنداتك تُستعمل للإجابة عليك وحدك، ولا تُغذّي أي نموذج.',
-              },
-            ].map((item, index) => (
-              <Reveal key={item.title} delay={index * 90}>
-                <div className="lift h-full rounded-xl border bg-card p-5">
-                  <item.icon className="size-5 text-primary" aria-hidden />
-                  <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
-                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                    {item.description}
-                  </p>
-                </div>
-              </Reveal>
-            ))}
+            {t.list('home.security.cards').map((item, index) => {
+              const Icon = pickIcon(SECURITY_ICONS, index);
+              return (
+                <Reveal key={`${item.title}-${index}`} delay={index * 90}>
+                  <div className="lift h-full rounded-xl border bg-card p-5">
+                    <Icon className="size-5 text-primary" aria-hidden />
+                    <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </div>
+                </Reveal>
+              );
+            })}
           </div>
         </div>
       </Section>
@@ -296,60 +239,28 @@ export default async function HomePage() {
       <Section>
         <Reveal>
           <SectionHeading
-            eyebrow="المنصة"
-            title="ليست روبوت محادثة — منصة لإدارة المعرفة"
+            eyebrow={t('home.platform.eyebrow')}
+            title={t('home.platform.title')}
           />
         </Reveal>
 
         <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              icon: MessagesSquare,
-              title: 'مساعد يعترف بجهله',
-              description:
-                'يقول «لم أجد» بدل أن يخترع. سياسة مُختلَقة أضرّ على شركتك من سؤال بلا إجابة.',
-            },
-            {
-              icon: Sparkles,
-              title: 'إجابات معتمدة',
-              description:
-                'يكتب المدير الجواب مرة واحدة فيدخل قاعدة المعرفة، ويجده كل من يسأل بعده.',
-            },
-            {
-              icon: FileWarning,
-              title: 'فجوات المعرفة',
-              description:
-                'تقرير بما يسأل عنه فريقك ولا يجده — أوضح دليل على ما ينقص توثيقكم.',
-            },
-            {
-              icon: ShieldCheck,
-              title: 'مقياس جودة الإجابات',
-              description:
-                'متوسط رسوخ الإجابات في المصادر، وعدد الإجابات التي حملت رقمًا غير مؤكد.',
-            },
-            {
-              icon: Languages,
-              title: 'عربي وإنجليزي',
-              description: 'يجيب بلغة السؤال، وواجهة عربية RTL أصلية لا معكوسة بحيلة.',
-            },
-            {
-              icon: Lock,
-              title: 'أربعة أدوار وصلاحيات دقيقة',
-              description: 'مالك المنصة، مدير الشركة، مدير القسم، وموظف — لكل حدوده.',
-            },
-          ].map((item, index) => (
-            <Reveal key={item.title} delay={(index % 3) * 90}>
-              <div className="lift h-full rounded-xl border bg-card p-6">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                  <item.icon className="size-5 text-primary" aria-hidden />
+          {t.list('home.platform.cards').map((item, index) => {
+            const Icon = pickIcon(PLATFORM_ICONS, index);
+            return (
+              <Reveal key={`${item.title}-${index}`} delay={(index % 3) * 90}>
+                <div className="lift h-full rounded-xl border bg-card p-6">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="size-5 text-primary" aria-hidden />
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
                 </div>
-                <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {item.description}
-                </p>
-              </div>
-            </Reveal>
-          ))}
+              </Reveal>
+            );
+          })}
         </div>
       </Section>
 
@@ -357,9 +268,9 @@ export default async function HomePage() {
       <Section muted id="pricing">
         <Reveal>
           <SectionHeading
-            eyebrow="الأسعار"
-            title="خطط واضحة تنمو مع فريقك"
-            description="بالريال السعودي شهريًا، غير شاملة ضريبة القيمة المضافة."
+            eyebrow={t('home.pricing.eyebrow')}
+            title={t('home.pricing.title')}
+            description={t('home.pricing.description')}
           />
         </Reveal>
         <Reveal className="mt-14" delay={100}>
@@ -370,13 +281,10 @@ export default async function HomePage() {
       {/* --------------------------------------------------- أسئلة شائعة */}
       <Section>
         <Reveal>
-          <SectionHeading
-            eyebrow="الأسئلة الشائعة"
-            title="ما يسأل عنه مديرو التقنية والموارد البشرية"
-          />
+          <SectionHeading eyebrow={t('home.faq.eyebrow')} title={t('home.faq.title')} />
         </Reveal>
         <Reveal className="mx-auto mt-12 max-w-3xl" delay={80}>
-          <FaqList items={HOME_FAQ} />
+          <FaqList items={homeFaq(t)} />
         </Reveal>
       </Section>
 
@@ -385,11 +293,10 @@ export default async function HomePage() {
         <div className="container py-20 sm:py-24">
           <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              جرّبها على مستند واحد من مستنداتك
+              {t('home.final.title')}
             </h2>
             <p className="mt-4 text-base leading-loose text-muted-foreground">
-              ارفع لائحة أو دليل إجراءات، واسأله سؤالًا تعرف إجابته. عشر دقائق تكفي لتعرف
-              إن كانت المنصة تفهم عربيتك أم لا.
+              {t('home.final.description')}
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild className="group">
@@ -402,7 +309,7 @@ export default async function HomePage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/contact">تحدّث إلينا</Link>
+                <Link href="/contact">{t('home.final.secondary')}</Link>
               </Button>
             </div>
           </Reveal>
