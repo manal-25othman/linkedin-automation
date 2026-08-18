@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   أنجز — نظام التصميم
+   واجهة عربية (RTL) بلوحة هادئة: أزرق نيلي للثقة، وذهبي دافئ للتحفيز.
+   ========================================================================== */
+
+@theme {
+  /* الأسطح */
+  --color-canvas: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-soft: #eef1f8;
+  --color-surface-dark: #131a33;
+
+  /* النص */
+  --color-ink: #131a33;
+  --color-ink-soft: #3d4667;
+  --color-ink-muted: #667092;
+  --color-ink-faint: #98a0bb;
+
+  /* الحدود */
+  --color-line: #e3e7f2;
+  --color-line-strong: #ccd3e6;
+
+  /* العلامة */
+  --color-brand: #3d3bc7;
+  --color-brand-hover: #302ea6;
+  --color-brand-soft: #eeeefb;
+  --color-brand-line: #d3d3f5;
+
+  /* لون التحفيز — للعمولة والأرباح */
+  --color-gold: #b8801f;
+  --color-gold-soft: #fdf3e0;
+  --color-gold-line: #f0dcb4;
+
+  /* الحالات */
+  --color-success: #157a52;
+  --color-success-soft: #e6f5ee;
+  --color-danger: #b4342b;
+  --color-danger-soft: #fdecea;
+  --color-warning: #8f6b12;
+  --color-warning-soft: #fdf5e3;
+  --color-info: #1f5f9e;
+  --color-info-soft: #e8f1fb;
+
+  /* الخطوط */
+  --font-sans: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), "Segoe UI", Tahoma, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    line-height: 1.4;
+    color: var(--color-ink);
+  }
+
+  /* الأرقام في السياق العربي أوضح لاتينيةً داخل الجداول والمبالغ */
+  table, .tabular { font-variant-numeric: tabular-nums; }
+
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection { background: var(--color-brand-soft); }
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 76rem;
+    padding-inline: 1.25rem;
+  }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+  }
+
+  .input-field {
+    width: 100%;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+    color: var(--color-ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px var(--color-brand-soft);
+  }
+
+  .input-field::placeholder { color: var(--color-ink-faint); }
+
+  .label-field {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-ink-soft);
+  }
+}

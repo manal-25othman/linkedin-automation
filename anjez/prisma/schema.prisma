@@ -1,0 +1,413 @@
+// أنجز — Prisma schema
+// قاعدة البيانات: PostgreSQL
+//
+// كل المبالغ مخزَّنة بالهللات (عدد صحيح) لا بالريالات العشرية: الحسابات المالية
+// على أعداد عشرية عائمة تنتج فروق كسور تتراكم في العمولات والأرصدة.
+// كل النِسَب مخزَّنة بنقاط الأساس (bps): 1500 = ١٥٪.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+
+  /// اتصال التطبيق وقت التشغيل. على المنصّات بلا خوادم يجب أن يشير إلى
+  /// مجمّع الاتصالات (pooler).
+  url = env("DATABASE_URL")
+
+  /// اتصال مباشر للهجرات فقط — المجمّعات بنمط transaction لا تدعم DDL.
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// المستخدمون والجلسات
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN
+  STAFF
+  AFFILIATE
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         UserRole  @default(AFFILIATE)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions  Session[]
+  affiliate Affiliate?
+
+  @@map("users")
+}
+
+/// الجلسات على الخادم: الكوكي تحمل السرّ الخام، والقاعدة تحفظ HMAC له فقط،
+/// فلا تكفي نسخة من قاعدة البيانات وحدها لانتحال جلسة.
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// كتالوج الخدمات
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  /// اسم أيقونة من مجموعة ثابتة في الواجهة (lib/icons.tsx).
+  icon        String   @default("sparkles")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services Service[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model Service {
+  id           String @id @default(cuid())
+  slug         String @unique
+  title        String
+  summary      String
+  /// وصف طويل بصيغة نصّية بسيطة (سطر لكل فقرة).
+  description  String @default("")
+  categoryId   String
+  /// متطلبات يزوّدنا بها العميل بعد الطلب، سطر لكل بند.
+  requirements String @default("")
+
+  /// نسبة عمولة خاصة بهذه الخدمة تتجاوز النسبة العامة — bps.
+  commissionBps Int?
+
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  tiers    ServiceTier[]
+  orders   Order[]
+
+  @@index([categoryId, isActive])
+  @@index([isActive, isFeatured])
+  @@map("services")
+}
+
+/// باقات الخدمة الواحدة (أساسية / متقدّمة / احترافية).
+model ServiceTier {
+  id           String  @id @default(cuid())
+  serviceId    String
+  name         String
+  /// السعر بالهللات.
+  price        Int
+  deliveryDays Int     @default(3)
+  /// المزايا، سطر لكل ميزة.
+  features     String  @default("")
+  sortOrder    Int     @default(0)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  orders  Order[]
+
+  @@index([serviceId, sortOrder])
+  @@map("service_tiers")
+}
+
+// ---------------------------------------------------------------------------
+// المسوّقون بالعمولة
+// ---------------------------------------------------------------------------
+
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+/// المستوى يُرقّى تلقائيًا حسب مجموع المبيعات المعتمدة، وكل مستوى نسبته.
+enum AffiliateTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+model Affiliate {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  /// الكود الظاهر في رابط الإحالة: /r/CODE أو ?ref=CODE
+  code   String          @unique
+  status AffiliateStatus @default(PENDING)
+  tier   AffiliateTier   @default(BRONZE)
+
+  /// نسبة تفاوضية تتجاوز نسبة الخدمة ونسبة المستوى — bps.
+  customBps Int?
+
+  /// كيف يعرّف المسوّق عن نفسه ومن أين سيأتي بالزوّار — يقرأه الأدمن قبل الاعتماد.
+  promotionPlan String @default("")
+
+  // بيانات صرف المستحقات
+  payoutMethod    String? // BANK | STC_PAY | WALLET
+  beneficiaryName String?
+  iban            String?
+  bankName        String?
+
+  approvedAt DateTime?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clicks      ReferralClick[]
+  orders      Order[]
+  commissions Commission[]
+  payouts     Payout[]
+  coupons     Coupon[]
+
+  @@index([status])
+  @@map("affiliates")
+}
+
+/// نقرة على رابط إحالة. تُخزَّن مجرّدة من الهوية: الـ IP مهشَّم فقط.
+model ReferralClick {
+  id          String   @id @default(cuid())
+  affiliateId String
+  code        String
+  landingPath String   @default("/")
+  referer     String?
+  ipHash      String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  @@index([affiliateId, createdAt])
+  @@map("referral_clicks")
+}
+
+// ---------------------------------------------------------------------------
+// الكوبونات — قناة إحالة ثانية لمن لا يستطيع تمرير رابط
+// ---------------------------------------------------------------------------
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+model Coupon {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  affiliateId String?
+  type        DiscountType @default(PERCENT)
+  /// نسبة bps إن كان النوع PERCENT، ومبلغ بالهللات إن كان FIXED.
+  value       Int
+  maxUses     Int?
+  usedCount   Int          @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  affiliate Affiliate? @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+  orders    Order[]
+
+  @@index([affiliateId])
+  @@map("coupons")
+}
+
+// ---------------------------------------------------------------------------
+// الطلبات والدفع
+// ---------------------------------------------------------------------------
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+/// كيف نُسبت الزيارة للمسوّق — يُثبَّت وقت إنشاء الطلب ولا يتغيّر بعدها.
+enum AttributionSource {
+  NONE
+  LINK
+  COUPON
+}
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+
+  serviceId String
+  tierId    String
+
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  notes         String  @default("")
+
+  /// كل المبالغ بالهللات.
+  subtotal Int
+  discount Int    @default(0)
+  total    Int
+  currency String @default("SAR")
+
+  status OrderStatus @default(PENDING_PAYMENT)
+
+  // الإحالة — تُقفل على الطلب وقت إنشائه
+  affiliateId String?
+  couponId    String?
+  attribution AttributionSource @default(NONE)
+
+  // الدفع
+  paymentProvider  String?
+  paymentReference String?
+  paidAt           DateTime?
+
+  completedAt DateTime?
+  cancelledAt DateTime?
+  /// سرّ قصير يسمح للعميل بمتابعة طلبه دون حساب.
+  trackingKey String    @unique
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  service    Service      @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  tier       ServiceTier  @relation(fields: [tierId], references: [id], onDelete: Restrict)
+  affiliate  Affiliate?   @relation(fields: [affiliateId], references: [id], onDelete: SetNull)
+  coupon     Coupon?      @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  commission Commission?
+  events     OrderEvent[]
+
+  @@index([status, createdAt])
+  @@index([affiliateId, createdAt])
+  @@map("orders")
+}
+
+/// سجلّ لا يُعدَّل لتغيّرات حالة الطلب — مرجع عند أي نزاع مع مسوّق أو عميل.
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  from      String?
+  to        String
+  note      String?
+  actor     String   @default("system")
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+// ---------------------------------------------------------------------------
+// العمولات والسحوبات
+// ---------------------------------------------------------------------------
+
+enum CommissionStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+model Commission {
+  id          String @id @default(cuid())
+  orderId     String @unique
+  affiliateId String
+
+  /// الوعاء الذي حُسبت عليه العمولة (الإجمالي بعد الخصم) — بالهللات.
+  baseAmount Int
+  rateBps    Int
+  amount     Int
+
+  status     CommissionStatus @default(PENDING)
+  /// متى يجوز اعتمادها: نهاية مدة الضمان بعد اكتمال الطلب.
+  maturesAt  DateTime?
+  approvedAt DateTime?
+  paidAt     DateTime?
+  payoutId   String?
+  note       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  payout    Payout?   @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  @@index([affiliateId, status])
+  @@index([status, maturesAt])
+  @@map("commissions")
+}
+
+enum PayoutStatus {
+  REQUESTED
+  PROCESSING
+  PAID
+  REJECTED
+}
+
+model Payout {
+  id                  String       @id @default(cuid())
+  affiliateId         String
+  /// بالهللات.
+  amount              Int
+  status              PayoutStatus @default(REQUESTED)
+  method              String?
+  /// بيانات الحساب لحظة الطلب — تغيير المسوّق لبياناته لاحقًا لا يغيّر سجلّ الصرف.
+  beneficiarySnapshot String?
+  reference           String?
+  note                String?
+  requestedAt         DateTime     @default(now())
+  processedAt         DateTime?
+  updatedAt           DateTime     @updatedAt
+
+  affiliate   Affiliate    @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  commissions Commission[]
+
+  @@index([affiliateId, status])
+  @@map("payouts")
+}
+
+// ---------------------------------------------------------------------------
+// الإعدادات
+// ---------------------------------------------------------------------------
+
+/// إعدادات يعدّلها الأدمن دون إعادة نشر: نِسَب العمولة، نافذة الإحالة، حدّ السحب…
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
