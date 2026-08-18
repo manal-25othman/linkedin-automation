@@ -85,6 +85,16 @@ npm run dev
    `Authorization: Bearer $CRON_SECRET`. اللوحة تعتمد المستحقّ عند فتحها أيضًا،
    فتعطّل المهمّة يؤخّر الاعتماد ولا يُسقطه.
 
+## لقطات ومعاينة محلية
+
+```bash
+npm run db:seed && npm run demo:data      # كتالوج + طلبات وعمولات ونقرات للعرض
+npm run build && npx next start -p 3100 &
+npm run screenshots                        # يلتقط ١٧ لقطة في مجلد screenshots/
+```
+
+`scripts/demo-data.ts` يرفض العمل في الإنتاج: بيانات العرض للتطوير فقط.
+
 ## الاختبارات
 
 ```bash

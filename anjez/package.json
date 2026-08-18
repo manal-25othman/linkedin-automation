@@ -16,6 +16,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "demo:data": "tsx scripts/demo-data.ts",
+    "screenshots": "node scripts/screenshots.mjs",
     "db:reset": "prisma migrate reset",
     "postinstall": "prisma generate"
   },
@@ -36,6 +38,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "playwright": "^1.62.1",
     "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.23.11",
