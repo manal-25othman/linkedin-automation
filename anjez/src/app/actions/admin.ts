@@ -16,7 +16,7 @@ import {
 import { formError, formSuccess, type FormState } from "@/lib/form-state";
 import { SETTING_KEYS, saveSettings } from "@/lib/settings";
 import { updateOrderStatus } from "@/lib/orders";
-import { normalizeCode } from "@/lib/affiliate/codes";
+import { normalizeCode } from "@/lib/affiliate/code-format";
 import { parseRiyalsInput } from "@/lib/money";
 
 // ---------------------------------------------------------------------------

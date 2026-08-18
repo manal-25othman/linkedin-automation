@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { evaluateCoupon, type CouponLike } from "@/lib/affiliate/coupons";
-import { normalizeCode, generateOrderNumber, suggestCode, randomCode } from "@/lib/affiliate/codes";
+import { generateOrderNumber, suggestCode, randomCode } from "@/lib/affiliate/codes";
+import { normalizeCode } from "@/lib/affiliate/code-format";
 import { formatMoney, parseRiyalsInput, riyalsToHalalas } from "@/lib/money";
 
 const base: CouponLike = {

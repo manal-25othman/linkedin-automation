@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
-import { normalizeCode } from "@/lib/affiliate/codes";
-import { encodeRefValue, REF_COOKIE, recordClick } from "@/lib/affiliate/attribution";
+import { normalizeCode } from "@/lib/affiliate/code-format";
+import { encodeRefValue, REF_COOKIE } from "@/lib/affiliate/code-format";
+import { recordClick } from "@/lib/affiliate/attribution";
 import { hashIp } from "@/lib/rate-limit";
 
 /**

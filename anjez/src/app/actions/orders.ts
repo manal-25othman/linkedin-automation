@@ -5,7 +5,7 @@ import { orderSchema, trackOrderSchema, toFieldErrors } from "@/lib/validation";
 import { formError, type FormState } from "@/lib/form-state";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { getReferralContext } from "@/lib/affiliate/attribution";
-import { normalizeCode } from "@/lib/affiliate/codes";
+import { normalizeCode } from "@/lib/affiliate/code-format";
 import { createOrder } from "@/lib/orders";
 import { createCheckout } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { REF_COOKIE, REF_QUERY_PARAM } from "@/lib/affiliate/attribution";
+import { REF_COOKIE, REF_QUERY_PARAM, encodeRefValue, normalizeCode } from "@/lib/affiliate/code-format";
 
 /** نافذة افتراضية للكوكي حين تُلتقط من ?ref= — الإعدادات لا تُقرأ في الـ middleware. */
 const DEFAULT_WINDOW_DAYS = 30;
@@ -23,10 +23,10 @@ export function middleware(request: NextRequest) {
     cleanUrl.searchParams.delete(REF_QUERY_PARAM);
 
     const response = NextResponse.redirect(cleanUrl);
-    const code = ref.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 24);
+    const code = normalizeCode(ref).slice(0, 24);
 
     if (code) {
-      response.cookies.set(REF_COOKIE, `${code}:${Date.now()}`, {
+      response.cookies.set(REF_COOKIE, encodeRefValue(code), {
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",

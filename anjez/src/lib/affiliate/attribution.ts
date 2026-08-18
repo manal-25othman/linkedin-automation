@@ -4,30 +4,15 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { isClickWithinWindow } from "@/lib/affiliate/commission";
-import { normalizeCode } from "@/lib/affiliate/codes";
+import {
+  REF_COOKIE,
+  REF_QUERY_PARAM,
+  decodeRefValue,
+  encodeRefValue,
+} from "@/lib/affiliate/code-format";
 
-export const REF_COOKIE = "anjez_ref";
-export const REF_QUERY_PARAM = "ref";
-
-/**
- * القيمة: «الكود:وقت النقر». غير موقّعة عمدًا — أسوأ ما يفعله من يزوّرها أن ينسب
- * البيع لكود مسوّق موجود، وهو ما يستطيعه أصلًا بفتح رابط الإحالة. التوقيع هنا
- * تعقيد بلا مكسب أمني.
- */
-export function encodeRefValue(code: string, clickedAt: Date = new Date()): string {
-  return `${code}:${clickedAt.getTime()}`;
-}
-
-export function decodeRefValue(
-  value: string | undefined | null,
-): { code: string; clickedAt: Date } | null {
-  if (!value) return null;
-  const [rawCode, rawTime] = value.split(":");
-  const code = normalizeCode(rawCode ?? "");
-  const time = Number(rawTime);
-  if (!code || !Number.isFinite(time)) return null;
-  return { code, clickedAt: new Date(time) };
-}
+// إعادة تصدير لتبقى نقطة استيراد واحدة لمن يتعامل مع الإحالة من جهة الخادم.
+export { REF_COOKIE, REF_QUERY_PARAM, encodeRefValue, decodeRefValue };
 
 export async function setReferralCookie(code: string, windowDays: number): Promise<void> {
   const cookieStore = await cookies();
