@@ -198,7 +198,11 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
 
       const value = String(raw).replace(/\r\n/g, '\n').trim();
 
-      if (value.length > 5000) {
+      // الحدّ هنا يطابق قيد قاعدة البيانات (0023). والقائمة تُخزَّن مُسلسَلة
+      // في صفّ واحد، فحدُّ النصّ المفرد لا يصلح لها: قائمة الأسئلة وحدها
+      // تتجاوز خمسة آلاف محرف بأجوبتها.
+      const limit = entry.kind === 'list' ? 200_000 : 5_000;
+      if (value.length > limit) {
         throw new AppError('VALIDATION', `المحتوى «${entry.label}» أطول من الحد المسموح.`);
       }
 

@@ -22,13 +22,11 @@ import {
   Workflow,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Section,
-  PageHero,
-  FeatureCard,
-} from '@/components/marketing/sections';
+import { Section, PageHero, FeatureCard } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
+import { pickIcon } from '@/components/marketing/icon-cycle';
 import { getSiteText } from '@/lib/content/site-text';
+import { groupRows } from '@/lib/content/group';
 
 export const metadata: Metadata = {
   title: 'المميزات',
@@ -36,161 +34,49 @@ export const metadata: Metadata = {
     'مساعد ذكي مبني على مستنداتك، إدارة مستندات، صلاحيات دقيقة، فجوات المعرفة، وتحليلات استخدام — كل ما تحتاجه لتحويل معرفة شركتك إلى أصل قابل للاستخدام.',
 };
 
-const FEATURE_GROUPS = [
-  {
-    title: 'المساعد الذكي',
-    description: 'واجهة السؤال والجواب التي يستخدمها موظفوك يوميًا.',
-    features: [
-      {
-        icon: MessagesSquare,
-        title: 'محادثة طبيعية',
-        description:
-          'يسأل الموظف بلغته دون معرفة اسم المستند أو مكانه، ويحصل على إجابة مباشرة.',
-      },
-      {
-        icon: Quote,
-        title: 'مصادر مع كل إجابة',
-        description:
-          'اسم المستند ورقم الصفحة والقسم المرجعي، مع مقتطف من النص الأصلي للتحقق السريع.',
-      },
-      {
-        icon: Languages,
-        title: 'عربي وإنجليزي',
-        description:
-          'يفهم السؤال بأي من اللغتين ويجيب بلغة السائل، حتى لو كانت لغة المستند مختلفة.',
-      },
-      {
-        icon: ScrollText,
-        title: 'سجل المحادثات',
-        description:
-          'كل محادثة محفوظة وقابلة للاستئناف، مع نسخ الإجابة وتقييمها بإبهام لأعلى أو لأسفل.',
-      },
-    ],
-  },
-  {
-    title: 'الثقة في الإجابة',
-    description: 'ما يفصل أداة تُعتمد عليها في لائحة عن روبوت محادثة لطيف.',
-    features: [
-      {
-        icon: BadgeCheck,
-        title: 'التحقق من الأرقام',
-        description:
-          'كل مدة ومهلة ومبلغ في الإجابة يُقارن بنص المصدر. وما لا أصل له يظهر عليه تحذير يسمّيه.',
-      },
-      {
-        icon: Gauge,
-        title: 'درجة ثقة ظاهرة',
-        description:
-          'مع كل إجابة درجة تُحسب من تطابقها مع نص المصادر ومن تحقّق أرقامها — عالية أو متوسطة أو منخفضة.',
-      },
-      {
-        icon: Quote,
-        title: 'المصادر المستعملة فقط',
-        description:
-          'لا نعرض كل ما بحثنا فيه، بل ما بُنيت عليه الإجابة فعلًا. عرض الزائد ادّعاء رسوخ لم يحدث.',
-      },
-      {
-        icon: CircleSlash,
-        title: 'يعترف بجهله',
-        description:
-          'يقول «لم أجد» بدل أن يخترع، ويُسجَّل السؤال فجوةً معرفية بدل أن يضيع.',
-      },
-    ],
-  },
-  {
-    title: 'إدارة المعرفة',
-    description: 'ما يبنيه مدير الشركة مرة واحدة ويستفيد منه الجميع.',
-    features: [
-      {
-        icon: FileStack,
-        title: 'رفع ومعالجة المستندات',
-        description:
-          'PDF وWord وExcel وCSV ونصوص. حالة معالجة واضحة لكل مستند، وسبب مفهوم عند الفشل.',
-      },
-      {
-        icon: FolderTree,
-        title: 'تصنيفات المعرفة',
-        description:
-          'موارد بشرية، مالية، تشغيل، تقنية، سياسات، تدريب — أو تصنيفات تصنعها بنفسك.',
-      },
-      {
-        icon: Search,
-        title: 'بحث دلالي',
-        description:
-          'يبحث بالمعنى لا بتطابق الكلمات، فيجد الجواب حتى لو صاغه الموظف بكلمات مختلفة عن المستند.',
-      },
-      {
-        icon: Workflow,
-        title: 'إصدارات المستندات',
-        description:
-          'ارفع النسخة المحدَّثة وأرشِف القديمة، فتخرج فورًا من نطاق البحث ولا يُجيب منها المساعد.',
-      },
-    ],
-  },
-  {
-    title: 'التحكم والصلاحيات',
-    description: 'من يرى ماذا — محسوم في قاعدة البيانات لا في الواجهة.',
-    features: [
-      {
-        icon: Lock,
-        title: 'ثلاثة مستويات وصول',
-        description:
-          'مستند متاح للشركة كاملة، أو لأقسام محددة، أو لأدوار محددة. الاختيار لكل مستند على حدة.',
-      },
-      {
-        icon: Users,
-        title: 'أدوار المستخدمين',
-        description:
-          'مدير شركة، مدير قسم، وموظف — لكل دور صلاحيات مختلفة مطبَّقة على الخادم.',
-      },
-      {
-        icon: Building2,
-        title: 'الأقسام',
-        description:
-          'نظّم موظفيك في أقسام، واربط صلاحيات المستندات وتحليلات الاستخدام بها.',
-      },
-      {
-        icon: ShieldCheck,
-        title: 'سجل تدقيق',
-        description:
-          'كل عملية حساسة مسجّلة: من رفع، من غيّر صلاحية، من عدّل دورًا، ومتى.',
-      },
-    ],
-  },
-  {
-    title: 'الرؤية والتحليلات',
-    description: 'ما لا يُقاس لا يتحسّن — وهذا ما يميّز المنصة عن روبوت محادثة.',
-    features: [
-      {
-        icon: Target,
-        title: 'فجوات المعرفة',
-        description:
-          'كل سؤال لم يجد إجابة يُسجَّل ويُجمَّع مع مثيله بعدّاد تكرار — قائمة مهام توثيق مرتّبة بأولويتها الحقيقية.',
-      },
-      {
-        icon: PenLine,
-        title: 'إجابات معتمدة',
-        description:
-          'يكتب المدير الجواب مرة واحدة فيدخل قاعدة المعرفة فورًا، ويجده كل من يسأل بعده. الفجوة تُسدّ لا تُوصَف فقط.',
-      },
-      {
-        icon: Bell,
-        title: 'تنبيهات داخل المنصة',
-        description:
-          'يصل الموظف تنبيه حين يصير لسؤاله جواب، ويصل المدير تنبيه بكل فجوة جديدة أو مستند تعذّرت معالجته.',
-      },
-      {
-        icon: BarChart3,
-        title: 'تحليلات الاستخدام',
-        description:
-          'معدل الإجابة، رسوخ الإجابات في مصادرها، الأسئلة عبر الزمن، أكثر المستندات استخدامًا، والنشاط حسب القسم.',
-      },
-    ],
-  },
+/**
+ * أيقونات البطاقات مرتّبة كما كانت مجموعةً مجموعة.
+ *
+ * وهي في مصفوفة واحدة مسطّحة لأن البطاقات صارت تُحرَّر: تُحذف بطاقة من
+ * مجموعة وتُضاف أخرى في غيرها، فربطُ الأيقونة بموضعها داخل مجموعتها
+ * يجعل ترتيب الأيقونات يقفز مع كل تعديل. والمسطّح يبقيها مستقرّة.
+ */
+const CARD_ICONS = [
+  MessagesSquare,
+  Quote,
+  Languages,
+  ScrollText,
+  BadgeCheck,
+  Gauge,
+  Quote,
+  CircleSlash,
+  FileStack,
+  FolderTree,
+  Search,
+  Workflow,
+  Lock,
+  Users,
+  Building2,
+  ShieldCheck,
+  Target,
+  PenLine,
+  Bell,
+  BarChart3,
 ];
 
 export default async function FeaturesPage() {
   const t = await getSiteText();
+
+  const groups = t.list('features.groups');
+  const cards = t.list('features.cards');
+
+  // ترتيب المجموعات من قائمة المجموعات، ووصفُ كلٍّ منها منها كذلك.
+  // والبطاقة بمجموعة غير مذكورة تُنشئ مجموعتها في الآخر بلا وصف — أهون
+  // من أن تختفي بطاقة كُتبت لأن حرفًا اختلف في اسم مجموعتها.
+  const order = groups.map((group) => group.title ?? '');
+  const describe = new Map(groups.map((group) => [group.title ?? '', group.description]));
+
+  let position = 0;
 
   return (
     <>
@@ -200,32 +86,38 @@ export default async function FeaturesPage() {
         description={t('features.description')}
       />
 
-      {FEATURE_GROUPS.map((group, index) => (
-        <Section key={group.title} muted={index % 2 === 1} className="py-14">
+      {groupRows(cards, 'group', order).map((group, index) => (
+        <Section key={group.key} muted={index % 2 === 1} className="py-14">
           <Reveal className="mb-10 max-w-2xl">
-            <h2 className="text-xl font-bold sm:text-2xl">{group.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {group.description}
-            </p>
+            <h2 className="text-xl font-bold sm:text-2xl">{group.key}</h2>
+            {describe.get(group.key) ? (
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {describe.get(group.key)}
+              </p>
+            ) : null}
           </Reveal>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {group.features.map((feature, position) => (
-              <Reveal key={feature.title} delay={(position % 4) * 80}>
-                <FeatureCard {...feature} />
-              </Reveal>
-            ))}
+            {group.items.map((feature, slot) => {
+              const Icon = pickIcon(CARD_ICONS, position++);
+              return (
+                <Reveal key={`${feature.title}-${slot}`} delay={(slot % 4) * 80}>
+                  <FeatureCard
+                    icon={Icon}
+                    title={feature.title ?? ''}
+                    description={feature.description ?? ''}
+                  />
+                </Reveal>
+              );
+            })}
           </div>
         </Section>
       ))}
 
       <Section>
         <Reveal className="rounded-xl border bg-card p-10 text-center">
-          <h2 className="text-xl font-bold sm:text-2xl">
-            جرّبها على مستند واحد من مستنداتك
-          </h2>
+          <h2 className="text-xl font-bold sm:text-2xl">{t('features.cta.title')}</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
-            أسرع طريقة لتقييم المنصة: ارفع سياسة تعرفها جيدًا، واسأل عنها أسئلة تعرف
-            إجاباتها، وتحقّق من دقة المصادر.
+            {t('features.cta.description')}
           </p>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild>

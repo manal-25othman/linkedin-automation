@@ -1,5 +1,50 @@
+import { Fragment } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toParagraphs } from '@/lib/content/group';
+
+/**
+ * نصّ محرَّر متعدّد الفقرات.
+ *
+ * النصوص الطويلة صارت تُحرَّر من اللوحة، فلم يعد ممكنًا كتابة وسوم HTML
+ * حولها في الشيفرة. والفاصل هنا سطر فارغ — وهو ما تفعله المحرِّرة تلقائيًا
+ * حين تكتب فقرة جديدة، فلا تحتاج أن تتعلّم شيئًا.
+ *
+ * ولا يُدعَم من التنسيق إلا التعريض بين نجمتين. والاقتصار مقصود: فتحُ
+ * HTML في حقل يُخزَّن ثم يُعرض على صفحة عامة يفتح ثغرة حقن، والقيمة
+ * المضافة من التنسيق الحرّ في فقرة تسويقية لا تساوي ذلك الخطر.
+ */
+export function Prose({
+  text,
+  className,
+  paragraphClassName,
+}: {
+  text: string;
+  className?: string;
+  paragraphClassName?: string;
+}) {
+  const paragraphs = toParagraphs(text);
+  if (paragraphs.length === 0) return null;
+
+  return (
+    <div className={className}>
+      {paragraphs.map((paragraph, index) => (
+        <p key={index} className={paragraphClassName}>
+          {paragraph.split(/\*\*(.+?)\*\*/g).map((part, position) =>
+            // الأجزاء الفردية هي ما كان بين النجمتين
+            position % 2 === 1 ? (
+              <strong key={position} className="font-bold text-foreground">
+                {part}
+              </strong>
+            ) : (
+              <Fragment key={position}>{part}</Fragment>
+            ),
+          )}
+        </p>
+      ))}
+    </div>
+  );
+}
 
 export function Section({
   className,

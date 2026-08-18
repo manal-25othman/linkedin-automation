@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Section, PageHero } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
 import { FaqList } from '@/components/marketing/faq-list';
-import { FULL_FAQ } from '@/content/faq';
 import { getSiteText } from '@/lib/content/site-text';
+import { faqGroups } from '@/lib/content/faq';
 
 export const metadata: Metadata = {
   title: 'الأسئلة الشائعة',
@@ -15,12 +15,14 @@ export const metadata: Metadata = {
 
 export default async function FaqPage() {
   const t = await getSiteText();
+  const groups = faqGroups(t);
 
-  // بيانات مُهيكلة لمحركات البحث
+  // بيانات مُهيكلة لمحركات البحث — تُبنى من المحتوى المحرَّر نفسه، فلا
+  // تتخلّف عمّا يقرؤه الزائر حين يُعدَّل سؤال أو يُحذف
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: FULL_FAQ.flatMap((group) =>
+    mainEntity: groups.flatMap((group) =>
       group.items.map((item) => ({
         '@type': 'Question',
         name: item.question,
@@ -44,7 +46,7 @@ export default async function FaqPage() {
 
       <Section>
         <div className="mx-auto max-w-3xl space-y-12">
-          {FULL_FAQ.map((group) => (
+          {groups.map((group) => (
             <Reveal key={group.category}>
               <h2 className="mb-5 text-lg font-bold">{group.category}</h2>
               <FaqList items={group.items} />
@@ -56,7 +58,7 @@ export default async function FaqPage() {
       <Section muted>
         <div className="text-center">
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-            سؤالك غير مذكور هنا؟
+            {t('faq.cta.title')}
           </h2>
           <Button className="mt-6" asChild>
             <Link href="/contact">اسألنا مباشرة</Link>
