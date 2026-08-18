@@ -32,7 +32,7 @@ export default function CategoriesPage() {
             <Link
               key={category.slug}
               href={`/categories/${category.slug}`}
-              className="group rounded-2xl border border-line bg-surface p-7 transition hover:border-signal-line hover:shadow-[var(--shadow-card)]"
+              className="lift group rounded-2xl border border-line bg-surface p-7 hover:border-signal-line hover:shadow-[var(--shadow-card)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <h2 className="font-display text-xl font-bold text-ink group-hover:text-signal">

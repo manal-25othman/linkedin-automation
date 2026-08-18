@@ -10,7 +10,7 @@ export function ArticleCard({ article, featured = false }: { article: ArticleMet
 
   return (
     <article
-      className={`group relative flex flex-col rounded-2xl border border-line bg-surface p-6 transition hover:border-signal-line hover:shadow-[var(--shadow-card)] ${
+      className={`lift group relative flex flex-col rounded-2xl border border-line bg-surface p-6 hover:border-signal-line hover:shadow-[var(--shadow-card)] ${
         featured ? "md:p-8" : ""
       }`}
     >

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CookiePreferencesLink } from "./cookie-consent";
 import { LogoMark } from "./logo";
 import { categories } from "@/config/categories";
 import { legalNav, primaryNav } from "@/config/nav";
@@ -56,6 +57,10 @@ export function SiteFooter() {
               {item.label}
             </FooterLink>
           ))}
+          {/* سحب الموافقة يجب أن يكون بسهولة منحها. */}
+          <li>
+            <CookiePreferencesLink />
+          </li>
         </FooterColumn>
       </div>
 

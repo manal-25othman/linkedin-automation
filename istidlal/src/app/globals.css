@@ -125,8 +125,8 @@
   --color-amber-soft: var(--amber-soft);
   --color-amber-line: var(--amber-line);
 
-  --font-display: var(--font-tajawal), "Segoe UI", system-ui, sans-serif;
-  --font-body: var(--font-plex-arabic), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-alexandria), "Segoe UI", system-ui, sans-serif;
+  --font-body: var(--font-almarai), "Segoe UI", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
 
   --shadow-card: var(--shadow-card);
@@ -148,8 +148,9 @@ body {
   background-color: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 1.0625rem;
-  line-height: 1.9;
+  /* المرايا أعرض بصريًّا من نظائرها، فمقاس أصغر قليلًا يعطي كثافة سطر مريحة */
+  font-size: 1.03rem;
+  line-height: 1.95;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -157,9 +158,13 @@ body {
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 700;
-  line-height: 1.45;
-  letter-spacing: 0;
+  line-height: 1.5;
+  /* الإسكندرية خطّ عريض المسافات؛ شدّ طفيف يجعل العنوان كتلة واحدة */
+  letter-spacing: -0.015em;
 }
+
+h1 { font-weight: 700; }
+h2, h3 { font-weight: 600; }
 
 a {
   color: inherit;
@@ -194,16 +199,16 @@ a {
 
 .prose {
   color: var(--ink-soft);
-  font-size: 1.125rem;
-  line-height: 2;
+  font-size: 1.075rem;
+  line-height: 2.05;
 }
 
 .prose > * + * { margin-block-start: 1.35em; }
 
 .prose h2 {
-  margin-block-start: 2.6em;
+  margin-block-start: 2.7em;
   margin-block-end: 0.9em;
-  font-size: 1.6rem;
+  font-size: 1.45rem;
   color: var(--ink);
   scroll-margin-top: 6rem;
   position: relative;
@@ -221,16 +226,16 @@ a {
 }
 
 .prose h3 {
-  margin-block-start: 2em;
+  margin-block-start: 2.1em;
   margin-block-end: 0.7em;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   color: var(--ink);
   scroll-margin-top: 6rem;
 }
 
 .prose p { text-wrap: pretty; }
 
-.prose strong { color: var(--ink); font-weight: 600; }
+.prose strong { color: var(--ink); font-weight: 700; }
 
 .prose a {
   color: var(--signal);
@@ -351,6 +356,34 @@ a {
 
 /* الفقرة الافتتاحية أكبر قليلًا — إيقاع قراءة أوضح */
 .prose > p:first-of-type {
-  font-size: 1.2rem;
+  font-size: 1.16rem;
+  line-height: 2;
   color: var(--ink);
+}
+
+/* ---------- لمسات بصرية ---------- */
+
+/* شبكة خفيفة خلف الواجهة تكسر فراغ الخلفية بلا ضجيج */
+.hero-grid {
+  background-image:
+    linear-gradient(to left, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--line) 55%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(120% 80% at 85% 0%, #000 0%, transparent 70%);
+  mask-image: radial-gradient(120% 80% at 85% 0%, #000 0%, transparent 70%);
+}
+
+/* رفع خفيف للبطاقة عند التحويم — حركة واحدة متّسقة في الموقع كله */
+.lift {
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+}
+
+/* ترقيم عربي أنيق للعناوين في القوائم المرقّمة */
+.marker-signal::marker {
+  color: var(--signal);
+  font-family: var(--font-display);
+  font-weight: 600;
 }

@@ -7,7 +7,7 @@ export const OG_SIZE = { width: 1200, height: 630 };
 
 /** الخط مرفق في المستودع؛ محرّك التوليد يحتاج ملف الخط نفسه لا اسمه. */
 function loadFont(): Buffer {
-  return fs.readFileSync(path.join(process.cwd(), "src/assets/tajawal-bold.ttf"));
+  return fs.readFileSync(path.join(process.cwd(), "src/assets/alexandria-bold.ttf"));
 }
 
 /**
@@ -58,8 +58,9 @@ function Mark() {
 
 export function renderOgImage({ title, eyebrow }: { title: string; eyebrow: string }) {
   const font = loadFont();
-  const fontSize = title.length > 60 ? 52 : 60;
-  const lines = toRtlLines(title, fontSize > 55 ? 30 : 34);
+  // الإسكندرية خطّ عريض؛ العرض المتاح ~١٠٤٨px، فنحسب أطول سطر يسعه المقاس.
+  const fontSize = title.length > 58 ? 46 : 54;
+  const lines = toRtlLines(title, Math.floor(1048 / (fontSize * 0.62)));
 
   return new ImageResponse(
     (
@@ -72,7 +73,7 @@ export function renderOgImage({ title, eyebrow }: { title: string; eyebrow: stri
           justifyContent: "space-between",
           background: "#0b1220",
           padding: "64px 76px",
-          fontFamily: "Tajawal",
+          fontFamily: "Alexandria",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 20, alignSelf: "flex-end" }}>
@@ -88,7 +89,11 @@ export function renderOgImage({ title, eyebrow }: { title: string; eyebrow: stri
             {toRtlLines(eyebrow, 60).join(" ")}
           </span>
           {lines.map((line) => (
-            <span key={line} style={{ color: "#E8EDF5", fontSize, lineHeight: 1.35 }}>
+            <span
+              key={line}
+              // بلا التفاف: السطر الملتفّ تلقائيًّا يفقد ترتيب كلماته المعكوس
+              style={{ color: "#E8EDF5", fontSize, lineHeight: 1.4, whiteSpace: "nowrap" }}
+            >
               {line}
             </span>
           ))}
@@ -104,7 +109,7 @@ export function renderOgImage({ title, eyebrow }: { title: string; eyebrow: stri
     ),
     {
       ...OG_SIZE,
-      fonts: [{ name: "Tajawal", data: font, style: "normal", weight: 700 }],
+      fonts: [{ name: "Alexandria", data: font, style: "normal", weight: 700 }],
     },
   );
 }

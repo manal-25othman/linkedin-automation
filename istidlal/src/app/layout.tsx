@@ -1,25 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
-import { IBM_Plex_Sans_Arabic, JetBrains_Mono, Tajawal } from "next/font/google";
+import { Alexandria, Almarai, JetBrains_Mono } from "next/font/google";
 
 import "./globals.css";
 
+import { AnalyticsScripts } from "@/components/analytics-scripts";
+import { CookieConsent } from "@/components/cookie-consent";
 import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { absoluteUrl, siteConfig } from "@/config/site";
+import { CONSENT_BOOTSTRAP } from "@/lib/consent";
 
-const tajawal = Tajawal({
+// العناوين: هندسي حادّ الحواف. المتن: محايد مريح في القراءة الطويلة.
+const alexandria = Alexandria({
   subsets: ["arabic", "latin"],
-  weight: ["500", "700"],
-  variable: "--font-tajawal",
+  weight: ["500", "600", "700"],
+  variable: "--font-alexandria",
   display: "swap",
 });
 
-const plexArabic = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-plex-arabic",
+const almarai = Almarai({
+  subsets: ["arabic"],
+  weight: ["300", "400", "700"],
+  variable: "--font-almarai",
   display: "swap",
 });
 
@@ -117,11 +120,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="ar"
       dir="rtl"
-      className={`${tajawal.variable} ${plexArabic.variable} ${jetbrains.variable}`}
+      className={`${alexandria.variable} ${almarai.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+        {/* وضع الموافقة يُضبط على الرفض قبل أي سكربت طرف ثالث. */}
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_BOOTSTRAP }} />
       </head>
       <body className="min-h-screen antialiased">
         <a
@@ -138,26 +143,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={organization} />
         <JsonLd data={website} />
 
-        {siteConfig.analytics.ga4 && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${siteConfig.analytics.ga4}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga4" strategy="afterInteractive">
-              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${siteConfig.analytics.ga4}');`}
-            </Script>
-          </>
-        )}
-
-        {siteConfig.adsense.client && (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${siteConfig.adsense.client}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
+        <CookieConsent />
+        <AnalyticsScripts />
       </body>
     </html>
   );
