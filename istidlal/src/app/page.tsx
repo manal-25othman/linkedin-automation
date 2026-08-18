@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ArticleCard } from "@/components/article-card";
+import { ArticleCard, FeatureCard } from "@/components/article-card";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { categories } from "@/config/categories";
 import { siteConfig } from "@/config/site";
@@ -95,9 +95,9 @@ export default function HomePage() {
       {featured.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <SectionHead title="مقالات الركيزة" href="/articles" linkLabel="كل المقالات" />
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="mt-8 flex flex-col gap-6">
             {featured.map((article) => (
-              <ArticleCard key={article.slug} article={article} featured />
+              <FeatureCard key={article.slug} article={article} />
             ))}
           </div>
         </section>
