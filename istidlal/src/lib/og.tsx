@@ -4,6 +4,8 @@ import path from "node:path";
 import { ImageResponse } from "next/og";
 
 export const OG_SIZE = { width: 1200, height: 630 };
+/** غلاف البطاقات: نسبة 16:9 لتستقيم الشبكة بلا قصّ. */
+export const COVER_SIZE = { width: 1024, height: 576 };
 
 /** الخط مرفق في المستودع؛ محرّك التوليد يحتاج ملف الخط نفسه لا اسمه. */
 function loadFont(): Buffer {
@@ -109,6 +111,109 @@ export function renderOgImage({ title, eyebrow }: { title: string; eyebrow: stri
     ),
     {
       ...OG_SIZE,
+      fonts: [{ name: "Alexandria", data: font, style: "normal", weight: 700 }],
+    },
+  );
+}
+
+/**
+ * غلاف البطاقة. لا يكرّر عنوان المقال — العنوان مكتوب تحته في البطاقة —
+ * بل يعطي البطاقة كتلة بصرية موسومة بلون تصنيفها: شبكة خفيفة، وهالة لونية،
+ * والرمز. النتيجة صور متمايزة بلا بنك صور ولا أصول خارجية.
+ */
+export function renderCoverImage({
+  eyebrow,
+  accent = "#2AB7C4",
+}: {
+  eyebrow: string;
+  accent?: string;
+}) {
+  const font = loadFont();
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          background: "#0b1220",
+          position: "relative",
+          fontFamily: "Alexandria",
+        }}
+      >
+        {/* هالة لون التصنيف */}
+        <div
+          style={{
+            position: "absolute",
+            top: -170,
+            left: -120,
+            width: 520,
+            height: 520,
+            borderRadius: 999,
+            background: accent,
+            opacity: 0.22,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: -220,
+            right: -140,
+            width: 460,
+            height: 460,
+            borderRadius: 999,
+            background: "#0E7C86",
+            opacity: 0.18,
+          }}
+        />
+
+        {/* أعمدة رفيعة توحي بالبنية الهندسية */}
+        {[0, 1, 2, 3, 4, 5].map((index) => (
+          <div
+            key={index}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              right: 96 + index * 152,
+              width: 1,
+              background: "#ffffff",
+              opacity: 0.06,
+            }}
+          />
+        ))}
+
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            width: "100%",
+            padding: "52px 56px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ color: "#8fa3bd", fontSize: 20, letterSpacing: 3 }}>ISTIDLAL.AI</span>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: "#0E7C86" }} />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
+            <span style={{ color: "#E8EDF5", fontSize: 46, lineHeight: 1.3, whiteSpace: "nowrap" }}>
+              {toRtlLines(eyebrow, 40)[0]}
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 120, height: 5, borderRadius: 999, background: accent }} />
+              <div style={{ width: 26, height: 5, borderRadius: 999, background: accent, opacity: 0.5 }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
+    {
+      ...COVER_SIZE,
       fonts: [{ name: "Alexandria", data: font, style: "normal", weight: 700 }],
     },
   );

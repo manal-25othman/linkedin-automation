@@ -7,6 +7,8 @@ export type Category = {
   name: string;
   short: string;
   description: string;
+  /** لون التصنيف في الأغلفة المولَّدة — يفرّق البطاقات في الشبكة. */
+  accent: string;
   /** تُعرض في صفحة التصنيف كخريطة للمواضيع الفرعية. */
   subtopics: string[];
 };
@@ -14,6 +16,7 @@ export type Category = {
 export const categories: Category[] = [
   {
     slug: "rag",
+    accent: "#2AB7C4",
     name: "الاسترجاع المعزّز (RAG)",
     short: "RAG",
     description:
@@ -22,6 +25,7 @@ export const categories: Category[] = [
   },
   {
     slug: "agents",
+    accent: "#7C9CF5",
     name: "الوكلاء والأدوات",
     short: "الوكلاء",
     description:
@@ -30,6 +34,7 @@ export const categories: Category[] = [
   },
   {
     slug: "evaluation",
+    accent: "#59C39B",
     name: "التقييم والقياس",
     short: "التقييم",
     description:
@@ -38,6 +43,7 @@ export const categories: Category[] = [
   },
   {
     slug: "inference",
+    accent: "#F0A24A",
     name: "الاستدلال والتكلفة",
     short: "التكلفة",
     description:
@@ -46,6 +52,7 @@ export const categories: Category[] = [
   },
   {
     slug: "security",
+    accent: "#F2777A",
     name: "أمن تطبيقات LLM",
     short: "الأمن",
     description:
@@ -54,6 +61,7 @@ export const categories: Category[] = [
   },
   {
     slug: "governance",
+    accent: "#B79BF0",
     name: "الحوكمة والامتثال",
     short: "الحوكمة",
     description:
