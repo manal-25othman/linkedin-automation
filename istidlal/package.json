@@ -4,12 +4,15 @@
   "private": true,
   "description": "استدلال — مدونة تقنية متخصصة في هندسة أنظمة الذكاء الاصطناعي التطبيقية",
   "scripts": {
+    "predev": "node scripts/sync-cms.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/sync-cms.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "check:content": "tsx scripts/check-content.ts"
+    "check:content": "tsx scripts/check-content.ts",
+    "cms": "node scripts/sync-cms.mjs"
   },
   "dependencies": {
     "next": "15.5.23",
@@ -33,6 +36,7 @@
     "eslint-config-next": "15.5.23",
     "tailwindcss": "^4",
     "tsx": "^4.20.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@sveltia/cms": "^0.193.1"
   }
 }

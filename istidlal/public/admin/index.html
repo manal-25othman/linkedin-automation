@@ -7,19 +7,158 @@
     <title>محرّر استدلال</title>
     <link rel="icon" href="/icon.svg" />
     <style>
-      body { margin: 0; font-family: system-ui, sans-serif; }
-      #nc-root:empty::after {
-        content: "جارٍ تحميل المحرّر…";
-        display: block;
-        padding: 3rem;
-        text-align: center;
-        color: #5d6b80;
+      :root {
+        --ink: #0f1b2d;
+        --ink-muted: #5d6b80;
+        --line: #e2e8f0;
+        --signal: #0e7c86;
+        --surface: #ffffff;
+        --bg: #f7f9fc;
       }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: system-ui, "Segoe UI", sans-serif;
+        line-height: 1.9;
+      }
+      /*
+        المحرّر يقلع في أقل من ثانية، فلا يكفي أن يظهر الشرح قبله. اللوحة
+        تطفو فوق واجهته — إنجليزية الواجهة — حتى يغلقها المستخدم.
+      */
+      #boot {
+        position: fixed;
+        inset-block-end: 1rem;
+        inset-inline-start: 1rem;
+        z-index: 9999;
+        width: min(24rem, calc(100vw - 2rem));
+        max-height: min(34rem, calc(100vh - 2rem));
+        overflow-y: auto;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        box-shadow: 0 12px 40px -12px rgb(15 27 45 / 0.35);
+        padding: 1.25rem;
+      }
+      #boot[hidden] { display: none; }
+      #close-help {
+        position: absolute;
+        inset-block-start: 0.75rem;
+        inset-inline-end: 0.75rem;
+        background: none;
+        border: 0;
+        color: var(--ink-muted);
+        cursor: pointer;
+        font-size: 1rem;
+        line-height: 1;
+      }
+      #boot .card {
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 0.75rem;
+        padding: 0.85rem 1rem;
+        margin-top: 0.75rem;
+      }
+      #boot h1 {
+        font-size: 1.05rem;
+        line-height: 1.6;
+        margin: 0 0 0.4rem;
+        padding-inline-end: 1.5rem;
+      }
+      #boot h2 {
+        font-size: 0.82rem;
+        line-height: 1.7;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+      }
+      #boot p {
+        color: var(--ink-muted);
+        font-size: 0.8rem;
+        line-height: 1.85;
+        margin: 0.25rem 0;
+      }
+      #boot code {
+        background: #eef2f8;
+        border-radius: 0.3rem;
+        padding: 0.1em 0.4em;
+        direction: ltr;
+        display: inline-block;
+        font-size: 0.85em;
+      }
+      #boot .tag {
+        display: inline-block;
+        background: #e6f4f5;
+        color: var(--signal);
+        border-radius: 0.4rem;
+        padding: 0.1rem 0.5rem;
+        font-size: 0.75rem;
+        margin-inline-start: 0.4rem;
+      }
+      #boot a { color: var(--signal); font-size: 0.8rem; }
     </style>
   </head>
   <body>
     <div id="nc-root"></div>
-    <!-- محرّر يعمل على المستودع مباشرةً: كل حفظ يصبح كوميت في GitHub -->
-    <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js" type="module"></script>
+
+    <div id="boot" hidden>
+      <button type="button" id="close-help" aria-label="إغلاق الشرح">✕</button>
+      <h1>كيف تدخل المحرّر</h1>
+      <p>
+        واجهة المحرّر بالإنجليزية (لا ترجمة عربية له بعد)، أما حقول المقالات والصفحات فكلها
+        بالعربية. وهذه أزراره الثلاثة:
+      </p>
+
+      <div class="card">
+        <h2>Work with Local Repository <span class="tag">بلا تسجيل دخول</span></h2>
+        <p>
+          يحرّر الملفات على جهازك مباشرةً. اضغطه ثم اختر مجلّد المستودع، وستراجع تغييراتك
+          بـ<code>git diff</code> وتدفعها بنفسك. يحتاج Chrome أو Edge.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Sign In Using Access Token <span class="tag">يحفظ في GitHub</span></h2>
+        <p>
+          أنشئ رمزًا شخصيًّا من GitHub بصلاحية <code>repo</code> وألصقه هنا. كل حفظ يصبح كوميت
+          في المستودع مباشرةً — بلا نطاق ولا إعداد إضافي.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Sign In with GitHub <span class="tag">يحتاج نطاقًا</span></h2>
+        <p>
+          الدخول المعتاد بضغطة واحدة. يعمل بعد نشر الموقع على نطاقك وضبط
+          <code>GITHUB_OAUTH_ID</code> و<code>GITHUB_OAUTH_SECRET</code> — الخطوات في
+          <code>docs/EDITOR.md</code>.
+        </p>
+      </div>
+
+      <p style="margin-top: 1rem">
+        <a href="/">← العودة إلى الموقع</a>
+      </p>
+    </div>
+
+    <script>
+      // تظهر مرة واحدة لكل متصفّح؛ من أغلقها لا تعود تزاحمه.
+      (function () {
+        var panel = document.getElementById("boot");
+        var KEY = "istidlal-admin-help-dismissed";
+        try {
+          if (localStorage.getItem(KEY) !== "1") panel.hidden = false;
+        } catch (e) {
+          panel.hidden = false;
+        }
+        document.getElementById("close-help").addEventListener("click", function () {
+          panel.hidden = true;
+          try { localStorage.setItem(KEY, "1"); } catch (e) {}
+        });
+      })();
+    </script>
+
+    <!--
+      المحرّر مستضاف معنا (يُنسخ من node_modules عند البناء) لا من CDN خارجي.
+      Sveltia CMS — رخصة MIT — https://sveltiacms.app
+    -->
+    <script src="/admin/sveltia-cms.js" type="module"></script>
   </body>
 </html>
