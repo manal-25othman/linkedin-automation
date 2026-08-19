@@ -129,7 +129,7 @@ export default async function AdminServicesPage() {
                     <Badge tone={service.isActive ? "success" : "neutral"}>
                       {service.isActive ? "مفعّلة" : "متوقّفة"}
                     </Badge>
-                    {service.isFeatured ? <Badge tone="gold">مميّزة</Badge> : null}
+                    {service.isFeatured ? <Badge tone="accent">مميّزة</Badge> : null}
                   </div>
                 </td>
               </tr>

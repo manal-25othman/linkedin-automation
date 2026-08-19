@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { RegisterForm } from "@/components/auth/register-form";
 import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/layout/logo";
 import { getSettings } from "@/lib/settings";
 import { formatBps } from "@/lib/format";
 
@@ -16,8 +17,8 @@ export default async function PartnerRegisterPage() {
   return (
     <div className="min-h-dvh bg-canvas px-5 py-14">
       <div className="mx-auto w-full max-w-2xl">
-        <Link href="/" className="mb-6 block text-center font-display text-2xl font-extrabold">
-          {siteConfig.name}
+        <Link href="/" className="mb-7 flex justify-center" aria-label={siteConfig.name}>
+          <Logo />
         </Link>
 
         <div className="card p-7 md:p-9">

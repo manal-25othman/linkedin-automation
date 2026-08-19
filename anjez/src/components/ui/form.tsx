@@ -15,7 +15,7 @@ export function SubmitButton({
 }: {
   children: ReactNode;
   pendingText?: string;
-  variant?: "primary" | "secondary" | "ghost" | "gold" | "danger";
+  variant?: "primary" | "secondary" | "ghost" | "accent" | "danger";
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {

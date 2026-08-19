@@ -53,7 +53,7 @@ export default async function AffiliateLandingPage() {
       <section className="border-b border-line bg-surface">
         <div className="container-page grid gap-10 py-16 md:grid-cols-2">
           <div>
-            <Badge tone="gold">دخل متكرّر بلا رأس مال</Badge>
+            <Badge tone="accent">دخل متكرّر بلا رأس مال</Badge>
             <h1 className="mt-5 font-display text-3xl font-extrabold leading-tight md:text-4xl">
               اربح من كل طلب يتم عبر رابطك
             </h1>
@@ -114,7 +114,7 @@ export default async function AffiliateLandingPage() {
               tier: "ذهبي",
               rate: goldRate,
               note: `بعد ${formatMoney(settings.commission.tierThresholds.gold)} مبيعات معتمدة.`,
-              tone: "gold" as const,
+              tone: "accent" as const,
             },
           ].map((level) => (
             <div key={level.tier} className="card p-6">

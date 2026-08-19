@@ -10,12 +10,12 @@ export function Stat({
   label: string;
   value: ReactNode;
   hint?: string;
-  tone?: "default" | "brand" | "gold" | "success" | "muted";
+  tone?: "default" | "brand" | "accent" | "success" | "muted";
 }) {
   const tones = {
     default: "text-ink",
     brand: "text-brand",
-    gold: "text-gold",
+    accent: "text-accent",
     success: "text-success",
     muted: "text-ink-muted",
   } as const;

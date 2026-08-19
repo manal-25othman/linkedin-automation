@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { LoginForm } from "@/components/auth/login-form";
 import { loginAdmin } from "@/app/actions/auth";
 import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/layout/logo";
 
 export const metadata: Metadata = {
   title: "دخول الإدارة",
@@ -19,8 +20,8 @@ export default async function AdminLoginPage({
   return (
     <div className="flex min-h-dvh items-center justify-center bg-canvas px-5">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-6 block text-center font-display text-2xl font-extrabold">
-          {siteConfig.name}
+        <Link href="/" className="mb-7 flex justify-center" aria-label={siteConfig.name}>
+          <Logo />
         </Link>
 
         <div className="card p-7">

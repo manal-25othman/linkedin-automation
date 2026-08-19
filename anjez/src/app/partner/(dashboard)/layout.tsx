@@ -6,6 +6,7 @@ import { logout } from "@/app/actions/auth";
 import { Badge, STATUS_TONES } from "@/components/ui/badge";
 import { AFFILIATE_STATUS_LABELS, AFFILIATE_TIER_LABELS } from "@/lib/format";
 import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/layout/logo";
 
 const nav = [
   { href: "/partner", label: "اللوحة" },
@@ -35,8 +36,8 @@ export default async function PartnerLayout({ children }: { children: React.Reac
       <header className="border-b border-line bg-surface">
         <div className="container-page flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/" className="font-display text-lg font-extrabold">
-              {siteConfig.name}
+            <Link href="/" aria-label={siteConfig.name}>
+              <Logo />
             </Link>
             <Badge tone="brand">لوحة الشريك</Badge>
           </div>
@@ -49,7 +50,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
             <form action={logout}>
               <button
                 type="submit"
-                className="rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-surface-soft"
+                className="rounded-full border border-line-strong px-4 py-1.5 text-sm font-bold text-ink-soft hover:bg-surface-tint"
               >
                 خروج
               </button>
@@ -63,7 +64,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
               <Link
                 key={item.href}
                 href={item.href}
-                className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-ink-soft hover:bg-surface-soft hover:text-ink"
+                className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold text-ink-soft hover:bg-surface-tint hover:text-brand"
               >
                 {item.label}
               </Link>

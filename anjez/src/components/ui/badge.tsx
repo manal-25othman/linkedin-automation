@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-type Tone = "neutral" | "brand" | "success" | "warning" | "danger" | "info" | "gold";
+type Tone = "neutral" | "brand" | "success" | "warning" | "danger" | "info" | "accent";
 
 const tones: Record<Tone, string> = {
   neutral: "bg-surface-soft text-ink-soft border-line",
@@ -10,7 +10,7 @@ const tones: Record<Tone, string> = {
   warning: "bg-warning-soft text-warning border-warning/20",
   danger: "bg-danger-soft text-danger border-danger/20",
   info: "bg-info-soft text-info border-info/20",
-  gold: "bg-gold-soft text-gold border-gold-line",
+  accent: "bg-accent-soft text-accent border-accent-line",
 };
 
 export function Badge({
@@ -25,7 +25,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold",
         tones[tone],
         className,
       )}
@@ -53,5 +53,5 @@ export const STATUS_TONES: Record<string, Tone> = {
   SUSPENDED: "danger",
   BRONZE: "neutral",
   SILVER: "info",
-  GOLD: "gold",
+  GOLD: "accent",
 };

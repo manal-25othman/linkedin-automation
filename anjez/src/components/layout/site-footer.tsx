@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/layout/logo";
 
 const columns = [
   {
@@ -28,10 +29,10 @@ const columns = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-line bg-surface">
+    <footer className="mt-24 border-t border-line bg-surface-soft">
       <div className="container-page grid gap-10 py-12 md:grid-cols-4">
         <div>
-          <p className="font-display text-lg font-extrabold">{siteConfig.name}</p>
+          <Logo />
           <p className="mt-2 max-w-xs text-sm leading-relaxed text-ink-muted">
             {siteConfig.tagline}
           </p>
@@ -45,7 +46,7 @@ export function SiteFooter() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-ink-muted transition-colors hover:text-brand"
+                    className="text-sm text-ink-muted transition-colors hover:text-accent"
                   >
                     {link.label}
                   </Link>

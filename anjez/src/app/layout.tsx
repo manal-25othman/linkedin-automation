@@ -1,20 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Almarai, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Tajawal } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { getSiteUrl } from "@/lib/payments";
 
-const bodyFont = IBM_Plex_Sans_Arabic({
+/**
+ * خطّ واحد بأوزان متعدّدة: تجاول يغطّي العناوين والنصّ معًا، فيبقى الحرف
+ * واحدًا في كل الصفحة، ويسقط طلب شبكة ثانٍ لخطّ عناوين منفصل.
+ */
+const bodyFont = Tajawal({
   subsets: ["arabic"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "700", "800"],
   variable: "--font-body",
-  display: "swap",
-});
-
-const headingFont = Almarai({
-  subsets: ["arabic"],
-  weight: ["700", "800"],
-  variable: "--font-heading",
   display: "swap",
 });
 
@@ -38,14 +35,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#3d3bc7",
+  themeColor: "#0e7c7b",
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${bodyFont.variable} ${headingFont.variable}`}>
+    <html lang="ar" dir="rtl" className={bodyFont.variable}>
       <body>{children}</body>
     </html>
   );

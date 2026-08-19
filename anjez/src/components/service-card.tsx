@@ -14,7 +14,7 @@ export function ServiceCard({ service }: { service: ServiceCardType }) {
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <Badge tone="brand">{service.category.name}</Badge>
-        {service.isFeatured ? <Badge tone="gold">الأكثر طلبًا</Badge> : null}
+        {service.isFeatured ? <Badge tone="accent">الأكثر طلبًا</Badge> : null}
       </div>
 
       <h3 className="font-display text-lg font-bold transition-colors group-hover:text-brand">

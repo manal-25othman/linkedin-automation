@@ -50,9 +50,9 @@ export function EarningsCalculator({
             {formatMoney(monthly)}
           </dd>
         </div>
-        <div className="rounded-xl bg-gold-soft p-4">
+        <div className="rounded-xl bg-accent-soft p-4">
           <dt className="text-xs text-ink-muted">وبالمستوى الذهبي</dt>
-          <dd className="font-display text-2xl font-extrabold text-gold tabular">
+          <dd className="font-display text-2xl font-extrabold text-accent tabular">
             {formatMoney(monthlyGold)}
           </dd>
         </div>

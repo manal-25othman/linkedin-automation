@@ -81,7 +81,7 @@ export default async function PartnerDashboard() {
           <div className="card p-6">
             <p className="font-display text-lg font-bold">مستواك</p>
             <div className="mt-3 flex items-center gap-3">
-              <Badge tone={tier === "GOLD" ? "gold" : tier === "SILVER" ? "info" : "neutral"}>
+              <Badge tone={tier === "GOLD" ? "accent" : tier === "SILVER" ? "info" : "neutral"}>
                 {AFFILIATE_TIER_LABELS[tier]}
               </Badge>
               <span className="text-sm text-ink-muted">

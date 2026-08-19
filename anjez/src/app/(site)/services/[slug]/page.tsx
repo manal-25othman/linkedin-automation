@@ -97,7 +97,7 @@ export default async function ServicePage({ params }: Props) {
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-display text-lg font-bold">{tier.name}</p>
-                  {index === 1 ? <Badge tone="gold">الأفضل قيمة</Badge> : null}
+                  {index === 1 ? <Badge tone="accent">الأفضل قيمة</Badge> : null}
                 </div>
 
                 <p className="mt-2 font-display text-2xl font-extrabold text-brand tabular">

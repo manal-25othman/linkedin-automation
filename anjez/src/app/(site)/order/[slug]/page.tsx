@@ -40,7 +40,7 @@ export default async function OrderPage({
 
       {referral ? (
         <p className="mt-4">
-          <Badge tone="gold">وصلت عبر إحالة {referral.affiliateName} — كود {referral.code}</Badge>
+          <Badge tone="accent">وصلت عبر إحالة {referral.affiliateName} — كود {referral.code}</Badge>
         </p>
       ) : null}
 

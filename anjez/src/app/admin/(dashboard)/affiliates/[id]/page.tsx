@@ -90,7 +90,7 @@ export default async function AdminAffiliatePage({
           <Badge tone={STATUS_TONES[affiliate.status] ?? "neutral"}>
             {AFFILIATE_STATUS_LABELS[affiliate.status]}
           </Badge>
-          <Badge tone={affiliate.tier === "GOLD" ? "gold" : "neutral"}>
+          <Badge tone={affiliate.tier === "GOLD" ? "accent" : "neutral"}>
             {AFFILIATE_TIER_LABELS[affiliate.tier]}
           </Badge>
         </div>

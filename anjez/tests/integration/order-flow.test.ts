@@ -16,6 +16,8 @@ suite("دورة الطلب والعمولة", () => {
   let tierId = "";
   let servicePrice = 0;
   let affiliateId = "";
+  let affiliateTier: "BRONZE" | "SILVER" | "GOLD" = "BRONZE";
+  let affiliateCustomBps: number | null = null;
   let serviceCommissionBps: number | null = null;
   const createdOrderNumbers: string[] = [];
 
@@ -27,7 +29,7 @@ suite("دورة الطلب والعمولة", () => {
 
     const affiliate = await prisma.affiliate.findFirst({
       where: { status: "ACTIVE" },
-      select: { id: true },
+      select: { id: true, tier: true, customBps: true },
     });
 
     if (!tier || !affiliate) {
@@ -38,6 +40,10 @@ suite("دورة الطلب والعمولة", () => {
     servicePrice = tier.price;
     serviceCommissionBps = tier.service.commissionBps;
     affiliateId = affiliate.id;
+    // المستوى يُقرأ من الحساب لا يُفترض: بيانات العرض قد ترقّيه، والاختبار يتحقّق
+    // من قاعدة الاحتساب لا من قيمة ثابتة.
+    affiliateTier = affiliate.tier;
+    affiliateCustomBps = affiliate.customBps;
   });
 
   afterAll(async () => {
@@ -92,9 +98,9 @@ suite("دورة الطلب والعمولة", () => {
     expect(afterPayment?.commission).not.toBeNull();
 
     const expectedRate = resolveRateBps({
-      affiliateCustomBps: null,
+      affiliateCustomBps,
       serviceBps: serviceCommissionBps,
-      tier: "BRONZE",
+      tier: affiliateTier,
       settings: DEFAULT_COMMISSION_SETTINGS,
     });
     expect(afterPayment?.commission?.rateBps).toBe(expectedRate);

@@ -72,7 +72,7 @@ export default async function AdminOverviewPage() {
         <Stat
           label="عمولات معتمدة (مستحقّة الصرف)"
           value={formatMoney(overview.commissionApproved)}
-          tone="gold"
+          tone="accent"
         />
         <Stat label="مسوّقون مفعّلون" value={formatNumber(overview.affiliatesActive)} />
         <Stat
@@ -104,7 +104,7 @@ export default async function AdminOverviewPage() {
                     <td className="px-4 py-3">{row.affiliate?.user.name ?? "—"}</td>
                     <td className="px-4 py-3 font-mono text-xs">{row.affiliate?.code ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge tone={row.affiliate?.tier === "GOLD" ? "gold" : "neutral"}>
+                      <Badge tone={row.affiliate?.tier === "GOLD" ? "accent" : "neutral"}>
                         {AFFILIATE_TIER_LABELS[row.affiliate?.tier ?? "BRONZE"]}
                       </Badge>
                     </td>

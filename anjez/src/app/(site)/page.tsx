@@ -13,7 +13,7 @@ export const revalidate = 300;
 const steps = [
   {
     title: "اختر الخدمة والباقة",
-    body: "كل خدمة بثلاث باقات واضحة: ما يشملها السعر، ومدّة التسليم، بلا مفاوضات ولا مفاجآت.",
+    body: "كل خدمة بثلاث باقات واضحة: ما يشملها السعر، وعدد المراجعات، ومدّة التسليم — بلا مفاوضات ولا مفاجآت.",
   },
   {
     title: "ادفع إلكترونيًا",
@@ -21,7 +21,7 @@ const steps = [
   },
   {
     title: "استلم في الموعد",
-    body: "متابعة الطلب برقمه في أي وقت، وتعديلات مجانية ضمن نطاق الباقة.",
+    body: "متابعة الطلب برقمه في أي وقت، ومراجعات ضمن ما نصّت عليه الباقة، وملفّاتك بكل الصيغ.",
   },
 ];
 
@@ -38,13 +38,13 @@ export default async function HomePage() {
   return (
     <>
       {/* البطل */}
-      <section className="border-b border-line bg-surface">
+      <section className="hero-glow border-b border-line">
         <div className="container-page grid gap-10 py-16 md:grid-cols-2 md:py-24">
           <div>
-            <Badge tone="gold">برنامج عمولة يصل إلى {formatBps(topRate)} لكل طلب</Badge>
+            <Badge tone="accent">برنامج عمولة يصل إلى {formatBps(topRate)} لكل طلب</Badge>
             <h1 className="mt-5 font-display text-3xl font-extrabold leading-tight md:text-5xl">
-              أنجز معاملاتك وخدماتك
-              <span className="text-brand"> بطلب واحد</span>
+              نصمّم متجرك وموقعك
+              <span className="text-brand"> وهويتك البصرية</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-soft">
               {siteConfig.description}
@@ -75,12 +75,12 @@ export default async function HomePage() {
             </dl>
           </div>
 
-          <div className="card flex flex-col justify-center gap-5 bg-surface-soft p-8">
+          <div className="card flex flex-col justify-center gap-5 bg-surface-tint p-8">
             <p className="font-display text-xl font-bold">كيف تعمل المنصّة؟</p>
             <ol className="space-y-5">
               {steps.map((step, index) => (
                 <li key={step.title} className="flex gap-4">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-bold text-white shadow-[0_6px_16px_-8px_rgb(14_124_123/0.9)]">
                     {index + 1}
                   </span>
                   <div>
@@ -104,10 +104,10 @@ export default async function HomePage() {
             <Link
               key={category.id}
               href={`/services?category=${category.slug}`}
-              className="card flex items-start gap-4 p-5 transition-colors hover:border-brand-line"
+              className="card group flex items-start gap-4 p-5 transition-all hover:-translate-y-0.5 hover:border-brand-line hover:shadow-[0_16px_40px_-20px_rgb(14_124_123/0.32)]"
             >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-lg">
-                ◆
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-lg text-brand transition-colors group-hover:bg-accent-soft group-hover:text-accent">
+                ✦
               </span>
               <div>
                 <p className="font-semibold">{category.name}</p>
@@ -123,7 +123,7 @@ export default async function HomePage() {
 
       {/* الأكثر طلبًا */}
       {featured.length > 0 ? (
-        <section className="border-y border-line bg-surface py-16">
+        <section className="border-y border-line bg-surface-tint py-16">
           <div className="container-page">
             <div className="flex items-end justify-between gap-4">
               <div>
@@ -146,10 +146,10 @@ export default async function HomePage() {
 
       {/* دعوة برنامج العمولة */}
       <section className="container-page py-16">
-        <div className="card overflow-hidden bg-surface-dark p-8 text-white md:p-12">
+        <div className="card overflow-hidden border-transparent bg-[linear-gradient(135deg,var(--color-surface-dark),#0e7c7b)] p-8 text-white shadow-[0_24px_60px_-30px_rgb(14_124_123/0.7)] md:p-12">
           <div className="grid items-center gap-8 md:grid-cols-2">
             <div>
-              <Badge tone="gold">دخل إضافي</Badge>
+              <Badge tone="accent">دخل إضافي</Badge>
               <h2 className="mt-4 font-display text-2xl font-extrabold text-white md:text-3xl">
                 سوّق لخدمات أنجز، واكسب على كل طلب يتم عبر رابطك
               </h2>
@@ -159,7 +159,7 @@ export default async function HomePage() {
                 على حسابك البنكي عند بلوغ {formatMoney(settings.commission.minPayout)}.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <ButtonLink href="/partner/register" variant="gold" size="lg">
+                <ButtonLink href="/partner/register" variant="accent" size="lg">
                   سجّل كمسوّق مجانًا
                 </ButtonLink>
                 <ButtonLink
@@ -185,7 +185,7 @@ export default async function HomePage() {
               ].map((item) => (
                 <div key={item.label} className="rounded-xl border border-white/15 bg-white/5 p-4">
                   <dt className="text-xs text-white/60">{item.label}</dt>
-                  <dd className="mt-1 font-display text-xl font-extrabold text-gold tabular">
+                  <dd className="mt-1 font-display text-xl font-extrabold text-accent tabular">
                     {item.value}
                   </dd>
                 </div>

@@ -3,6 +3,7 @@ import { requireStaff } from "@/lib/auth/guard";
 import { logout } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/badge";
 import { siteConfig } from "@/config/site";
+import { Logo } from "@/components/layout/logo";
 
 const nav = [
   { href: "/admin", label: "المؤشرات" },
@@ -24,10 +25,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="border-b border-line bg-surface-dark text-white">
         <div className="container-page flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/" className="font-display text-lg font-extrabold text-white">
-              {siteConfig.name}
+            <Link href="/" aria-label={siteConfig.name}>
+              <Logo onDark />
             </Link>
-            <Badge tone="gold">لوحة الإدارة</Badge>
+            <Badge tone="accent">لوحة الإدارة</Badge>
           </div>
 
           <div className="flex items-center gap-3 text-sm">
@@ -35,7 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <form action={logout}>
               <button
                 type="submit"
-                className="rounded-lg border border-white/25 px-3 py-1.5 font-medium text-white hover:bg-white/10"
+                className="rounded-full border border-white/25 px-4 py-1.5 font-bold text-white hover:bg-white/10"
               >
                 خروج
               </button>
@@ -48,7 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link
               key={item.href}
               href={item.href}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white"
+              className="whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold text-white/75 hover:bg-white/10 hover:text-white"
             >
               {item.label}
             </Link>
