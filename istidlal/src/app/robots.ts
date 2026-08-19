@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: "/",
         // أرشيف الوسوم والبحث الداخلي: زحف بلا فهرسة.
-        disallow: ["/search", "/tags/"],
+        disallow: ["/search", "/tags/", "/admin", "/api/"],
       },
     ],
     sitemap: absoluteUrl("/sitemap.xml"),

@@ -1,51 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { PageShell } from "@/components/page-shell";
+import { MarkdownPage, buildPageMetadata } from "@/components/markdown-page";
 
-export const metadata: Metadata = {
-  title: "إخلاء المسؤولية",
-  description: "حدود ما يقدّمه محتوى استدلال، وما لا يُعدّ استشارة مهنية أو ضمانًا.",
-  alternates: { canonical: "/disclaimer" },
-};
+export function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata("disclaimer");
+}
 
-export default function DisclaimerPage() {
-  return (
-    <PageShell
-      title="إخلاء المسؤولية"
-      lead="ما تقرؤه هنا هندسة تطبيقية قابلة للنقاش، لا فتوى تقنية."
-      updated="2026-08-17"
-      crumbs={[{ href: "/disclaimer", label: "إخلاء المسؤولية" }]}
-    >
-      <h2>محتوى تعليمي لا استشارة</h2>
-      <p>
-        مقالات استدلال موجّهة للتعلّم والتطبيق الهندسي. قرارات المعمارية والأمن والامتثال في نظامك
-        تعتمد على سياقك وبياناتك وقيودك التنظيمية، وتحتاج مراجعة مختص مطّلع على حالتك.
-      </p>
-
-      <h2>الأرقام والأسعار</h2>
-      <p>
-        أسعار واجهات النماذج وحدود المعدّل وقدرات الإصدارات تتغيّر باستمرار. كل رقم في مقالاتنا صحيح
-        بتاريخ القياس المذكور بجانبه، ويجب التحقق منه من المصدر الرسمي قبل بناء قرار عليه.
-      </p>
-
-      <h2>القياسات</h2>
-      <p>
-        نتائج القياس مرتبطة ببيانات محدّدة وإصدارات محدّدة وأجهزة محدّدة، وقد تختلف عندك. ننشر طريقة
-        القياس تحديدًا حتى تعيد إنتاجها بدل أن تثق بها على علّاتها.
-      </p>
-
-      <h2>الأمن والامتثال</h2>
-      <p>
-        ما نشرحه في مسار الأمن والحوكمة لا يُغني عن تقييم أمني مستقل ولا عن استشارة قانونية بشأن
-        الأنظمة السارية في بلدك.
-      </p>
-
-      <h2>الإعلانات والروابط</h2>
-      <p>
-        قد يحتوي الموقع على إعلانات وروابط تسويق بالعمولة. لا تؤثّر على محتوى المقالات ولا على
-        توصياتها، والتفاصيل في <Link href="/advertising-policy">سياسة الإعلانات</Link>.
-      </p>
-    </PageShell>
-  );
+export default function Page() {
+  return <MarkdownPage slug="disclaimer" />;
 }

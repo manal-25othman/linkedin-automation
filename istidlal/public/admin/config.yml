@@ -1,0 +1,83 @@
+# إعدادات محرّر استدلال. المحتوى يبقى ملفات Markdown في المستودع،
+# وكل حفظ من المحرّر يصبح كوميت في GitHub — بلا قاعدة بيانات ولا خادم إدارة.
+
+backend:
+  name: github
+  repo: manal-25othman/linkedin-automation
+  branch: main
+  # نقطة الاستيثاق مبنيّة داخل الموقع نفسه (src/app/api/oauth) — لا وسيط خارجي.
+  base_url: https://istidlal.ai
+  auth_endpoint: api/oauth/github
+
+# مسودّات وتحرير قبل النشر عبر طلبات دمج على GitHub
+publish_mode: editorial_workflow
+
+locale: ar
+media_folder: istidlal/public/uploads
+public_folder: /uploads
+
+collections:
+  - name: articles
+    label: المقالات
+    label_singular: مقال
+    folder: istidlal/content/articles
+    create: true
+    slug: "{{fields.slug}}"
+    preview_path: articles/{{slug}}
+    summary: "{{title}} — {{published}}"
+    sortable_fields: [published, title, category]
+    fields:
+      - { name: title, label: العنوان, widget: string, hint: "٥٠–٦٠ حرفًا، والكلمة المفتاحية في أوله" }
+      - { name: seoTitle, label: عنوان السيو (اختياري), widget: string, required: false }
+      - {
+          name: description,
+          label: الوصف,
+          widget: text,
+          pattern: ['^.{80,200}$', 'المطلوب بين ٨٠ و٢٠٠ حرف'],
+          hint: "يظهر في نتائج البحث وبطاقة المقال",
+        }
+      - {
+          name: category,
+          label: التصنيف,
+          widget: select,
+          options:
+            [
+              { label: "الاسترجاع المعزّز (RAG)", value: rag },
+              { label: "الوكلاء والأدوات", value: agents },
+              { label: "التقييم والقياس", value: evaluation },
+              { label: "الاستدلال والتكلفة", value: inference },
+              { label: "أمن تطبيقات LLM", value: security },
+              { label: "الحوكمة والامتثال", value: governance },
+            ],
+        }
+      - { name: tags, label: الوسوم, widget: list, default: [], hint: "٣–٦ وسوم" }
+      - { name: published, label: تاريخ النشر, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD }
+      - { name: updated, label: تاريخ التحديث, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD, required: false }
+      - { name: featured, label: مقال ركيزة, widget: boolean, default: false }
+      - {
+          name: takeaways,
+          label: الخلاصة قبل القراءة,
+          widget: list,
+          min: 3,
+          hint: "ثلاث نقاط على الأقل — تظهر في صندوق أعلى المقال",
+        }
+      - {
+          name: body,
+          label: المتن,
+          widget: markdown,
+          hint: "إلزامي: قسم «## الأسئلة الشائعة» وقسم «## المراجع»، وقسم يحدّد حدود الحلّ",
+        }
+
+  - name: pages
+    label: الصفحات
+    label_singular: صفحة
+    folder: istidlal/content/pages
+    create: false
+    delete: false
+    preview_path: "{{slug}}"
+    fields:
+      - { name: title, label: العنوان, widget: string }
+      - { name: description, label: وصف السيو, widget: text }
+      - { name: lead, label: السطر الافتتاحي, widget: text, required: false }
+      - { name: updated, label: آخر تحديث, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD, required: false }
+      - { name: body, label: المتن, widget: markdown }

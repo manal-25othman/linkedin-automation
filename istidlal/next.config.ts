@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
 
+  async rewrites() {
+    // لوحة المحرّر ملف ثابت في public؛ هذا يجعلها تُفتح من /admin مباشرةً.
+    return [{ source: "/admin", destination: "/admin/index.html" }];
+  },
+
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
@@ -34,6 +39,14 @@ const nextConfig: NextConfig = {
         // نتائج البحث الداخلي بلا قيمة للزحف.
         source: "/search",
         headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
+      },
+      {
+        // لوحة المحرّر وواجهات الاستيثاق: لا فهرسة ولا تخزين مؤقت.
+        source: "/admin/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Cache-Control", value: "no-store" },
+        ],
       },
     ];
   },
