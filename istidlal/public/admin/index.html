@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>محرّر استدلال</title>
+    <link rel="icon" href="/icon.svg" />
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; }
+      #nc-root:empty::after {
+        content: "جارٍ تحميل المحرّر…";
+        display: block;
+        padding: 3rem;
+        text-align: center;
+        color: #5d6b80;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="nc-root"></div>
+    <!-- محرّر يعمل على المستودع مباشرةً: كل حفظ يصبح كوميت في GitHub -->
+    <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js" type="module"></script>
+  </body>
+</html>
