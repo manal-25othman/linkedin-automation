@@ -12,7 +12,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check:content": "tsx scripts/check-content.ts",
-    "cms": "node scripts/sync-cms.mjs"
+    "cms": "node scripts/sync-cms.mjs",
+    "prelaunch": "tsx scripts/prelaunch.ts"
   },
   "dependencies": {
     "next": "15.5.23",

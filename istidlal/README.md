@@ -32,6 +32,7 @@ npm run dev                    # http://localhost:3000
 | `npm run lint` | فحص ESLint |
 | `npm run typecheck` | فحص الأنواع |
 | `npm run check:content` | **فحص المقالات مقابل سياسة التحرير** |
+| `npm run prelaunch` | فحص ما قبل الإطلاق: قيم نائبة وإعدادات ناقصة |
 
 ## المحرّر
 
@@ -112,3 +113,4 @@ takeaways:
 | [`docs/SEO_CHECKLIST.md`](./docs/SEO_CHECKLIST.md) | قائمة تحقق لكل مقال قبل النشر |
 | [`docs/ADSENSE.md`](./docs/ADSENSE.md) | متطلبات القبول وتوزيع الإعلانات |
 | [`docs/EDITOR.md`](./docs/EDITOR.md) | تشغيل لوحة التحرير وسير العمل التحريري |
+| [`docs/DEPLOY.md`](./docs/DEPLOY.md) | نشر الموقع على الإنترنت وربط النطاق |
