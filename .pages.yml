@@ -1,0 +1,127 @@
+# إعدادات محرّر Pages CMS (app.pagescms.org)
+# محرّر مستضاف يقرأ هذا الملف من جذر المستودع: تدخل بحساب GitHub، تختار
+# المستودع، فيعرض المحتوى بالحقول أدناه. كل حفظ كوميت، وكل كوميت بناء.
+# المسارات نسبية إلى جذر المستودع، ولذلك تبدأ كلها بـistidlal/.
+
+media:
+  input: istidlal/public/uploads
+  output: /uploads
+
+content:
+  # ─── المقالات ─────────────────────────────────────────────────
+  - name: articles
+    label: المقالات
+    description: مقالات استدلال التقنية. كل مقال ملف Markdown في المستودع.
+    type: collection
+    path: istidlal/content/articles
+    format: yaml-frontmatter
+    # اسم الملف هو رابط المقال، ولذلك يُبنى من حقل slug اللاتيني لا من العنوان العربي.
+    filename: '{fields.slug}.md'
+    view:
+      fields: [title, category, published, featured]
+      primary: title
+      sort: [published, title]
+    fields:
+      - name: title
+        label: العنوان
+        type: string
+        required: true
+        description: ٥٠–٦٠ حرفًا، والكلمة المفتاحية في أوله.
+
+      - name: slug
+        label: رابط المقال
+        type: string
+        required: true
+        pattern:
+          regex: '^[a-z0-9-]+$'
+          message: حروف لاتينية صغيرة وأرقام وشرطات فقط — هذا هو عنوان الصفحة.
+        description: مثال rag-complete-guide. لا تغيّره بعد النشر إلا بضرورة.
+
+      - name: seoTitle
+        label: عنوان السيو
+        type: string
+        required: false
+        description: يُستعمل في نتائج البحث إن اختلف عن العنوان الظاهر.
+
+      - name: description
+        label: الوصف
+        type: text
+        required: true
+        options:
+          minlength: 80
+          maxlength: 200
+        description: وعد + فائدة. يظهر في نتائج البحث وبطاقة المقال.
+
+      - name: category
+        label: التصنيف
+        type: select
+        required: true
+        options:
+          values:
+            - { label: الاسترجاع المعزّز (RAG), value: rag }
+            - { label: الوكلاء والأدوات, value: agents }
+            - { label: التقييم والقياس, value: evaluation }
+            - { label: الاستدلال والتكلفة, value: inference }
+            - { label: أمن تطبيقات LLM, value: security }
+            - { label: الحوكمة والامتثال, value: governance }
+
+      - name: tags
+        label: الوسوم
+        type: string
+        list: true
+        description: ٣–٦ وسوم.
+
+      - name: published
+        label: تاريخ النشر
+        type: date
+        required: true
+        options:
+          format: yyyy-MM-dd
+
+      - name: updated
+        label: تاريخ آخر تحديث
+        type: date
+        required: false
+        options:
+          format: yyyy-MM-dd
+
+      - name: featured
+        label: مقال ركيزة
+        type: boolean
+        default: false
+        description: يظهر متصدّرًا في الرئيسية وأرشيف المقالات.
+
+      - name: takeaways
+        label: الخلاصة قبل القراءة
+        type: text
+        list:
+          min: 3
+        description: ثلاث نقاط على الأقل — تظهر في صندوق أعلى المقال.
+
+      - name: body
+        label: المتن
+        type: rich-text
+        description: >-
+          إلزامي: قسم «## الأسئلة الشائعة» وقسم «## المراجع»، وقسم يحدّد حدود
+          الحلّ («متى لا يصلح…»). راجع docs/EDITOR.md.
+
+  # ─── الصفحات ──────────────────────────────────────────────────
+  # كل صفحة ملف مستقل لأن مسارها مرتبط بالكود: لا تُنشأ صفحات جديدة من هنا.
+  - name: pages
+    label: الصفحات
+    type: group
+    items:
+      - { name: page_about, label: عن استدلال, type: file, path: istidlal/content/pages/about.md, format: yaml-frontmatter, fields: &page_fields [
+            { name: title, label: العنوان, type: string, required: true },
+            { name: description, label: وصف السيو, type: text, required: true },
+            { name: lead, label: السطر الافتتاحي, type: text, required: false },
+            { name: updated, label: آخر تحديث, type: date, required: false, options: { format: yyyy-MM-dd } },
+            { name: body, label: المتن, type: rich-text },
+          ] }
+      - { name: page_contact, label: تواصل معنا, type: file, path: istidlal/content/pages/contact.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: page_privacy, label: سياسة الخصوصية, type: file, path: istidlal/content/pages/privacy-policy.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: page_cookies, label: سياسة الكوكيز, type: file, path: istidlal/content/pages/cookie-policy.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: page_terms, label: شروط الاستخدام, type: file, path: istidlal/content/pages/terms.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: page_disclaimer, label: إخلاء المسؤولية, type: file, path: istidlal/content/pages/disclaimer.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: page_editorial, label: سياسة التحرير, type: file, path: istidlal/content/pages/editorial-policy.md, format: yaml-frontmatter, fields: *page_fields }
+      - { name: page_advertising, label: سياسة الإعلانات, type: file, path: istidlal/content/pages/advertising-policy.md, format: yaml-frontmatter, fields: *page_fields }

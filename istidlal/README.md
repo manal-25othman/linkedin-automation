@@ -37,7 +37,9 @@ npm run dev                    # http://localhost:3000
 
 لوحة تحرير على `‎/admin` تعمل على ملفات المستودع مباشرةً: كل حفظ كوميت، وكل كوميت بناء جديد. المقالات تُنشأ وتُعدَّل وتُحذف، والصفحات تُعدَّل فقط.
 
-**يعمل الآن بلا نطاق:** شغّل `npm run dev` وافتح `‎/admin` واختر **Work with Local Repository** (Chrome أو Edge) لتحرير الملفات على قرصك، أو **Sign In Using Access Token** برمز GitHub شخصي لتحفظ كوميتات مباشرة. الدخول بضغطة واحدة (OAuth) يحتاج نطاقًا — الطرق الثلاث في [`docs/EDITOR.md`](./docs/EDITOR.md).
+**Pages CMS (مستضاف، بلا تنصيب):** ادخل [app.pagescms.org](https://app.pagescms.org) بحساب GitHub واختر المستودع — يقرأ `.pages.yml` من جذره ويعرض المقالات والصفحات بحقول عربية.
+
+**المحرّر المدمج، بلا نطاق:** شغّل `npm run dev` وافتح `‎/admin` واختر **Work with Local Repository** (Chrome أو Edge) لتحرير الملفات على قرصك، أو **Sign In Using Access Token** برمز GitHub شخصي لتحفظ كوميتات مباشرة. الدخول بضغطة واحدة (OAuth) يحتاج نطاقًا — الطرق الثلاث في [`docs/EDITOR.md`](./docs/EDITOR.md).
 
 يمكن أيضًا تحرير الملفات مباشرةً كما يلي:
 
