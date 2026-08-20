@@ -23,6 +23,12 @@ for (const file of files) {
 
   if (!/^[a-z0-9-]+$/.test(slug)) fail("الرابط يجب أن يكون لاتينيًّا صغيرًا بشرطات فقط");
 
+  // حقل slug يقرأه محرّر Pages CMS ليبني منه اسم الملف؛ تباعده عن اسم الملف
+  // يعني مقالًا يُنشر على رابط غير الذي يظنّه الكاتب.
+  const declaredSlug = data.slug ? String(data.slug) : "";
+  if (!declaredSlug) fail("ينقصه حقل slug — يحتاجه المحرّر لبناء اسم الملف");
+  else if (declaredSlug !== slug) fail(`حقل slug «${declaredSlug}» لا يطابق اسم الملف «${slug}»`);
+
   const title = String(data.title ?? "");
   if (!title) fail("العنوان مفقود");
   if (seenTitles.has(title)) fail("عنوان مكرّر مع مقال آخر");

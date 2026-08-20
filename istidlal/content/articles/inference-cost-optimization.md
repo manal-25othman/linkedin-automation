@@ -1,5 +1,6 @@
 ---
 title: "اقتصاد الاستدلال: خفض الفاتورة دون خفض الجودة"
+slug: "inference-cost-optimization"
 description: "من أين تأتي تكلفة تشغيل نموذج لغوي فعلًا، وستّ روافع لخفضها مرتّبة بالعائد، وماذا تقول أوراق PagedAttention وFlashAttention وQLoRA لمن يستضيف بنفسه."
 category: inference
 tags: [التكلفة, الاستدلال, التخزين المؤقت, vLLM, التكميم]
