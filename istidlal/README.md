@@ -114,3 +114,5 @@ takeaways:
 | [`docs/ADSENSE.md`](./docs/ADSENSE.md) | متطلبات القبول وتوزيع الإعلانات |
 | [`docs/EDITOR.md`](./docs/EDITOR.md) | تشغيل لوحة التحرير وسير العمل التحريري |
 | [`docs/DEPLOY.md`](./docs/DEPLOY.md) | نشر الموقع على الإنترنت وربط النطاق |
+| [`docs/NEW_REPO.md`](./docs/NEW_REPO.md) | نقل المشروع إلى مستودع مستقلّ بتاريخه |
+| [`docs/DATABASE.md`](./docs/DATABASE.md) | لماذا لا يحتاج المشروع قاعدة بيانات، ومتى يحتاجها |
