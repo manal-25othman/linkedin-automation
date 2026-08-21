@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.env*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+
+# حزمة المحرّر تُنسخ من node_modules عند البناء
+public/admin/sveltia-cms.js
