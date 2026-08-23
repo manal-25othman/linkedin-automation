@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { JsonLd } from "@/components/json-ld";
 import { MarkdownPage, buildPageMetadata } from "@/components/markdown-page";
-import { absoluteUrl, siteConfig } from "@/config/site";
+import { absoluteUrl, configuredProfiles, siteConfig } from "@/config/site";
 
 export function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata("about");
@@ -16,7 +16,9 @@ export default function AboutPage() {
     jobTitle: siteConfig.author.role,
     description: siteConfig.author.bio,
     url: absoluteUrl("/about"),
-    email: siteConfig.email,
+    // حقل فارغ في البيانات المهيكلة أسوأ من غيابه — لا نُصرّح ببريد غير مضبوط.
+    ...(siteConfig.email ? { email: siteConfig.email } : {}),
+    ...(configuredProfiles().length ? { sameAs: configuredProfiles() } : {}),
     worksFor: { "@type": "Organization", name: siteConfig.name, url: siteConfig.url },
   };
 

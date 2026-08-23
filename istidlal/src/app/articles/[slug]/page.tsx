@@ -138,7 +138,9 @@ export default async function ArticlePage({ params }: PageProps) {
         <p className="mt-5 text-lg leading-9 text-ink-muted">{article.description}</p>
 
         <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-line py-4 text-sm text-ink-muted numerals-latn">
-          <span className="font-medium text-ink">{siteConfig.author.name}</span>
+          <Link href="/about" className="font-medium text-ink hover:text-signal" rel="author">
+            {siteConfig.author.name}
+          </Link>
           <span aria-hidden="true">·</span>
           <span>
             نُشر <time dateTime={article.published}>{formatDate(article.published)}</time>
