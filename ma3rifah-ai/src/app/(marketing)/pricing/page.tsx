@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Section, SectionHeading, PageHero } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
 import { PricingTable } from '@/components/marketing/pricing-table';
+import { RoiCalculator } from '@/components/marketing/roi-calculator';
 import { FaqList } from '@/components/marketing/faq-list';
 import { getSiteText } from '@/lib/content/site-text';
 import { faqByCategory } from '@/lib/content/faq';
@@ -45,6 +46,16 @@ export default async function PricingPage() {
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
             </div>
           ))}
+        </div>
+      </Section>
+
+      <Section>
+        <SectionHeading
+          title="كم يوفّر عليكم؟"
+          description="حرّكي الأرقام إلى تقديركم أنتم. وكل افتراض هنا ظاهر وقابل للتعديل — بما فيه ما لا يخدمنا."
+        />
+        <div className="mt-10">
+          <RoiCalculator />
         </div>
       </Section>
 
