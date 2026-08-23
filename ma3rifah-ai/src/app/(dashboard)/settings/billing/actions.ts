@@ -120,6 +120,6 @@ export async function startCheckoutAction(planId: string): Promise<CheckoutResul
         message: 'بوابة الدفع غير مفعّلة بعد. تواصل معنا لإتمام الاشتراك.',
       };
     }
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

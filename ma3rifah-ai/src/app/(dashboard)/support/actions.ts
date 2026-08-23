@@ -91,7 +91,7 @@ export async function createTicketAction(formData: FormData): Promise<ActionResu
     revalidatePath('/support');
     return { ok: true, ticketId: ticket.id, message: 'فُتحت التذكرة. سنردّ عليك قريبًا.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -138,7 +138,7 @@ export async function replyToTicketAction(formData: FormData): Promise<ActionRes
     revalidatePath(`/support/${ticket.id}`);
     return { ok: true, message: 'أُرسل ردّك.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -187,7 +187,7 @@ export async function platformReplyAction(formData: FormData): Promise<ActionRes
     revalidatePath('/admin/support');
     return { ok: true, message: 'أُرسل الردّ.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -225,6 +225,6 @@ export async function updateTicketStatusAction(formData: FormData): Promise<Acti
     revalidatePath(`/admin/support/${parsed.data.ticketId}`);
     return { ok: true, message: 'حُدِّثت الحالة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

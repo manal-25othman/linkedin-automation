@@ -45,7 +45,7 @@ export async function updateCompanyAction(formData: FormData): Promise<ActionRes
     revalidatePath('/dashboard', 'layout');
     return { ok: true, message: 'تم تحديث بيانات الشركة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -96,7 +96,7 @@ export async function updateAiSettingsAction(formData: FormData): Promise<Action
     revalidatePath('/settings');
     return { ok: true, message: 'تم حفظ إعدادات المساعد.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -124,6 +124,6 @@ export async function updateProfileAction(formData: FormData): Promise<ActionRes
     revalidatePath('/dashboard', 'layout');
     return { ok: true, message: 'تم تحديث ملفك الشخصي.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

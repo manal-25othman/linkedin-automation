@@ -174,6 +174,6 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
       message: `${STATUS_MESSAGES[input.status] ?? 'تم تحديث الفجوة.'}${notice}`,
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

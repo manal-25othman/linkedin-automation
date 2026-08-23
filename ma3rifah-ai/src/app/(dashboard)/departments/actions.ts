@@ -59,7 +59,7 @@ export async function createDepartmentAction(formData: FormData): Promise<Action
     revalidatePath('/departments');
     return { ok: true, message: 'تم إنشاء القسم.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -101,7 +101,7 @@ export async function updateDepartmentAction(
     revalidatePath('/departments');
     return { ok: true, message: 'تم تحديث القسم.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -138,6 +138,6 @@ export async function deleteDepartmentAction(departmentId: string): Promise<Acti
     revalidatePath('/departments');
     return { ok: true, message: 'تم حذف القسم.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

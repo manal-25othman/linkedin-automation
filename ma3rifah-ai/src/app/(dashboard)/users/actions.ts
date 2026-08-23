@@ -213,7 +213,7 @@ export async function inviteUserAction(formData: FormData): Promise<ActionResult
       message: `أُنشئ الحساب وأُرسل إلى ${input.email} رابط يضع به كلمة مروره.`,
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -279,7 +279,7 @@ export async function resendAccessLinkAction(userId: string): Promise<ActionResu
       message: `أُرسل رابط تعيين كلمة المرور إلى ${target.email}.`,
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -379,6 +379,6 @@ export async function updateUserAction(formData: FormData): Promise<ActionResult
     revalidatePath('/users');
     return { ok: true, message: 'تم تحديث بيانات المستخدم.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

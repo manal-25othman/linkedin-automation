@@ -117,7 +117,7 @@ export async function createUploadTicketAction(input: {
 
     return { ok: true, ticket: { path: data.path, token: data.token } };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -356,7 +356,7 @@ export async function reprocessDocumentAction(documentId: string): Promise<Actio
       message: failure ? `تعذّرت إعادة المعالجة: ${failure}` : 'اكتملت إعادة المعالجة.',
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -380,7 +380,7 @@ export async function processDocumentNow(documentId: string): Promise<ActionResu
     revalidatePath('/documents');
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -441,7 +441,7 @@ export async function updateDocumentAction(
     revalidatePath('/documents');
     return { ok: true, message: 'تم تحديث المستند.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -470,7 +470,7 @@ export async function archiveDocumentAction(documentId: string): Promise<ActionR
     revalidatePath('/documents');
     return { ok: true, message: 'تمت أرشفة المستند وخرج من نطاق البحث.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -511,7 +511,7 @@ export async function deleteDocumentAction(documentId: string): Promise<ActionRe
     revalidatePath('/dashboard');
     return { ok: true, message: 'تم حذف المستند ومقاطعه من قاعدة المعرفة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -543,6 +543,6 @@ export async function getDocumentDownloadUrl(
 
     return { ok: true, url: data.signedUrl };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

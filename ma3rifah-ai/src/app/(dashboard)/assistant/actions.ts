@@ -69,7 +69,7 @@ export async function feedbackAction(
     await submitFeedback(messageId, feedback);
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -87,7 +87,7 @@ export async function deleteConversationAction(
     revalidatePath('/conversations');
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -114,6 +114,6 @@ export async function renameConversationAction(
     revalidatePath('/conversations');
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

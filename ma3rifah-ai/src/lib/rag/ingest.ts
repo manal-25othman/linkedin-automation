@@ -214,6 +214,6 @@ export async function ingestDocumentNow(documentId: string): Promise<string | nu
     await ingestDocument(documentId);
     return null;
   } catch (error) {
-    return toAppError(error).message;
+    return toAppError(error).displayMessage;
   }
 }

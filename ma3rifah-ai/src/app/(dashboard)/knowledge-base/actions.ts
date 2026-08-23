@@ -61,7 +61,7 @@ export async function createCategoryAction(formData: FormData): Promise<ActionRe
     revalidatePath('/documents');
     return { ok: true, message: 'تم إنشاء التصنيف.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -103,7 +103,7 @@ export async function updateCategoryAction(
     revalidatePath('/knowledge-base');
     return { ok: true, message: 'تم تحديث التصنيف.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -145,6 +145,6 @@ export async function deleteCategoryAction(categoryId: string): Promise<ActionRe
           : 'تم حذف التصنيف.',
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

@@ -47,7 +47,7 @@ export async function requestWhatsAppLinkCodeAction(): Promise<LinkCodeResult> {
     revalidatePath('/settings/profile');
     return { ok: true, code: data[0].code, expiresAt: data[0].expires_at };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -79,6 +79,6 @@ export async function unlinkWhatsAppAction(): Promise<{ ok: boolean; message?: s
     revalidatePath('/settings/profile');
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

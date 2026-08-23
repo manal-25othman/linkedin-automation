@@ -43,7 +43,7 @@ export async function setCompanyStatusAction(
       message: status === 'ACTIVE' ? 'تم تفعيل الشركة.' : 'تم إيقاف الشركة.',
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -133,7 +133,7 @@ export async function upsertPlanAction(formData: FormData): Promise<ActionResult
 
     return { ok: true, message: input.planId ? 'تم حفظ الخطة.' : 'تمت إضافة الخطة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -170,7 +170,7 @@ export async function setPlanVisibilityAction(
 
     return { ok: true, message: isPublic ? 'صارت الخطة معروضة.' : 'أُخفيت الخطة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -257,7 +257,7 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
           : `حُفظ ${toUpsert.length} نصًّا. افتحي الموقع لترَي التغيير.`,
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -377,7 +377,7 @@ export async function createSitePageAction(formData: FormData): Promise<ActionRe
           : 'حُفظت الصفحة مسوّدة — لا يراها الزوّار حتى تنشريها.',
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -411,7 +411,7 @@ export async function updateSitePageAction(
 
     return { ok: true, message: 'حُفظت الصفحة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -449,7 +449,7 @@ export async function setSitePageStatusAction(
       message: status === 'PUBLISHED' ? 'نُشرت الصفحة.' : 'أُعيدت الصفحة مسوّدة.',
     };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }
 
@@ -482,6 +482,6 @@ export async function deleteSitePageAction(pageId: string): Promise<ActionResult
 
     return { ok: true, message: 'حُذفت الصفحة.' };
   } catch (error) {
-    return { ok: false, message: toAppError(error).message };
+    return { ok: false, message: toAppError(error).displayMessage };
   }
 }

@@ -15,6 +15,8 @@ import { requireCompanySession } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { can } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/shared/page-header';
+import { OnboardingCard } from '@/components/dashboard/onboarding-card';
+import { computeOnboarding } from '@/lib/onboarding';
 import { StatCard } from '@/components/shared/stat-card';
 import { EmptyState } from '@/components/shared/states';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,7 +66,16 @@ export default async function DashboardPage() {
   const totalAnswers = answeredCount + unansweredCount;
   const answerRate = totalAnswers > 0 ? (answeredCount / totalAnswers) * 100 : null;
 
-  const isEmptyWorkspace = (stats?.documents_count ?? 0) === 0 && questionsCount === 0;
+  // رحلة التجهيز — تُحسب من البيانات لا من علامة محفوظة
+  const onboarding = computeOnboarding(
+    {
+      usersCount: stats?.users_count ?? 0,
+      documentsCount: stats?.documents_count ?? 0,
+      documentsReady: stats?.documents_ready ?? 0,
+      questionsCount,
+    },
+    { canManage: can(profile.role, 'documents.manage') },
+  );
 
   return (
     <div className="space-y-6">
@@ -81,26 +92,8 @@ export default async function DashboardPage() {
         }
       />
 
-      {/* بداية فارغة — نوجّه المستخدم للخطوة الأولى بدل عرض أصفار */}
-      {isEmptyWorkspace && can(profile.role, 'documents.manage') ? (
-        <Card className="border-primary/25 bg-primary/5">
-          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-base font-semibold">ابدأ برفع أول مستند</h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                قاعدة المعرفة فارغة حاليًا. ارفع سياسة أو دليلًا، وخلال أقل من دقيقة يصبح
-                قابلًا للسؤال عنه.
-              </p>
-            </div>
-            <Button asChild className="shrink-0">
-              <Link href="/documents">
-                رفع مستند
-                <ArrowLeft className="size-4" aria-hidden />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+      {/* رحلة التجهيز — تحلّ محلّ بطاقة «ارفع أول مستند» وتشمل ما بعدها */}
+      <OnboardingCard progress={onboarding} />
 
       {/* بطاقات الإحصاءات */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

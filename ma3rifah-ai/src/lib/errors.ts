@@ -5,6 +5,8 @@
  * كل خطأ يحمل رسالة عربية صالحة للعرض ورمزًا للتتبّع في السجلات.
  */
 
+import { logger } from '@/lib/logger';
+
 export type AppErrorCode =
   | 'UNAUTHENTICATED'
   | 'FORBIDDEN'
@@ -49,11 +51,49 @@ const DEFAULT_MESSAGE: Record<AppErrorCode, string> = {
   INTERNAL: 'حدث خطأ غير متوقع. تم تسجيل المشكلة وسنعمل على معالجتها.',
 };
 
+/**
+ * الأخطاء التي يستحق المستخدمُ فيها رقمَ مرجع.
+ *
+ * الرقم لمن **لا يستطيع إصلاح الخطأ بنفسه**: عطلٌ عندنا يحتاج أن
+ * يخبرنا به. أما «أدخل بريدًا صحيحًا · ERR-8F31» فضجيج — يُشعِر
+ * المستخدم بأن خطأه المطبعيّ عطلٌ في المنصة، ويُغرِق الدعم بأرقام لا
+ * شيء خلفها.
+ */
+const REFERENCED_CODES: ReadonlySet<AppErrorCode> = new Set<AppErrorCode>([
+  'INTERNAL',
+  'DOCUMENT_PROCESSING',
+  'AI_UNAVAILABLE',
+  'EMBEDDINGS_UNAVAILABLE',
+]);
+
+export function needsReference(code: AppErrorCode): boolean {
+  return REFERENCED_CODES.has(code);
+}
+
+/**
+ * رقم مرجع قصير.
+ *
+ * أربعة محارف من السداسي العشري: قصير بما يُقرأ في الهاتف ويُكتب في
+ * تذكرة، وواسع بما يكفي (65536 احتمالًا) لأن يميّز أخطاء الدقيقة
+ * الواحدة. وليس معرّفًا فريدًا عالميًا — ولا يُراد له ذلك: البحث في
+ * السجلّات يقع في نافذة زمنية معلومة، فالتصادم بعد شهر لا يضرّ.
+ *
+ * ولا يحمل معلومة: لا وقتًا ولا هوية ولا نوع خطأ. من التقطه من شاشة
+ * لا يستفيد منه شيئًا، ومن عنده السجلّ يجده.
+ */
+export function newErrorReference(): string {
+  const bytes = new Uint8Array(2);
+  crypto.getRandomValues(bytes);
+  return `ERR-${[...bytes].map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+}
+
 export class AppError extends Error {
   readonly code: AppErrorCode;
   readonly status: number;
   /** تفاصيل داخلية تُسجَّل ولا تُعرض للمستخدم */
   readonly detail?: string;
+  /** رقم مرجع — يوجد على الأخطاء التي لا يصلحها المستخدم بنفسه */
+  readonly reference?: string;
 
   constructor(code: AppErrorCode, message?: string, detail?: string) {
     super(message ?? DEFAULT_MESSAGE[code]);
@@ -61,10 +101,22 @@ export class AppError extends Error {
     this.code = code;
     this.status = STATUS_BY_CODE[code];
     this.detail = detail;
+    this.reference = needsReference(code) ? newErrorReference() : undefined;
+  }
+
+  /** الرسالة كما تُعرض — ومعها المرجع إن وُجد */
+  get displayMessage(): string {
+    return this.reference ? `${this.message}\nرقم المرجع: ${this.reference}` : this.message;
   }
 
   toJSON() {
-    return { error: { code: this.code, message: this.message } };
+    return {
+      error: {
+        code: this.code,
+        message: this.message,
+        ...(this.reference ? { reference: this.reference } : {}),
+      },
+    };
   }
 }
 
@@ -72,11 +124,26 @@ export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
 }
 
-/** يحوّل أي خطأ إلى AppError صالح للعرض */
+/**
+ * يحوّل أي خطأ إلى AppError صالح للعرض.
+ *
+ * ويُسجَّل التفصيل التقني هنا مقرونًا برقم المرجع — وهذا هو موضع
+ * التسجيل الصحيح: كل خطأ غير متوقع يمرّ من هنا، فلا يضيع واحد لأن
+ * مستدعيًا نسي أن يسجّله. والمستخدم يرى الرقم، والمطوّر يجده بالبحث
+ * عنه في السجلّ ومعه سبب الخطأ الحقيقي.
+ */
 export function toAppError(error: unknown): AppError {
   if (isAppError(error)) return error;
+
   const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-  return new AppError('INTERNAL', undefined, detail);
+  const wrapped = new AppError('INTERNAL', undefined, detail);
+
+  logger.error('خطأ غير متوقع', {
+    reference: wrapped.reference,
+    detail: sanitizeTechnicalDetail(detail),
+  });
+
+  return wrapped;
 }
 
 /**
