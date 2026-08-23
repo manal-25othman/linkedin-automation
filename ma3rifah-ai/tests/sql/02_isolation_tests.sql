@@ -917,6 +917,180 @@ select public.record_write_attempt(
 commit;
 
 -- =====================================================================
+-- التفويض داخل الشركة الواحدة — أخطر ما لا يُختبر عادةً
+--
+-- العزل بين الشركات يُختبر كثيرًا، وهذا القسم عن الطبقة التي تليه:
+-- زميلٌ في الشركة نفسها. والفرق أن المعرّفات هنا **قابلة للتخمين
+-- والتسريب**: تظهر في الروابط وفي الاستجابات، فمن رأى معرّف رسالة
+-- زميله يستطيع أن يجرّب الكتابة عليها. وهو IDOR بعينه.
+--
+-- والحماية هنا في قاعدة البيانات لا في الاستعلام: شيفرة التطبيق تحدّث
+-- الرسالة بمعرّفها بلا فحص ملكية، وتتّكل على السياسة. فإن سقطت السياسة
+-- سقطت الحماية كلها بلا أن يظهر شيء في الشيفرة.
+-- =====================================================================
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000003"}';
+
+-- ضابطان موجبان: قراءةً وكتابةً. وبدونهما تمرّ كل الاختبارات التالية
+-- على مستخدم لا يرى شيئًا أصلًا، فتُثبت العجز لا الحماية.
+insert into public.test_results (category, name, passed, detail)
+select 'التفويض الداخلي', 'الموظف يقرأ محادثته هو (ضابط موجب)',
+       count(*) = 1, 'الصفوف العائدة: ' || count(*)
+from public.conversations where user_id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid;
+
+with updated as (
+  update public.messages set feedback = 'UP'
+  where conversation_id = 'aaaaaaaa-4000-4000-8000-000000000002'::uuid
+    and role = 'ASSISTANT'
+  returning 1
+)
+insert into public.test_results (category, name, passed, detail)
+select 'التفويض الداخلي', 'الموظف يقيّم رسالة في محادثته هو (ضابط موجب)',
+       count(*) = 1, 'صفوف متأثرة: ' || count(*)
+from updated;
+
+select public.record_zero_rows_expected(
+  'التفويض الداخلي', 'الموظف لا يقرأ محادثة مدير شركته',
+  $sql$select 1 from public.conversations
+       where id = 'aaaaaaaa-4000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_zero_rows_expected(
+  'التفويض الداخلي', 'الموظف لا يقرأ رسائل محادثة زميله',
+  $sql$select 1 from public.messages
+       where conversation_id = 'aaaaaaaa-4000-4000-8000-000000000001'::uuid$sql$);
+
+-- IDOR: تقييم رسالة في محادثة زميل. التطبيق يحدّث بالمعرّف وحده.
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يقيّم رسالة في محادثة زميله (IDOR)',
+  $sql$update public.messages set feedback = 'UP'
+       where conversation_id = 'aaaaaaaa-4000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يحذف محادثة زميله',
+  $sql$delete from public.conversations
+       where id = 'aaaaaaaa-4000-4000-8000-000000000001'::uuid$sql$);
+
+-- تصعيد الامتياز: أخطر كتابة في المنصة كلها
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يرقّي دوره إلى مدير شركة',
+  $sql$update public.profiles set role = 'COMPANY_ADMIN'
+       where id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يرقّي دوره إلى مالك المنصة',
+  $sql$update public.profiles set role = 'SUPER_ADMIN'
+       where id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا ينقل نفسه إلى شركة أخرى',
+  $sql$update public.profiles
+       set company_id = 'bbbbbbbb-0000-4000-8000-000000000001'::uuid
+       where id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid$sql$);
+
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يرفع مستندًا لشركته',
+  $sql$insert into public.documents
+       (company_id, name, file_type, file_size_bytes, status, visibility, uploaded_by)
+       values ('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 'مزروع', 'text/plain', 1,
+               'READY', 'COMPANY', 'aaaaaaaa-2000-4000-8000-000000000003'::uuid)$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يغيّر إعدادات شركته',
+  $sql$update public.companies set name = 'اسم مزروع'
+       where id = 'aaaaaaaa-0000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف لا يمدّد اشتراك شركته',
+  $sql$update public.subscriptions set status = 'ACTIVE'$sql$);
+
+commit;
+
+-- ---------------------------------------------------------------------
+-- التفعيل الذاتي بعد التعطيل
+--
+-- أخطر ما في هذا الباب. الموظف المعطَّل يحتفظ برمز جلسة صالح مدةً بعد
+-- تعطيله، ويستطيع مخاطبة واجهة قاعدة البيانات مباشرةً لا عبر التطبيق.
+-- فلو قبلت السياسة تعديله لحالته، لاستعاد المفصولُ وصولَه بطلب واحد
+-- ولا يمرّ بشيفرة التطبيق أصلًا.
+--
+-- والتعطيل هنا حقيقي: تعيين ACTIVE على حساب نشط أصلًا عمليةٌ لاغية
+-- تمرّ بحق، ولا تثبت شيئًا. وهذا ما أوقع أول صياغة لهذا الاختبار.
+-- ---------------------------------------------------------------------
+
+begin;
+update public.profiles set status = 'DISABLED'
+where id = 'aaaaaaaa-2000-4000-8000-000000000004'::uuid;
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000004"}';
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'الموظف المعطَّل لا يعيد تفعيل نفسه',
+  $sql$update public.profiles set status = 'ACTIVE'
+       where id = 'aaaaaaaa-2000-4000-8000-000000000004'::uuid$sql$);
+
+commit;
+
+-- تأكيد من خارج RLS أن الحالة لم تتغيّر فعلًا
+insert into public.test_results (category, name, passed, detail)
+select 'التفويض الداخلي', 'حالة المعطَّل بقيت DISABLED بعد المحاولة',
+       status = 'DISABLED', 'الحالة: ' || status
+from public.profiles where id = 'aaaaaaaa-2000-4000-8000-000000000004'::uuid;
+
+begin;
+update public.profiles set status = 'ACTIVE'
+where id = 'aaaaaaaa-2000-4000-8000-000000000004'::uuid;
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000002"}';
+
+-- مدير القسم: أعلى من الموظف وأدنى من مدير الشركة
+select public.record_write_attempt(
+  'التفويض الداخلي', 'مدير القسم لا يرقّي نفسه إلى مدير شركة',
+  $sql$update public.profiles set role = 'COMPANY_ADMIN'
+       where id = 'aaaaaaaa-2000-4000-8000-000000000002'::uuid$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'مدير القسم لا يرقّي موظفًا في قسمه',
+  $sql$update public.profiles set role = 'COMPANY_ADMIN'
+       where id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid$sql$);
+
+select public.record_zero_rows_expected(
+  'التفويض الداخلي', 'مدير القسم لا يقرأ محادثات موظفي قسمه',
+  $sql$select 1 from public.conversations
+       where user_id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid$sql$);
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"aaaaaaaa-2000-4000-8000-000000000001"}';
+
+-- مدير الشركة: أوسع الأدوار داخل الشركة، ولا يبلغ المنصة
+select public.record_write_attempt(
+  'التفويض الداخلي', 'مدير الشركة لا يرقّي نفسه إلى مالك المنصة',
+  $sql$update public.profiles set role = 'SUPER_ADMIN'
+       where id = 'aaaaaaaa-2000-4000-8000-000000000001'::uuid$sql$);
+
+select public.record_zero_rows_expected(
+  'التفويض الداخلي', 'مدير الشركة لا يقرأ محادثات موظفيه',
+  $sql$select 1 from public.conversations
+       where user_id = 'aaaaaaaa-2000-4000-8000-000000000003'::uuid$sql$);
+
+select public.record_write_attempt(
+  'التفويض الداخلي', 'مدير الشركة لا يعدّل خطة تسعير المنصة',
+  $sql$update public.plans set price_amount = 0$sql$);
+
+commit;
+
+-- =====================================================================
 -- صفحات الموقع المصنوعة في اللوحة
 --
 -- خطران هنا لا واحد: أن يقرأ زائرٌ مسوّدةً لم تُنشر بعد، وأن يكتب

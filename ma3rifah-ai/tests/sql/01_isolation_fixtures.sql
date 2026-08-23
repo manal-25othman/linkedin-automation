@@ -140,6 +140,18 @@ insert into public.messages (company_id, conversation_id, user_id, role, content
   (:company_a::uuid, :conv_a::uuid, :user_a_admin::uuid, 'USER', 'سؤال داخلي للشركة أ'),
   (:company_b::uuid, :conv_b::uuid, :user_b_admin::uuid, 'USER', 'سؤال داخلي للشركة ب');
 
+-- محادثة يملكها موظف من الشركة نفسها.
+--
+-- بدونها يمرّ الضابط الموجب لاختبارات التفويض الداخلي على جدول فارغ
+-- فلا يثبت شيئًا — والاختبار الذي لا يستطيع الفشل ليس اختبارًا.
+insert into public.conversations (id, company_id, user_id, title) values
+  ('aaaaaaaa-4000-4000-8000-000000000002'::uuid, :company_a::uuid,
+   :user_a_hr_emp::uuid, 'محادثة موظف الموارد البشرية');
+
+insert into public.messages (company_id, conversation_id, user_id, role, content) values
+  (:company_a::uuid, 'aaaaaaaa-4000-4000-8000-000000000002'::uuid,
+   :user_a_hr_emp::uuid, 'ASSISTANT', 'إجابة على سؤال الموظف');
+
 -- ---------- فجوات المعرفة ----------
 
 insert into public.knowledge_gaps (company_id, question, normalized_question) values
