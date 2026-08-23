@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArticleCard, FeatureCard } from "./article-card";
 import { Breadcrumbs } from "./breadcrumbs";
 import { NewsletterForm } from "./newsletter-form";
+import { isNewsletterEnabled } from "@/lib/newsletter";
 import { categories } from "@/config/categories";
 import type { ArticleMeta } from "@/lib/articles";
 
@@ -106,7 +107,7 @@ export function ArchiveView({
             <p className="mb-3 text-xs leading-6 text-ink-muted">
               ثلاثة أشياء مفيدة كل أسبوع: ورقة مشروحة، وقياس عملي، وخطأ شائع في الإنتاج.
             </p>
-            <NewsletterForm compact />
+            <NewsletterForm compact enabled={isNewsletterEnabled()} />
           </SidebarBlock>
         </aside>
       </div>

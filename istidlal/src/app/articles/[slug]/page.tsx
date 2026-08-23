@@ -12,6 +12,7 @@ import { categoryBySlug } from "@/config/categories";
 import { absoluteUrl, siteConfig } from "@/config/site";
 import { getArticle, getArticleSlugs, getRelatedArticles } from "@/lib/articles";
 import { formatDate } from "@/lib/format";
+import { getToolsForArticle } from "@/lib/tools";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -51,6 +52,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
   const category = categoryBySlug.get(article.category);
   const related = getRelatedArticles(article.slug, 3);
+  const tools = getToolsForArticle(article.slug);
   const url = absoluteUrl(`/articles/${article.slug}`);
 
   const blogPosting = {
@@ -204,6 +206,32 @@ export default async function ArticlePage({ params }: PageProps) {
           <AdSlot minHeight={600} label="مساحة إعلانية جانبية" />
         </aside>
       </div>
+
+      {tools.length > 0 && (
+        <section className="mt-16">
+          <h2 className="border-b border-line pb-4 font-display text-2xl font-bold text-ink">
+            أدوات مذكورة في هذا المقال
+          </h2>
+          <ul className="mt-8 grid gap-4 sm:grid-cols-3">
+            {tools.map((tool) => (
+              <li key={tool.slug}>
+                <Link
+                  href={`/tools/${tool.slug}`}
+                  className="lift block h-full rounded-xl border border-line bg-surface p-4 hover:border-signal-line"
+                >
+                  <span className="font-display font-bold text-ink">{tool.name}</span>
+                  <span dir="ltr" className="mt-0.5 block text-[0.7rem] text-ink-faint">
+                    {tool.nameLatin}
+                  </span>
+                  <span className="mt-2 block text-xs leading-6 text-ink-muted">
+                    {tool.description}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {related.length > 0 && (
         <section className="mt-16">

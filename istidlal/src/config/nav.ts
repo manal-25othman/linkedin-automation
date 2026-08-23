@@ -2,6 +2,7 @@
 export const primaryNav = [
   { href: "/articles", label: "المقالات" },
   { href: "/categories", label: "التصنيفات" },
+  { href: "/tools", label: "الأدوات" },
   { href: "/about", label: "عن استدلال" },
   { href: "/contact", label: "تواصل" },
 ] as const;

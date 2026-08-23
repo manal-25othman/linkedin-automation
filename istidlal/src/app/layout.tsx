@@ -8,7 +8,7 @@ import { CookieConsent } from "@/components/cookie-consent";
 import { JsonLd } from "@/components/json-ld";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { absoluteUrl, siteConfig } from "@/config/site";
+import { absoluteUrl, configuredProfiles, siteConfig } from "@/config/site";
 import { CONSENT_BOOTSTRAP } from "@/lib/consent";
 
 // العناوين: هندسي حادّ الحواف. المتن: محايد مريح في القراءة الطويلة.
@@ -96,10 +96,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     name: siteConfig.name,
     alternateName: siteConfig.nameLatin,
     url: siteConfig.url,
-    email: siteConfig.email,
     description: siteConfig.description,
     logo: absoluteUrl("/icon.svg"),
-    sameAs: [siteConfig.social.linkedin, siteConfig.social.x, siteConfig.social.github],
+    // لا نُصرّح إلا بما هو مضبوط فعلًا: حقل فارغ أفضل من حقل كاذب.
+    ...(siteConfig.email ? { email: siteConfig.email } : {}),
+    ...(configuredProfiles().length ? { sameAs: configuredProfiles() } : {}),
   };
 
   const website = {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { NewsletterForm } from "@/components/newsletter-form";
+import { isNewsletterEnabled } from "@/lib/newsletter";
 import { PageShell } from "@/components/page-shell";
 
 export const metadata: Metadata = {
@@ -31,7 +32,7 @@ export default function NewsletterPage() {
       </ul>
 
       <div className="not-prose mt-8">
-        <NewsletterForm />
+        <NewsletterForm enabled={isNewsletterEnabled()} />
       </div>
     </PageShell>
   );

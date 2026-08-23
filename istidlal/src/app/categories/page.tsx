@@ -20,8 +20,12 @@ export default function CategoriesPage() {
       <header className="mt-6 max-w-2xl">
         <h1 className="font-display text-3xl font-bold text-ink md:text-4xl">التصنيفات</h1>
         <p className="mt-4 text-lg leading-9 text-ink-muted">
-          نطاق استدلال ضيّق عن قصد: ما يحتاجه المهندس لتشغيل نظام لغوي في الإنتاج. لا أخبار، ولا
-          قوائم أدوات، ولا تنبّؤات.
+          نطاق استدلال ضيّق عن قصد: ما يحتاجه المهندس لتشغيل نظام لغوي في الإنتاج. لا أخبار ولا
+          تنبّؤات. وللأدوات نفسها{" "}
+          <Link href="/tools" className="underline hover:text-signal">
+            دليل منفصل
+          </Link>{" "}
+          يذكر حدودها لا مزاياها فقط.
         </p>
       </header>
 

@@ -85,6 +85,19 @@ content:
         options:
           format: yyyy-MM-dd
 
+      - name: status
+        label: حالة النشر
+        type: select
+        required: false
+        options:
+          values:
+            - { value: '', label: 'منشور (حسب التاريخ)' }
+            - { value: 'scheduled', label: 'مجدوَل — لا يظهر قبل تاريخه' }
+            - { value: 'draft', label: 'مسوّدة — لا يظهر إطلاقًا' }
+        description: >-
+          تاريخ مستقبلي بلا «مجدوَل» يُرفض في فحص المحتوى. القارئ لا يرى تاريخًا
+          لم يأتِ بعد.
+
       - name: featured
         label: مقال ركيزة
         type: boolean
@@ -104,6 +117,140 @@ content:
         description: >-
           إلزامي: قسم «## الأسئلة الشائعة» وقسم «## المراجع»، وقسم يحدّد حدود
           الحلّ («متى لا يصلح…»). راجع docs/EDITOR.md.
+
+  # ─── الأدوات ──────────────────────────────────────────────────
+  - name: tools
+    label: الأدوات
+    description: >-
+      دليل أدوات بناء أنظمة الذكاء الاصطناعي. كل مدخل يذكر حدود الأداة لا
+      مزاياها فقط، ولا يُدرج مدخل بلا رابط رسمي.
+    type: collection
+    path: istidlal/content/tools
+    format: yaml-frontmatter
+    filename: '{fields.slug}.md'
+    view:
+      fields: [name, category, license, published]
+      primary: name
+      sort: [name, published]
+    fields:
+      - name: name
+        label: الاسم بالعربية
+        type: string
+        required: true
+
+      - name: nameLatin
+        label: الاسم كما يكتبه المنتج
+        type: string
+        required: true
+
+      - name: slug
+        label: رابط الأداة
+        type: string
+        required: true
+        pattern:
+          regex: '^[a-z0-9-]+$'
+          message: حروف لاتينية صغيرة وأرقام وشرطات فقط.
+
+      - name: description
+        label: الوصف
+        type: text
+        required: true
+        description: سطر واحد يقول ما تفعله الأداة، لا لماذا هي رائعة.
+
+      - name: category
+        label: التصنيف
+        type: select
+        required: true
+        options:
+          values:
+            - { value: vector-stores, label: قواعد المتّجهات }
+            - { value: rag-frameworks, label: أطر الاسترجاع }
+            - { value: agent-frameworks, label: أطر الوكلاء }
+            - { value: evaluation, label: التقييم والرصد }
+            - { value: serving, label: التشغيل والاستدلال }
+            - { value: security, label: الأمن والحواجز }
+
+      - name: license
+        label: الترخيص
+        type: select
+        required: true
+        options:
+          values:
+            - { value: open-source, label: مفتوح المصدر }
+            - { value: proprietary, label: مغلق المصدر }
+
+      - name: hosting
+        label: طريقة التشغيل
+        type: select
+        required: true
+        options:
+          values:
+            - { value: self-hosted, label: استضافة ذاتية }
+            - { value: managed, label: خدمة مُدارة }
+            - { value: both, label: ذاتية أو مُدارة }
+
+      - name: website
+        label: الموقع الرسمي
+        type: string
+        required: true
+        pattern:
+          regex: '^https://'
+          message: رابط https حقيقي — لا يُدرج مدخل بلا مصدر رسمي.
+
+      - name: docs
+        label: التوثيق
+        type: string
+        required: false
+
+      - name: repo
+        label: المستودع
+        type: string
+        required: false
+
+      - name: tiktok
+        label: رابط مقطع تيك توك
+        type: string
+        required: false
+        description: >-
+          اتركه فارغًا ما لم يوجد مقطع فعلي. شارة «غطّيتها في تيك توك» لا تظهر
+          إلا برابط حقيقي.
+
+      - name: goodFor
+        label: متى تناسبك
+        type: text
+        list:
+          min: 1
+
+      - name: limits
+        label: متى لا تناسبك
+        type: text
+        list:
+          min: 1
+        description: مطلوب — المدخل بلا حدود إعلان لا مراجعة.
+
+      - name: relatedArticles
+        label: مقالات مرتبطة (المسارات)
+        type: string
+        list: true
+        required: false
+
+      - name: published
+        label: تاريخ النشر
+        type: date
+        required: true
+        options:
+          format: yyyy-MM-dd
+
+      - name: updated
+        label: تاريخ آخر تحديث
+        type: date
+        required: false
+        options:
+          format: yyyy-MM-dd
+
+      - name: body
+        label: المتن
+        type: rich-text
 
   # ─── الصفحات ──────────────────────────────────────────────────
   # كل صفحة ملف مستقل لأن مسارها مرتبط بالكود: لا تُنشأ صفحات جديدة من هنا.

@@ -6,6 +6,11 @@ import path from "node:path";
 import { parseFrontmatter } from "./frontmatter";
 import { extractFaq, readingMinutes, renderMarkdown, type Heading } from "./markdown";
 import { categoryBySlug } from "@/config/categories";
+import {
+  isPubliclyVisible,
+  resolveStatus,
+  type PublicationStatus,
+} from "./publication";
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "articles");
 
@@ -23,6 +28,8 @@ export type ArticleMeta = {
   /** ثلاث نقاط تختصر المقال قبل قراءته. */
   takeaways: string[];
   readingMinutes: number;
+  /** محسوبة من التاريخ وحقل `status`؛ لا تُكتب يدويًّا في القوائم. */
+  status: PublicationStatus;
 };
 
 export type Article = ArticleMeta & {
@@ -66,18 +73,31 @@ function toMeta(slug: string, data: Record<string, unknown>, body: string): Arti
     featured: data.featured === true,
     takeaways: Array.isArray(data.takeaways) ? (data.takeaways as string[]) : [],
     readingMinutes: readingMinutes(body),
+    status: resolveStatus(String(data.published ?? ""), data.status ? String(data.status) : undefined),
   };
 }
 
-/** كل المقالات مرتّبة من الأحدث إلى الأقدم. */
-export function getAllArticles(): ArticleMeta[] {
+/**
+ * كل ما في مجلد المحتوى — منشورًا كان أو مجدوَلًا أو مسوّدة.
+ * للأدوات والفحوص فقط. لا تستدعِه من صفحة تُعرض للقارئ.
+ */
+export function getEveryArticle(): ArticleMeta[] {
   return readRawArticles()
     .map(({ slug, data, body }) => toMeta(slug, data, body))
     .sort((a, b) => (a.published < b.published ? 1 : -1));
 }
 
+/**
+ * المقالات المنشورة فقط، من الأحدث إلى الأقدم.
+ * هذه هي البوّابة الوحيدة لكل واجهة عامّة؛ المجدوَل والمسوّدة لا يمرّان منها.
+ */
+export function getAllArticles(): ArticleMeta[] {
+  return getEveryArticle().filter((article) => isPubliclyVisible(article.status));
+}
+
+/** مسارات المقالات التي تُولَّد لها صفحات — المنشورة وحدها. */
 export function getArticleSlugs(): string[] {
-  return readRawArticles().map((entry) => entry.slug);
+  return getAllArticles().map((article) => article.slug);
 }
 
 export async function getArticle(slug: string): Promise<Article | null> {
@@ -85,9 +105,32 @@ export async function getArticle(slug: string): Promise<Article | null> {
   if (!entry) return null;
 
   const meta = toMeta(entry.slug, entry.data, entry.body);
+  // مقال لم يحن موعده لا يُعرض ولو طُلب مساره مباشرةً.
+  if (!isPubliclyVisible(meta.status)) return null;
+
   const { html, headings } = await renderMarkdown(entry.body);
 
   return { ...meta, html, headings, faq: extractFaq(entry.body) };
+}
+
+/**
+ * عدد المراجع المذكورة في قسم «المراجع» عبر كل المقالات المنشورة.
+ * رقم محسوب من الملفات نفسها، لا رقم مكتوب باليد — إن نقص مرجع نقص العدّاد.
+ */
+export function getReferenceCount(): number {
+  const published = new Set(getAllArticles().map((article) => article.slug));
+  let total = 0;
+
+  for (const entry of readRawArticles()) {
+    if (!published.has(entry.slug)) continue;
+    const section = entry.body.split(/^##\s+المراجع\s*$/m)[1];
+    if (!section) continue;
+    // نقف عند العنوان التالي حتى لا نعدّ روابط أقسام أخرى.
+    const untilNextHeading = section.split(/^##\s/m)[0];
+    total += (untilNextHeading.match(/\]\(https?:\/\//g) ?? []).length;
+  }
+
+  return total;
 }
 
 export function getArticlesByCategory(category: string): ArticleMeta[] {

@@ -7,6 +7,7 @@ import path from "node:path";
 
 import { parseFrontmatter } from "../src/lib/frontmatter";
 import { categoryBySlug } from "../src/config/categories";
+import { todayIso } from "../src/lib/publication";
 
 const DIR = path.join(process.cwd(), "content", "articles");
 const errors: string[] = [];
@@ -40,7 +41,13 @@ for (const file of files) {
 
   if (!categoryBySlug.has(String(data.category ?? ""))) fail("تصنيف غير معرّف");
   if (!Array.isArray(data.tags) || data.tags.length === 0) fail("لا وسوم");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(data.published ?? ""))) fail("تاريخ النشر بصيغة غير صحيحة");
+  const published = String(data.published ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(published)) {
+    fail("تاريخ النشر بصيغة غير صحيحة");
+  } else if (published > todayIso() && String(data.status ?? "") !== "scheduled") {
+    // تاريخ مستقبلي بلا إعلان جدولة: خطأ تحريري، لا خيار تصميم.
+    fail(`تاريخ نشر مستقبلي (${published}) بلا \`status: scheduled\``);
+  }
 
   const takeaways = Array.isArray(data.takeaways) ? data.takeaways : [];
   if (takeaways.length < 3) fail("المطلوب ٣ نقاط خلاصة على الأقل");

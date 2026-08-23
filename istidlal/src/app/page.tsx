@@ -4,10 +4,17 @@ import { ArticleCard, FeatureCard } from "@/components/article-card";
 import { NewsletterCta } from "@/components/newsletter-cta";
 import { categories } from "@/config/categories";
 import { siteConfig } from "@/config/site";
-import { getAllArticles, getArticlesByCategory, getFeaturedArticles } from "@/lib/articles";
+import { formatNumber } from "@/lib/format";
+import {
+  getAllArticles,
+  getArticlesByCategory,
+  getFeaturedArticles,
+  getReferenceCount,
+} from "@/lib/articles";
 
 export default function HomePage() {
   const all = getAllArticles();
+  const referenceCount = getReferenceCount();
   const featured = getFeaturedArticles(2);
   const featuredSlugs = new Set(featured.map((article) => article.slug));
   const latest = all.filter((article) => !featuredSlugs.has(article.slug)).slice(0, 6);
@@ -50,11 +57,16 @@ export default function HomePage() {
                 </Link>
               </div>
 
+              {/* ثلاثة أرقام، وكلّها محسوبة من ملفات المحتوى وقت البناء. لا رقم مكتوب باليد. */}
               <dl className="mt-10 grid gap-6 border-t border-line pt-7 sm:grid-cols-3">
-                <Stat value={`${all.length}`} label="مقالًا تقنيًّا منشورًا" />
-                <Stat value="6" label="تصنيفات هندسية" />
-                <Stat value="100%" label="ادعاءات مسنودة إلى مصدر" />
+                <Stat value={formatNumber(all.length)} label="مقالًا تقنيًّا منشورًا" />
+                <Stat value={formatNumber(categories.length)} label="تصنيفات هندسية" />
+                <Stat value={formatNumber(referenceCount)} label="مرجعًا في قوائم المصادر" />
               </dl>
+
+              <p className="mt-5 text-sm leading-7 text-ink-faint">
+                الادعاءات التقنية الجوهرية مدعومة بمصادر أوّلية أو قياسات قابلة للتحقق.
+              </p>
             </div>
 
             {/* لوحة النطاق: تعطي الواجهة ثِقلًا بصريًّا وتقول ما يغطّيه الموقع في نظرة */}
@@ -83,7 +95,7 @@ export default function HomePage() {
                 ))}
               </ul>
               <p className="mt-5 border-t border-line pt-4 text-xs leading-6 text-ink-muted">
-                لا أخبار شركات، ولا قوائم أدوات، ولا تنبّؤات — ما يخدم مهندسًا يبني نظامًا حقيقيًّا
+                لا أخبار شركات ولا تنبّؤات — ما يخدم مهندسًا يبني نظامًا حقيقيًّا
                 هذا الأسبوع فقط.
               </p>
             </aside>

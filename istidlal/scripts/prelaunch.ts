@@ -30,16 +30,35 @@ if (!siteUrl) {
   add("ok", "رابط الموقع", siteUrl);
 }
 
-const emails = [...siteConfig.matchAll(/"([\w.+-]+@[\w.-]+)"/g)].map((m) => m[1]);
-const unverifiedEmails = emails.filter((email) => email.endsWith("@istidlal.ai"));
-if (unverifiedEmails.length) {
+const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "";
+const contactFormReady = Boolean(
+  process.env.RESEND_API_KEY && process.env.CONTACT_TO_EMAIL && process.env.CONTACT_FROM_EMAIL,
+);
+
+if (!contactEmail && !contactFormReady) {
   add(
     "blocker",
-    "بريد التواصل",
-    `${unverifiedEmails.join("، ")} — بريد حقيقي يعمل شرطٌ في مراجعة أدسنس. غيّره في src/config/site.ts أو فعّل النطاق.`,
+    "قناة التواصل",
+    "لا بريد ولا نموذج مراسلة مفعّل. اضبط NEXT_PUBLIC_CONTACT_EMAIL، أو RESEND_API_KEY وCONTACT_TO_EMAIL وCONTACT_FROM_EMAIL. قناة تواصل عاملة شرطٌ في مراجعة أدسنس.",
   );
 } else {
-  add("ok", "بريد التواصل", emails.join("، ") || "لا بريد معرَّف");
+  add(
+    "ok",
+    "قناة التواصل",
+    [contactEmail && `بريد: ${contactEmail}`, contactFormReady && "نموذج مراسلة مفعّل"]
+      .filter(Boolean)
+      .join(" · "),
+  );
+}
+
+// أي بريد مكتوب نصًّا في الإعدادات قيمة نائبة — البريد يُقرأ من البيئة.
+const hardcodedEmails = [...siteConfig.matchAll(/"([\w.+-]+@[\w.-]+)"/g)].map((m) => m[1]);
+if (hardcodedEmails.length) {
+  add(
+    "blocker",
+    "بريد مكتوب في الشيفرة",
+    `${hardcodedEmails.join("، ")} — انقله إلى متغيّر بيئة بدل تثبيته في src/config/site.ts.`,
+  );
 }
 
 // ─── التحليلات والإعلانات ────────────────────────────────────────
@@ -61,11 +80,11 @@ add(
 
 // ─── النشرة البريدية ─────────────────────────────────────────────
 add(
-  process.env.NEXT_PUBLIC_NEWSLETTER_ENDPOINT ? "ok" : "warn",
+  process.env.NEWSLETTER_ENDPOINT ? "ok" : "warn",
   "النشرة البريدية",
-  process.env.NEXT_PUBLIC_NEWSLETTER_ENDPOINT
-    ? "موصولة بمزوّد."
-    : "غير موصولة: النموذج يفتح رسالة بريد بدل حفظ المشترك. أخفِ النموذج أو اربطه بمزوّد قبل الإطلاق.",
+  process.env.NEWSLETTER_ENDPOINT
+    ? "موصولة بمزوّد على الخادم."
+    : "NEWSLETTER_ENDPOINT غير مضبوط: النموذج لا يُعرض أصلًا ويظهر بديله (RSS). لا وعد كاذب، لكن لا قائمة بريدية أيضًا.",
 );
 
 // ─── المحرّر ─────────────────────────────────────────────────────
@@ -110,6 +129,29 @@ add(
   "الصفحات الإلزامية",
   missing.length ? `ناقص: ${missing.join("، ")}` : `الثماني كلها موجودة.`,
 );
+
+// ─── التواريخ ────────────────────────────────────────────────────
+const today = new Date().toISOString().slice(0, 10);
+const futureDated = articles.filter((file) => {
+  const raw = read(path.join("content", "articles", file));
+  const published = raw.match(/^published:\s*(\S+)/m)?.[1] ?? "";
+  const declared = raw.match(/^status:\s*(\S+)/m)?.[1] ?? "";
+  return published > today && declared !== "scheduled";
+});
+add(
+  futureDated.length ? "blocker" : "ok",
+  "تواريخ النشر",
+  futureDated.length
+    ? `${futureDated.join("، ")} — تاريخ مستقبلي بلا «status: scheduled».`
+    : "لا مقال بتاريخ مستقبلي غير معلَن. القارئ لا يرى تاريخًا لم يأتِ بعد.",
+);
+
+// ─── دليل الأدوات ────────────────────────────────────────────────
+const toolsDir = path.join(process.cwd(), "content", "tools");
+const tools = fs.existsSync(toolsDir)
+  ? fs.readdirSync(toolsDir).filter((file) => file.endsWith(".md"))
+  : [];
+add("ok", "دليل الأدوات", `${tools.length} مدخلًا، ولكلٍّ رابط رسمي وقسم حدود.`);
 
 // ─── التقرير ─────────────────────────────────────────────────────
 const icon = { blocker: "✗", warn: "⚠︎", ok: "✓" } as const;

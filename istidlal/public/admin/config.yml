@@ -57,6 +57,20 @@ collections:
         }
       - { name: tags, label: الوسوم, widget: list, default: [], hint: "٣–٦ وسوم" }
       - { name: published, label: تاريخ النشر, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD }
+      - {
+          name: status,
+          label: حالة النشر,
+          widget: select,
+          required: false,
+          default: "",
+          options:
+            [
+              { label: "منشور (حسب التاريخ)", value: "" },
+              { label: "مجدوَل — لا يظهر قبل تاريخه", value: scheduled },
+              { label: "مسوّدة — لا يظهر إطلاقًا", value: draft },
+            ],
+          hint: "تاريخ مستقبلي بلا «مجدوَل» يُرفض في فحص المحتوى. القارئ لا يرى تاريخًا لم يأتِ بعد.",
+        }
       - { name: updated, label: تاريخ التحديث, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD, required: false }
       - { name: featured, label: مقال ركيزة, widget: boolean, default: false }
       - {
@@ -72,6 +86,72 @@ collections:
           widget: markdown,
           hint: "إلزامي: قسم «## الأسئلة الشائعة» وقسم «## المراجع»، وقسم يحدّد حدود الحلّ",
         }
+
+  - name: tools
+    label: الأدوات
+    label_singular: أداة
+    folder: istidlal/content/tools
+    create: true
+    slug: "{{fields.slug}}"
+    preview_path: tools/{{slug}}
+    summary: "{{name}} — {{category}}"
+    sortable_fields: [name, category, published]
+    fields:
+      - { name: name, label: الاسم بالعربية, widget: string }
+      - { name: nameLatin, label: الاسم كما يكتبه المنتج, widget: string }
+      - { name: slug, label: المسار, widget: string, pattern: ["^[a-z0-9-]+$", "حروف لاتينية صغيرة وأرقام وشرطات فقط"] }
+      - { name: description, label: الوصف, widget: text, hint: "سطر واحد: ما تفعله الأداة، لا لماذا هي رائعة" }
+      - {
+          name: category,
+          label: التصنيف,
+          widget: select,
+          options:
+            [
+              { label: "قواعد المتّجهات", value: vector-stores },
+              { label: "أطر الاسترجاع", value: rag-frameworks },
+              { label: "أطر الوكلاء", value: agent-frameworks },
+              { label: "التقييم والرصد", value: evaluation },
+              { label: "التشغيل والاستدلال", value: serving },
+              { label: "الأمن والحواجز", value: security },
+            ],
+        }
+      - {
+          name: license,
+          label: الترخيص,
+          widget: select,
+          options:
+            [
+              { label: "مفتوح المصدر", value: open-source },
+              { label: "مغلق المصدر", value: proprietary },
+            ],
+        }
+      - {
+          name: hosting,
+          label: طريقة التشغيل,
+          widget: select,
+          options:
+            [
+              { label: "استضافة ذاتية", value: self-hosted },
+              { label: "خدمة مُدارة", value: managed },
+              { label: "ذاتية أو مُدارة", value: both },
+            ],
+        }
+      - { name: website, label: الموقع الرسمي, widget: string, pattern: ["^https://", "رابط https حقيقي — لا يُدرج مدخل بلا مصدر رسمي"] }
+      - { name: docs, label: التوثيق, widget: string, required: false }
+      - { name: repo, label: المستودع, widget: string, required: false }
+      - {
+          name: tiktok,
+          label: رابط مقطع تيك توك,
+          widget: string,
+          required: false,
+          hint: "اتركه فارغًا ما لم يوجد مقطع فعلي. الشارة لا تظهر إلا برابط.",
+        }
+      - { name: goodFor, label: متى تناسبك, widget: list, default: [] }
+      - { name: limits, label: متى لا تناسبك, widget: list, default: [], hint: "مطلوب — المدخل بلا حدود إعلان لا مراجعة" }
+      - { name: relatedArticles, label: مقالات مرتبطة (المسارات), widget: list, default: [], required: false }
+      - { name: published, label: تاريخ النشر, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD }
+      - { name: updated, label: تاريخ التحديث, widget: datetime, date_format: YYYY-MM-DD, time_format: false, format: YYYY-MM-DD, required: false }
+      - { name: body, label: المتن, widget: markdown }
 
   - name: pages
     label: الصفحات

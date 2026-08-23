@@ -1,4 +1,5 @@
 import { NewsletterForm } from "./newsletter-form";
+import { isNewsletterEnabled } from "@/lib/newsletter";
 
 export function NewsletterCta() {
   return (
@@ -11,7 +12,7 @@ export function NewsletterCta() {
             بلا حشو وبلا رعايات مخفية.
           </p>
         </div>
-        <NewsletterForm />
+        <NewsletterForm enabled={isNewsletterEnabled()} />
       </div>
     </section>
   );
