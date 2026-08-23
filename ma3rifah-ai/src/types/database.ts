@@ -528,6 +528,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: void;
       };
+      check_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_ms: number };
+        Returns: { allowed: boolean; retry_after_seconds: number }[];
+      };
       activate_subscription_for_payment: {
         Args: { p_payment_id: string };
         Returns: boolean;

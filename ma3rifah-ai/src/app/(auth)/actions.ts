@@ -53,8 +53,12 @@ async function authRateLimited(email: string): Promise<boolean> {
   const headerList = await headers();
   const ip = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
-  const byEmail = checkRateLimit(`auth-email:${email}`, RATE_LIMITS.auth);
-  const byIp = checkRateLimit(`auth-ip:${ip}`, RATE_LIMITS.auth);
+  // كلاهما يُعدّ دائمًا — لا يُختصر بالثاني عند سقوط الأول: العدّادان
+  // مستقلّان، وترك أحدهما بلا زيادة يفتح المسار الذي يحرسه.
+  const [byEmail, byIp] = await Promise.all([
+    checkRateLimit(`auth-email:${email}`, RATE_LIMITS.auth),
+    checkRateLimit(`auth-ip:${ip}`, RATE_LIMITS.auth),
+  ]);
 
   return !byEmail.allowed || !byIp.allowed;
 }

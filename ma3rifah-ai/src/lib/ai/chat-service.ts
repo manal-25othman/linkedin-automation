@@ -89,7 +89,7 @@ export async function askAssistant(input: {
     );
   }
 
-  enforceRateLimit(`chat:${profile.id}`, RATE_LIMITS.chat);
+  await enforceRateLimit(`chat:${profile.id}`, RATE_LIMITS.chat);
 
   const supabase = await createClient();
 

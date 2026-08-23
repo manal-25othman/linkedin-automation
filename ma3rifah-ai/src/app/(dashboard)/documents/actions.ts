@@ -70,7 +70,7 @@ export async function createUploadTicketAction(input: {
 }): Promise<UploadTicket> {
   try {
     const { profile, company } = await requirePermission('documents.manage');
-    enforceRateLimit(`upload:${profile.id}`, RATE_LIMITS.upload);
+    await enforceRateLimit(`upload:${profile.id}`, RATE_LIMITS.upload);
 
     if (!input.fileName || !Number.isFinite(input.fileSize) || input.fileSize <= 0) {
       throw new AppError('VALIDATION', 'اختر ملفًا للرفع.');

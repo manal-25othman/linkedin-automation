@@ -1,14 +1,30 @@
 import 'server-only';
 
 import { AppError } from '@/lib/errors';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
- * تحديد معدّل الطلبات — نافذة منزلقة في الذاكرة.
+ * تحديد معدّل الطلبات — عدّاد مشترك في القاعدة، وذاكرةٌ عند تعذّره.
  *
- * ملاحظة معمارية: هذا التطبيق يعمل لكل نسخة (instance) على حدة،
- * وهو كافٍ لصدّ إساءة الاستخدام العرضية من مستخدم واحد. للنشر متعدّد
- * النسخ على Vercel، استبدل RateLimiter بمخزن مشترك (Upstash Redis
- * أو ما يعادله) دون تغيير مواقع الاستدعاء — الواجهة هنا مصمّمة لذلك.
+ * كان العدّاد في `Map` داخل ذاكرة عملية Node. وهذا يعمل على خادم واحد،
+ * والنشر على Vercel يشغّل نسخًا كثيرة متوازية لكلٍّ منها ذاكرتها: فمن
+ * وُضع له حدّ ثماني محاولات دخول يملك فعليًا ثمانيًا **لكل نسخة**،
+ * والنسخ تزداد كلّما زاد الضغط — أي أن الحماية تضعف بالضبط حين تُحتاج.
+ * والعطل صامت: لا خطأ ولا سجلّ، والحدّ يبدو مطبَّقًا تمامًا في الشيفرة.
+ *
+ * والمخزن هو Postgres نفسه لا خدمة جديدة: لا مفتاح إضافي ولا فاتورة.
+ *
+ * ---------------------------------------------------------------------
+ * حين تتعذّر القاعدة: يُسمح بالطلب بعد عدّه في الذاكرة
+ *
+ * قرارٌ مقصود لا إغفال. الإغلاق عند تعذّر القاعدة يعني أن عطلًا في
+ * القاعدة يمنع **كل** تسجيل دخول وكل رفع مستند — أي أن أداة الحماية
+ * تصير هي العطل، وتحوّل خللًا جزئيًا إلى انقطاع تامّ.
+ *
+ * والبديل ليس السماح المطلق: يُرجَع إلى عدّاد الذاكرة، وهو ما كان
+ * قائمًا وحده قبل هذه الترحيلة. فالتدهور إلى الحماية السابقة لا إلى
+ * لا حماية.
+ * ---------------------------------------------------------------------
  */
 
 interface Bucket {
@@ -24,7 +40,10 @@ function sweep(now: number) {
   if (now - lastSweep < SWEEP_INTERVAL_MS) return;
   lastSweep = now;
   for (const [key, bucket] of buckets) {
-    if (bucket.timestamps.length === 0 || now - bucket.timestamps[bucket.timestamps.length - 1] > SWEEP_INTERVAL_MS) {
+    if (
+      bucket.timestamps.length === 0 ||
+      now - bucket.timestamps[bucket.timestamps.length - 1] > SWEEP_INTERVAL_MS
+    ) {
       buckets.delete(key);
     }
   }
@@ -64,14 +83,13 @@ export const RATE_LIMITS = {
 
 export interface RateLimitResult {
   allowed: boolean;
-  remaining: number;
   retryAfterSeconds: number;
+  /** true حين تعذّرت القاعدة فحُسب الحدّ في ذاكرة هذه النسخة وحدها */
+  degraded: boolean;
 }
 
-export function checkRateLimit(
-  identifier: string,
-  rule: RateLimitRule,
-): RateLimitResult {
+/** العدّاد الاحتياطي — نافذة منزلقة دقيقة داخل نسخة واحدة */
+function checkInMemory(identifier: string, rule: RateLimitRule): RateLimitResult {
   const now = Date.now();
   sweep(now);
 
@@ -84,24 +102,58 @@ export function checkRateLimit(
     const oldest = bucket.timestamps[0];
     return {
       allowed: false,
-      remaining: 0,
       retryAfterSeconds: Math.max(1, Math.ceil((oldest + rule.windowMs - now) / 1000)),
+      degraded: true,
     };
   }
 
   bucket.timestamps.push(now);
   buckets.set(identifier, bucket);
 
-  return {
-    allowed: true,
-    remaining: rule.limit - bucket.timestamps.length,
-    retryAfterSeconds: 0,
-  };
+  return { allowed: true, retryAfterSeconds: 0, degraded: true };
+}
+
+export async function checkRateLimit(
+  identifier: string,
+  rule: RateLimitRule,
+): Promise<RateLimitResult> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin.rpc('check_rate_limit', {
+      p_key: identifier,
+      p_limit: rule.limit,
+      p_window_ms: rule.windowMs,
+    });
+
+    if (error) throw error;
+
+    // الدالة تعيد صفًّا واحدًا؛ وغيابه يعني عقدًا مكسورًا لا سماحًا
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row.allowed !== 'boolean') {
+      throw new Error('استجابة غير متوقعة من check_rate_limit');
+    }
+
+    return {
+      allowed: row.allowed,
+      retryAfterSeconds: row.retry_after_seconds ?? 0,
+      degraded: false,
+    };
+  } catch (cause) {
+    // لا يُسجَّل المفتاح: قد يكون بريدًا أو معرّف مستخدم
+    console.error('[rate-limit] تعذّر العدّاد المشترك، والرجوع إلى الذاكرة', {
+      rule,
+      cause: cause instanceof Error ? cause.message : String(cause),
+    });
+    return checkInMemory(identifier, rule);
+  }
 }
 
 /** يرمي AppError إذا تجاوز المستخدم الحد */
-export function enforceRateLimit(identifier: string, rule: RateLimitRule): void {
-  const result = checkRateLimit(identifier, rule);
+export async function enforceRateLimit(
+  identifier: string,
+  rule: RateLimitRule,
+): Promise<void> {
+  const result = await checkRateLimit(identifier, rule);
   if (!result.allowed) {
     throw new AppError(
       'RATE_LIMITED',

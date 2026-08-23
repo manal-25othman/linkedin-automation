@@ -58,7 +58,7 @@ export async function askSiteAssistant(input: {
 
   // الزائر مجهول، فالحد أضيق من حد الموظفين: الطلب مفتوح للعموم
   // ويستهلك رصيد المنصة لا رصيد شركة.
-  enforceRateLimit(`site-chat:${input.visitorKey}`, RATE_LIMITS.siteChat);
+  await enforceRateLimit(`site-chat:${input.visitorKey}`, RATE_LIMITS.siteChat);
 
   const admin = createAdminClient();
 

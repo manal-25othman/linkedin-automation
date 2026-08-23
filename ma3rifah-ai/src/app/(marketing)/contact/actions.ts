@@ -37,7 +37,7 @@ export async function submitContactRequest(
   const identifier =
     headerList.get('x-forwarded-for')?.split(',')[0]?.trim() || 'contact-anonymous';
 
-  const rate = checkRateLimit(`contact:${identifier}`, RATE_LIMITS.mutation);
+  const rate = await checkRateLimit(`contact:${identifier}`, RATE_LIMITS.mutation);
   if (!rate.allowed) {
     return {
       status: 'error',

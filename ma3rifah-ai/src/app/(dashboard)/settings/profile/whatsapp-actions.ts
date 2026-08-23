@@ -25,7 +25,7 @@ export interface LinkCodeResult {
 export async function requestWhatsAppLinkCodeAction(): Promise<LinkCodeResult> {
   try {
     const { profile, company } = await requireCompanySession();
-    enforceRateLimit(`wa-link:${profile.id}`, RATE_LIMITS.mutation);
+    await enforceRateLimit(`wa-link:${profile.id}`, RATE_LIMITS.mutation);
 
     const supabase = await createClient();
     const { data, error } = await supabase.rpc('request_whatsapp_link_code');

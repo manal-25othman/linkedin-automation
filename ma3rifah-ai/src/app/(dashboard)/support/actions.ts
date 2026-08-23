@@ -33,7 +33,7 @@ const replySchema = z.object({
 export async function createTicketAction(formData: FormData): Promise<ActionResult> {
   try {
     const { profile, company } = await requireCompanySession();
-    enforceRateLimit(`ticket:${profile.id}`, RATE_LIMITS.mutation);
+    await enforceRateLimit(`ticket:${profile.id}`, RATE_LIMITS.mutation);
 
     const parsed = createSchema.safeParse({
       subject: formData.get('subject'),
@@ -99,7 +99,7 @@ export async function createTicketAction(formData: FormData): Promise<ActionResu
 export async function replyToTicketAction(formData: FormData): Promise<ActionResult> {
   try {
     const { profile, company } = await requireCompanySession();
-    enforceRateLimit(`ticket-reply:${profile.id}`, RATE_LIMITS.mutation);
+    await enforceRateLimit(`ticket-reply:${profile.id}`, RATE_LIMITS.mutation);
 
     const parsed = replySchema.safeParse({
       ticketId: formData.get('ticketId'),
