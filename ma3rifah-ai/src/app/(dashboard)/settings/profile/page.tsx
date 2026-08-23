@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SessionCard } from '@/components/dashboard/session-card';
+import { formatDurationAr, policyFor, tierForRole } from '@/lib/auth/session-policy';
 import { ProfileForm } from '../settings-forms';
 import { WhatsAppLinkCard } from '@/components/dashboard/whatsapp-link-card';
 import { WHATSAPP_NUMBER } from '@/lib/config/contact';
@@ -33,6 +35,10 @@ export default async function ProfileSettingsPage() {
     .select('phone, verified_at')
     .eq('user_id', profile.id)
     .maybeSingle();
+
+  const sessionPolicy = policyFor(tierForRole(profile.role));
+  const idleLabel = formatDurationAr(sessionPolicy.idleMs);
+  const absoluteLabel = formatDurationAr(sessionPolicy.absoluteMs);
 
   return (
     <div className="space-y-6">
@@ -87,6 +93,15 @@ export default async function ProfileSettingsPage() {
             <p className="rounded-lg border bg-muted/30 p-3 text-xs leading-relaxed text-muted-foreground">
               تغيير الدور أو القسم يتم عبر مدير الشركة من صفحة المستخدمين.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>أمان الجلسة</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SessionCard idleLabel={idleLabel} absoluteLabel={absoluteLabel} />
           </CardContent>
         </Card>
       </div>

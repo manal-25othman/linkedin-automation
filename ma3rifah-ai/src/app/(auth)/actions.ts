@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { serverEnv } from '@/lib/env';
 import { headers } from 'next/headers';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { stampSession, clearSessionStamp } from '@/lib/auth/session-stamp';
 
 import type { AuthFormState } from './form-state';
 
@@ -90,7 +91,7 @@ export async function loginAction(
   if (data.user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('company_id, status')
+      .select('company_id, status, role')
       .eq('id', data.user.id)
       .maybeSingle();
 
@@ -116,6 +117,10 @@ export async function loginAction(
         message: 'حسابك غير مرتبط بأي شركة بعد. تواصل مع الدعم لإكمال التجهيز.',
       };
     }
+
+    // ختم الجلسة — تبدأ منه المهلتان. وبدونه يُنهي الـmiddleware
+    // الجلسة عند أول طلب، فلا يُترك أي مسار دخول بلا ختم.
+    await stampSession(profile?.role);
 
     await recordAudit({
       companyId: profile?.company_id ?? null,
@@ -208,15 +213,56 @@ export async function registerAction(
     };
   }
 
+  // المسجِّل الجديد مالك شركته ⇒ رتبة مشدَّدة
+  await stampSession('COMPANY_ADMIN');
+
   revalidatePath('/', 'layout');
   redirect('/dashboard');
 }
 
 export async function logoutAction(): Promise<void> {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // 'local' يُبطل جلسة هذا المتصفح وحده — الخروج من جهاز لا ينبغي أن
+  // يُخرج صاحبه من هاتفه. وإبطال الكلّ له إجراؤه الصريح أدناه.
+  await supabase.auth.signOut({ scope: 'local' });
+  await clearSessionStamp();
   revalidatePath('/', 'layout');
   redirect('/login');
+}
+
+/**
+ * الخروج من كل الأجهزة.
+ *
+ * يُبطل رموز التحديث كلها لدى Supabase، فتموت كل جلسة على كل جهاز ولا
+ * تُجدَّد. وهو ما يُحتاج فعلًا عند فقد جهاز أو الشكّ في تسريب — ومحو
+ * الكوكي محليًا وحده لا يكفي حينها، لأن الجهاز الآخر يحتفظ برمزه.
+ */
+export async function logoutEverywhereAction(): Promise<void> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    await recordAudit({
+      companyId: profile?.company_id ?? null,
+      actorId: user.id,
+      actorEmail: user.email,
+      action: 'auth.logout_all',
+    });
+  }
+
+  await supabase.auth.signOut({ scope: 'global' });
+  await clearSessionStamp();
+  revalidatePath('/', 'layout');
+  redirect('/login?error=signed_out_everywhere');
 }
 
 /**

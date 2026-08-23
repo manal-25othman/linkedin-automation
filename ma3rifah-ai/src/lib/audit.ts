@@ -7,6 +7,7 @@ export type AuditAction =
   | 'auth.register'
   | 'auth.login'
   | 'auth.password_reset'
+  | 'auth.logout_all'
   | 'company.updated'
   | 'company.ai_settings_updated'
   | 'plan.created'

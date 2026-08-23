@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { activateInvitedProfile, classifyCallbackProfile } from '@/lib/auth/activation';
+import { stampSession } from '@/lib/auth/session-stamp';
 import { serverEnv } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
   if (userId) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('status, company_id')
+      .select('status, company_id, role')
       .eq('id', userId)
       .maybeSingle();
 
@@ -81,6 +82,10 @@ export async function GET(request: NextRequest) {
         companyId: profile?.company_id,
       });
     }
+
+    // الموظف المدعو يصل من هنا ولا يمرّ بنموذج الدخول إطلاقًا. وبلا ختم
+    // ينهي الـmiddleware جلسته عند أول طلب، فيدور بين الرابط والدخول.
+    await stampSession(profile?.role);
   }
 
   return NextResponse.redirect(`${base}${next}`);
