@@ -485,3 +485,95 @@ export async function deleteSitePageAction(pageId: string): Promise<ActionResult
     return { ok: false, message: toAppError(error).displayMessage };
   }
 }
+
+/**
+ * المصاريف الثابتة للمنصّة.
+ *
+ * تُدخَل يدويًا لأنها ليست في أي جدول: فاتورة الاستضافة والقاعدة
+ * والأدوات لا تمرّ بالمنتج. وبلا إدخالها لا يُطرح منها شيء، فيظهر
+ * الربح أكبر مما هو — وعلى رقمٍ كهذا تُتخذ قرارات توظيف وإنفاق.
+ */
+export async function addPlatformExpenseAction(
+  input: { label: string; amountUsd: number; startsOn: string; note?: string },
+): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    const label = input.label.trim();
+    if (label.length < 2 || label.length > 80) {
+      throw new AppError('VALIDATION', 'اسم المصروف بين حرفين وثمانين حرفًا.');
+    }
+    if (!Number.isFinite(input.amountUsd) || input.amountUsd < 0) {
+      throw new AppError('VALIDATION', 'المبلغ يجب أن يكون رقمًا موجبًا.');
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startsOn)) {
+      throw new AppError('VALIDATION', 'تاريخ البداية غير صالح.');
+    }
+
+    const admin = createAdminClient();
+    const { error } = await admin.from('platform_expenses').insert({
+      label,
+      amount_usd: input.amountUsd,
+      starts_on: input.startsOn,
+      note: input.note?.trim() || null,
+    });
+    if (error) throw error;
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'platform.expense.added',
+      entityType: 'platform_expense',
+      entityId: null,
+      metadata: { label, amountUsd: input.amountUsd },
+    });
+
+    revalidatePath('/admin/finance');
+    return { ok: true, message: 'أُضيف المصروف.' };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+/**
+ * إنهاء مصروف بدل حذفه.
+ *
+ * الحذف يزوّر الماضي: المصروف الذي دُفع فعلًا في الأشهر السابقة يختفي
+ * منها، فيرتفع ربحُ شهرٍ مضى بأثر رجعي. والإنهاء يوقفه من تاريخه
+ * ويُبقي التاريخ كما كان.
+ */
+export async function endPlatformExpenseAction(
+  expenseId: string,
+  endsOn: string,
+): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) {
+      throw new AppError('VALIDATION', 'تاريخ الانتهاء غير صالح.');
+    }
+
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from('platform_expenses')
+      .update({ ends_on: endsOn })
+      .eq('id', expenseId);
+    if (error) throw error;
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'platform.expense.ended',
+      entityType: 'platform_expense',
+      entityId: expenseId,
+      metadata: { endsOn },
+    });
+
+    revalidatePath('/admin/finance');
+    return { ok: true, message: 'أُنهي المصروف.' };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}

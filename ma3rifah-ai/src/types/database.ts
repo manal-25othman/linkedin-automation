@@ -393,6 +393,18 @@ type AiUsageLogRow = {
   created_at: string;
 };
 
+type PlatformExpenseRow = {
+  id: string;
+  label: string;
+  /** بالدولار — أكثر فواتير البنية التحتية بالدولار */
+  amount_usd: number;
+  starts_on: string;
+  /** null = ما زال ساريًا */
+  ends_on: string | null;
+  note: string | null;
+  created_at: string;
+};
+
 type AuditLogRow = {
   id: string;
   company_id: string | null;
@@ -487,6 +499,7 @@ export interface Database {
       plans: Table<PlanRow>;
       site_content: Table<SiteContentRow>;
       site_pages: Table<SitePageRow>;
+      platform_expenses: Table<PlatformExpenseRow>;
       payments: Table<PaymentRow>;
       subscriptions: Table<SubscriptionRow>;
       usage_records: Table<UsageRecordRow>;
@@ -662,6 +675,34 @@ export interface Database {
           input_tokens: number;
           output_tokens: number;
           cost_usd: number;
+        }[];
+      };
+      platform_finance_summary: {
+        Args: { p_months?: number };
+        Returns: {
+          period_month: string;
+          revenue_sar: number;
+          ai_cost_usd: number;
+          fixed_cost_usd: number;
+          net_profit_sar: number;
+          margin_percent: number | null;
+          paying_companies: number;
+          questions_count: number;
+        }[];
+      };
+      platform_company_pnl: {
+        Args: { p_month?: string | null };
+        Returns: {
+          company_id: string;
+          company_name: string;
+          plan_name: string | null;
+          is_demo: boolean;
+          revenue_sar: number;
+          ai_cost_usd: number;
+          profit_sar: number;
+          margin_percent: number | null;
+          questions_count: number;
+          questions_limit: number | null;
         }[];
       };
       platform_margin_report: {

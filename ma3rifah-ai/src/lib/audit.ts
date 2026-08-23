@@ -12,6 +12,8 @@ export type AuditAction =
   | 'company.ai_settings_updated'
   | 'plan.created'
   | 'plan.updated'
+  | 'platform.expense.added'
+  | 'platform.expense.ended'
   | 'site_content.updated'
   | 'site_page.created'
   | 'site_page.updated'

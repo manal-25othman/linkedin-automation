@@ -18,6 +18,7 @@
 \set dept_a_fin '''aaaaaaaa-1000-4000-8000-000000000002'''
 \set dept_b_hr  '''bbbbbbbb-1000-4000-8000-000000000001'''
 
+\set platform_owner '''00000000-2000-4000-8000-000000000001'''
 \set user_a_admin  '''aaaaaaaa-2000-4000-8000-000000000001'''
 \set user_a_hr_mgr '''aaaaaaaa-2000-4000-8000-000000000002'''
 \set user_a_hr_emp '''aaaaaaaa-2000-4000-8000-000000000003'''
@@ -53,11 +54,22 @@ insert into public.departments (id, company_id, name) values
 -- إدراج في auth.users يُشغّل المُحفِّز الذي ينشئ ملف profiles تلقائيًا
 
 insert into auth.users (id, email) values
+  (:platform_owner::uuid, 'owner@test.invalid'),
   (:user_a_admin::uuid,   'a.admin@test.invalid'),
   (:user_a_hr_mgr::uuid,  'a.hr.manager@test.invalid'),
   (:user_a_hr_emp::uuid,  'a.hr.employee@test.invalid'),
   (:user_a_fin_emp::uuid, 'a.fin.employee@test.invalid'),
   (:user_b_admin::uuid,   'b.admin@test.invalid');
+
+-- مالك المنصّة: بلا شركة، ودوره SUPER_ADMIN.
+--
+-- ووجوده شرطُ صحّةٍ لاختبارات التقرير المالي: بلا حسابٍ **يحقّ له**
+-- القراءة، تنجح اختباراتُ المنع كلّها بينما التقرير معطَّل تمامًا —
+-- فتكون خضراء وجوفاء.
+update public.profiles set
+  company_id = null, department_id = null,
+  role = 'SUPER_ADMIN', status = 'ACTIVE', full_name = 'مالك المنصّة'
+where id = :platform_owner::uuid;
 
 update public.profiles set
   company_id = :company_a::uuid, department_id = null,

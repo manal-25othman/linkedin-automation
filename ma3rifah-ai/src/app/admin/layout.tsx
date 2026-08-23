@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
+  Banknote,
   Building2,
   FileText,
   Files,
@@ -36,6 +37,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               <LayoutDashboard className="me-2 inline size-4" aria-hidden />
               نظرة عامة
+            </Link>
+            <Link
+              href="/admin/finance"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <Banknote className="me-2 inline size-4" aria-hidden />
+              المالية
             </Link>
             <Link
               href="/admin/companies"
