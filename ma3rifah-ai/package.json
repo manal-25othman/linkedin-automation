@@ -16,7 +16,8 @@
     "test:isolation:mutate": "MUTATE=1 TEST_DB=ma3rifah_mutation bash tests/sql/run-isolation-tests.sh",
     "db:seed": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed.ts",
     "db:reset": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed.ts --reset",
-    "injection-drill": "tsx --tsconfig scripts/tsconfig.drill.json scripts/prompt-injection-drill.ts"
+    "injection-drill": "tsx --tsconfig scripts/tsconfig.drill.json scripts/prompt-injection-drill.ts",
+    "rag-drill": "tsx --tsconfig scripts/tsconfig.drill.json scripts/rag-quality-drill.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

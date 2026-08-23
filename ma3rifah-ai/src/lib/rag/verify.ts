@@ -115,6 +115,9 @@ export function contentTokens(text: string): Set<string> {
  *
  * تُزال فواصل الآلاف وتُوحَّد الفاصلة العشرية، فيتطابق «1,500» مع
  * «1500» و«١٬٥٠٠». وتُسقط الأصفار اللاحقة كي يتطابق «30.0» مع «30».
+ *
+ * ويُقرأ العدد المكتوب بالحروف بالقيمة نفسها، فيلتقي «ثلاثين» بـ«30»
+ * في مجموعة واحدة — وعليه يقوم التحقق كلّه.
  */
 export function extractNumbers(text: string): Set<string> {
   const normalized = normalizeArabic(text)
@@ -129,6 +132,128 @@ export function extractNumbers(text: string): Set<string> {
     if (Number.isFinite(value)) result.add(String(value));
   }
 
+  for (const value of extractWordNumbers(normalized)) result.add(value);
+
+  return result;
+}
+
+/**
+ * الأعداد المكتوبة بالحروف — الثغرة التي كانت تُمرِّر الهلوسة.
+ *
+ * `extractNumbers` تقرأ الخانات وحدها، والمستند النظامي العربي يكتب
+ * العدد بالحروف: «قبل ثلاثين يومًا». فكانت ثلاث حالات تفشل معًا:
+ *
+ *   • الجواب «٣٠» والمصدر «ثلاثين» ⇒ تحذير **كاذب** على رقم صحيح،
+ *     وخصمٌ كامل لوزن الأرقام من درجة الثقة.
+ *   • الجواب «ثلاثون» والمصدر «٣٠» ⇒ لا تحقّق البتة.
+ *   • الجواب «تسعون» **مخترَعًا** والمصدر «واحد وعشرون» ⇒ `ratio = 1`،
+ *     أي أن الرقم المخترَع يجتاز الطبقة المبنيّة أصلًا لكشفه.
+ *
+ * والثالثة أخطرها: عطبٌ صامت في وظيفة المنتج الأساسية.
+ *
+ * والجدول مكتوب بصيغته **بعد التطبيع** (أ→ا، ة→ه، ى→ي) كي لا تُعدَّد
+ * أشكال الرسم: «ثلاثة» و«ثلاثه» مدخلٌ واحد.
+ *
+ * وحدّه معروف ومقصود: يقرأ الأعداد لا صيغ المثنى الاسمية («يومين»
+ * بمعنى ٢)، فتلك تحتاج تحليلًا صرفيًا كاملًا، وخطؤه يخترع أرقامًا لم
+ * يقلها أحد — وهو أسوأ من إغفالها.
+ */
+const WORD_NUMBERS: Record<string, number> = {
+  // آحاد
+  واحد: 1, واحده: 1, احد: 1, احدي: 1, اولي: 1,
+  اثنان: 2, اثنين: 2, اثنتان: 2, اثنتين: 2,
+  ثلاث: 3, ثلاثه: 3, اربع: 4, اربعه: 4, خمس: 5, خمسه: 5,
+  ست: 6, سته: 6, سبع: 7, سبعه: 7, ثمان: 8, ثمانيه: 8, ثماني: 8,
+  تسع: 9, تسعه: 9, عشر: 10, عشره: 10,
+  // عقود
+  عشرون: 20, عشرين: 20, ثلاثون: 30, ثلاثين: 30,
+  اربعون: 40, اربعين: 40, خمسون: 50, خمسين: 50,
+  ستون: 60, ستين: 60, سبعون: 70, سبعين: 70,
+  ثمانون: 80, ثمانين: 80, تسعون: 90, تسعين: 90,
+  // مئات
+  مئه: 100, مايه: 100, مئتان: 200, مئتين: 200, مايتان: 200, مايتين: 200,
+  ثلاثمئه: 300, ثلاثمايه: 300, اربعمئه: 400, اربعمايه: 400,
+  خمسمئه: 500, خمسمايه: 500, ستمئه: 600, ستمايه: 600,
+  سبعمئه: 700, سبعمايه: 700, ثمانمئه: 800, ثمانمايه: 800,
+  تسعمئه: 900, تسعمايه: 900,
+  // ألوف
+  الف: 1000, الفا: 1000, الفان: 2000, الفين: 2000, الاف: 1000,
+};
+
+/**
+ * طيّ كرسي الهمزة.
+ *
+ * «مائة» و«مئة» رسمان لكلمة واحدة، والتطبيع العام لا يوحّد الكرسي.
+ * ويمرّ الطيّ على **الجدول والنصّ معًا**: طيُّ أحدهما دون الآخر يصلح
+ * «ثلاثمائة» ويكسر «مئتان» — وقد فعل.
+ */
+function foldHamzaSeat(word: string): string {
+  return word.replace(/ئ/g, 'ي').replace(/ؤ/g, 'و');
+}
+
+const NUMBER_LOOKUP: Record<string, number> = Object.fromEntries(
+  Object.entries(WORD_NUMBERS).map(([word, value]) => [foldHamzaSeat(word), value]),
+);
+
+/** مضاعِفات تضرب ما قبلها بدل أن تُضاف إليه */
+const MULTIPLIERS = new Set([100, 1000]);
+
+/**
+ * قراءة الأعداد المكتوبة بالحروف من نصّ **مُطبَّع**.
+ *
+ * تُجمع الكلمات العددية المتجاورة في عدد واحد على قاعدة التركيب
+ * العربية: «خمسة وعشرون» ⇒ ٢٥، و«ثلاثة آلاف» ⇒ ٣٠٠٠. والواو المتصلة
+ * بالعقد («وعشرون») تُقشَر حين يكون الباقي عددًا، فلا تُكسَر السلسلة.
+ */
+function extractWordNumbers(normalized: string): Set<string> {
+  const tokens = normalized.split(/[^\p{L}]+/u).filter(Boolean);
+  const result = new Set<string>();
+
+  let total = 0;
+  let current = 0;
+  let open = false;
+
+  const close = () => {
+    if (open) {
+      const value = total + current;
+      if (value > 0) result.add(String(value));
+    }
+    total = 0;
+    current = 0;
+    open = false;
+  };
+
+  for (const raw of tokens) {
+    const token = foldHamzaSeat(raw);
+
+    // «وعشرون» ← «عشرون»، ولا تُقشَر «واحد» فهي عدد بذاتها
+    const word =
+      NUMBER_LOOKUP[token] !== undefined
+        ? token
+        : token.startsWith('و') && NUMBER_LOOKUP[token.slice(1)] !== undefined
+          ? token.slice(1)
+          : null;
+
+    if (word === null) {
+      close();
+      continue;
+    }
+
+    const value = NUMBER_LOOKUP[word];
+    open = true;
+
+    if (MULTIPLIERS.has(value)) {
+      current = (current === 0 ? 1 : current) * value;
+      if (value === 1000) {
+        total += current;
+        current = 0;
+      }
+    } else {
+      current += value;
+    }
+  }
+
+  close();
   return result;
 }
 

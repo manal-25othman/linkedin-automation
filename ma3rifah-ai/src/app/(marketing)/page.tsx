@@ -20,7 +20,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Section, SectionHeading } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
-import { HeroDemo, Pulse } from '@/components/marketing/hero-demo';
+import { Pulse } from '@/components/marketing/pulse';
+import { DemoConsole } from '@/components/marketing/demo-console';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { getSiteText } from '@/lib/content/site-text';
@@ -99,7 +100,7 @@ export default async function HomePage() {
           </div>
 
           <div className="reveal-now mt-16" style={{ animationDelay: '120ms' }}>
-            <HeroDemo />
+            <DemoConsole />
           </div>
         </div>
       </section>
