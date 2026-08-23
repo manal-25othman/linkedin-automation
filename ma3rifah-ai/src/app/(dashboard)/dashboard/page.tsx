@@ -17,6 +17,11 @@ import { can } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/shared/page-header';
 import { OnboardingCard } from '@/components/dashboard/onboarding-card';
 import { computeOnboarding } from '@/lib/onboarding';
+import { SubscriptionBanner } from '@/components/dashboard/subscription-banner';
+import {
+  describeSubscription,
+  type SubscriptionStatus,
+} from '@/lib/billing/subscription-state';
 import { StatCard } from '@/components/shared/stat-card';
 import { EmptyState } from '@/components/shared/states';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +39,15 @@ export default async function DashboardPage() {
   const { profile, company } = await requireCompanySession();
   const supabase = await createClient();
 
-  const [statsResult, topQuestionsResult, gapsResult, activityResult, timeseriesResult, usageResult] =
+  const [
+    statsResult,
+    topQuestionsResult,
+    gapsResult,
+    activityResult,
+    timeseriesResult,
+    usageResult,
+    subscriptionResult,
+  ] =
     await Promise.all([
       supabase.rpc('company_dashboard_stats'),
       supabase.rpc('company_top_questions', { p_limit: 6 }),
@@ -51,6 +64,11 @@ export default async function DashboardPage() {
       can(profile.role, 'billing.view')
         ? supabase.rpc('company_usage_summary')
         : Promise.resolve({ data: [], error: null }),
+      // حالة الاشتراك — RLS تقصرها على شركة المستخدم
+      supabase
+        .from('subscriptions')
+        .select('status, current_period_end, trial_ends_at, canceled_at')
+        .maybeSingle(),
     ]);
 
   const stats = statsResult.data?.[0];
@@ -65,6 +83,19 @@ export default async function DashboardPage() {
   const unansweredCount = stats?.unanswered_count ?? 0;
   const totalAnswers = answeredCount + unansweredCount;
   const answerRate = totalAnswers > 0 ? (answeredCount / totalAnswers) * 100 : null;
+
+  // حالة الاشتراك — الشريط لا يظهر إلا حين يستحق
+  const subscriptionRow = subscriptionResult.data;
+  const subscription = describeSubscription(
+    subscriptionRow
+      ? {
+          status: subscriptionRow.status as SubscriptionStatus,
+          currentPeriodEnd: subscriptionRow.current_period_end,
+          trialEndsAt: subscriptionRow.trial_ends_at,
+          canceledAt: subscriptionRow.canceled_at,
+        }
+      : null,
+  );
 
   // رحلة التجهيز — تُحسب من البيانات لا من علامة محفوظة
   const onboarding = computeOnboarding(
@@ -91,6 +122,11 @@ export default async function DashboardPage() {
           </Button>
         }
       />
+
+      {/* حالة الاشتراك قبل كل شيء: من انتهت تجربته لا يعنيه تقدّم تجهيزه */}
+      {can(profile.role, 'billing.view') ? (
+        <SubscriptionBanner view={subscription} />
+      ) : null}
 
       {/* رحلة التجهيز — تحلّ محلّ بطاقة «ارفع أول مستند» وتشمل ما بعدها */}
       <OnboardingCard progress={onboarding} />

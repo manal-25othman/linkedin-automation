@@ -4,6 +4,11 @@ import { createClient } from '@/lib/supabase/server';
 import { PageHeader } from '@/components/shared/page-header';
 import { BillingClient, type BillingPlanOption } from './billing-client';
 import { serverEnv } from '@/lib/env';
+import { SubscriptionStatusCard } from '@/components/dashboard/subscription-status-card';
+import {
+  describeSubscription,
+  type SubscriptionStatus,
+} from '@/lib/billing/subscription-state';
 
 export const metadata: Metadata = { title: 'الاشتراك والفواتير' };
 export const dynamic = 'force-dynamic';
@@ -20,7 +25,10 @@ export default async function BillingPage() {
       .select('id, amount_halalas, currency, status, paid_at, created_at')
       .order('created_at', { ascending: false })
       .limit(12),
-    supabase.from('subscriptions').select('plan_id, status, current_period_end').maybeSingle(),
+    supabase
+      .from('subscriptions')
+      .select('plan_id, status, current_period_end, trial_ends_at, canceled_at')
+      .maybeSingle(),
   ]);
 
   const usage = usageResult.data?.[0] ?? null;
@@ -49,12 +57,27 @@ export default async function BillingPage() {
     createdAt: payment.created_at,
   }));
 
+  // حالة الاشتراك محسوبةً على الخادم — فلا تختلف عن اللوحة
+  const row = subscriptionResult.data;
+  const subscription = describeSubscription(
+    row
+      ? {
+          status: row.status as SubscriptionStatus,
+          currentPeriodEnd: row.current_period_end,
+          trialEndsAt: row.trial_ends_at,
+          canceledAt: row.canceled_at,
+        }
+      : null,
+  );
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="الاشتراك والفواتير"
         description={`خطة ${company.name} الحالية واستهلاكها، وسجلّ المدفوعات.`}
       />
+
+      <SubscriptionStatusCard view={subscription} />
 
       <BillingClient
         usage={
