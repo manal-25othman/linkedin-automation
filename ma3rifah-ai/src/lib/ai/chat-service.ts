@@ -403,6 +403,22 @@ async function recordUsageAndAnalytics(params: {
       p_cost_usd: cost + embeddingCost,
     });
 
+    // تنبيه اقتراب الحصة — بعد تسجيل الاستهلاك كي يقرأ الرقم المحدَّث.
+    //
+    // بعميل الجلسة لا بمفتاح الخدمة: الدالة تقرأ auth.uid() لتعرف شركة
+    // الطالب، ومفتاح الخدمة يجعلها null فتخرج صامتة بلا أثر ظاهر.
+    //
+    // وفشلُه لا يُسقط الإجابة: التنبيه خدمةٌ إضافية، وحجبُ جواب وصل
+    // فعلًا لأن تنبيهًا تعذّر مقايضةٌ خاسرة.
+    try {
+      const sessionClient = await createClient();
+      await sessionClient.rpc('notify_quota_warning');
+    } catch (error) {
+      logger.warn('تعذّر إرسال تنبيه الحصة', {
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     await admin.from('ai_usage_logs').insert({
       company_id: params.companyId,
       user_id: params.userId,

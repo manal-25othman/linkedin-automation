@@ -524,6 +524,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: { allowed: boolean; used: number; quota: number }[];
       };
+      notify_quota_warning: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
       activate_subscription_for_payment: {
         Args: { p_payment_id: string };
         Returns: boolean;

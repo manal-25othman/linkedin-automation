@@ -82,20 +82,45 @@ export const serverEnv = {
   get anthropicApiKey() {
     return required('ANTHROPIC_API_KEY');
   },
+  /**
+   * النموذج الافتراضي.
+   *
+   * كان `claude-opus-5`، وهو أقوى النماذج وأغلاها: خمسة أضعاف سعر
+   * الدخل وضعف سعر الخرج مقابل `claude-sonnet-5`. وبحساب الحصص
+   * المعلنة كانت كل خطة تخسر عند الاستهلاك الكامل — أي أن العميل
+   * الأكثر استعمالًا هو الأكثر خسارةً للمنصة، وهو انقلابٌ في نموذج
+   * العمل لا مسألة تحسين.
+   *
+   * وsonnet-5 كافٍ لمهمة هذا المنتج: الإجابة مبنيّة على مقاطع
+   * مسترجَعة ومقيَّدة بها، لا استنتاج مفتوح. والفرق بين النموذجين
+   * يظهر في الاستدلال الطويل لا في «اقرأ هذه المقاطع وأجب منها».
+   *
+   * ومن أراد opus فليضبط `ANTHROPIC_MODEL` صراحةً — وليراجع الحصص.
+   */
   get anthropicModel() {
-    return optional('ANTHROPIC_MODEL', 'claude-opus-5');
+    return optional('ANTHROPIC_MODEL', 'claude-sonnet-5');
   },
+  /**
+   * مستوى الجهد.
+   *
+   * الافتراضي `low` لا `medium`: التفكير الطويل يُحتسب رموزَ خرج بسعر
+   * الخرج، وهو أغلى ما في الطلب. والسؤال هنا استرجاعيّ لا استدلاليّ،
+   * فزيادة الجهد تزيد التكلفة أكثر مما تزيد الدقة.
+   */
   get anthropicEffort() {
-    const value = optional('ANTHROPIC_EFFORT', 'medium');
+    const value = optional('ANTHROPIC_EFFORT', 'low');
     const allowed = ['low', 'medium', 'high', 'xhigh', 'max'];
-    return allowed.includes(value) ? value : 'medium';
+    return allowed.includes(value) ? value : 'low';
   },
   get anthropicMaxOutputTokens() {
-    // على claude-opus-5 التفكير مفعّل تلقائيًا ما لم يُعطَّل صراحةً، و
-    // max_tokens سقف لمجموع (التفكير + نص الإجابة) لا للإجابة وحدها.
-    // قيمة ضيقة كـ2000 قد يستهلكها التفكير فتُبتر الإجابة العربية في
-    // منتصفها بلا خطأ — يعود stop_reason = 'max_tokens' فقط.
-    return optionalInt('ANTHROPIC_MAX_OUTPUT_TOKENS', 8000);
+    // `max_tokens` سقف لمجموع (التفكير + نص الإجابة) لا للإجابة وحدها.
+    // فالقيمة الضيقة جدًا (2000) قد يستهلكها التفكير فتُبتر الإجابة
+    // العربية في منتصفها بلا خطأ — يعود stop_reason = 'max_tokens' فقط.
+    //
+    // و3000 مع جهد `low` تترك متسعًا لإجابة طويلة بعد التفكير، وتقطع
+    // في الوقت نفسه الحالةَ التي كان فيها السقف 8000 بابًا لتكلفة
+    // مفتوحة على سؤال واحد.
+    return optionalInt('ANTHROPIC_MAX_OUTPUT_TOKENS', 3000);
   },
   get embeddingsProvider() {
     const value = optional('EMBEDDINGS_PROVIDER', 'local');
