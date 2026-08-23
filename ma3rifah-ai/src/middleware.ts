@@ -9,6 +9,8 @@ const PROTECTED_PREFIXES = [
   '/knowledge-base',
   '/documents',
   '/conversations',
+  '/help',
+
   '/knowledge-gaps',
   '/analytics',
   '/users',

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { LogOut, Menu, Settings, User, X } from 'lucide-react';
+import { CircleHelp, LogOut, Menu, Settings, User, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +57,17 @@ export function Topbar({
         <div className="hidden min-w-0 flex-1 lg:block" />
 
         <div className="flex items-center gap-3">
+          {/* المساعدة بجوار التنبيهات: من احتاجها احتاجها وهو عالق في
+              صفحة، لا وهو يبحث في قائمة جانبية */}
+          <Link
+            href="/help"
+            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            aria-label="دليل الاستخدام"
+            title="دليل الاستخدام"
+          >
+            <CircleHelp className="size-5" aria-hidden />
+          </Link>
+
           <Badge variant="muted" className="hidden sm:inline-flex">
             {ROLE_LABELS[user.role]}
           </Badge>
