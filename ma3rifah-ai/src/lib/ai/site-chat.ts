@@ -164,6 +164,8 @@ export async function askSiteAssistant(input: {
       completion.model,
       completion.inputTokens,
       completion.outputTokens,
+      completion.cacheReadTokens,
+      completion.cacheWriteTokens,
     ),
   });
 

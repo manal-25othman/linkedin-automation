@@ -335,6 +335,8 @@ export async function askAssistant(input: {
     model: completion.model,
     inputTokens: completion.inputTokens,
     outputTokens: completion.outputTokens,
+    cacheReadTokens: completion.cacheReadTokens,
+    cacheWriteTokens: completion.cacheWriteTokens,
     latencyMs: completion.latencyMs,
     unanswered,
     sourceCount: sources.length,
@@ -375,12 +377,20 @@ async function recordUsageAndAnalytics(params: {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
   latencyMs: number;
   unanswered: boolean;
   sourceCount: number;
   question: string;
 }): Promise<void> {
-  const cost = estimateCostUsd(params.model, params.inputTokens, params.outputTokens);
+  const cost = estimateCostUsd(
+    params.model,
+    params.inputTokens,
+    params.outputTokens,
+    params.cacheReadTokens,
+    params.cacheWriteTokens,
+  );
 
   // تضمين السؤال يمرّ على مزوّد خارجي أيضًا. تكلفته ضئيلة للسؤال
   // الواحد وملموسة عبر آلاف الأسئلة، وإغفالها يجعل الهامش يبدو أوسع.
@@ -398,7 +408,10 @@ async function recordUsageAndAnalytics(params: {
     await admin.rpc('record_usage', {
       p_company_id: params.companyId,
       p_questions: 1,
-      p_input_tokens: params.inputTokens + queryTokens,
+      // تشمل المخزَّنة مؤقتًا: هي رموز دخل فُوتِرت فعلًا وإن بسعر مخفَّض،
+      // وإسقاطها يُظهر استهلاكًا أقلّ من الحقيقي في تقارير الشركة
+      p_input_tokens:
+        params.inputTokens + params.cacheReadTokens + params.cacheWriteTokens + queryTokens,
       p_output_tokens: params.outputTokens,
       p_cost_usd: cost + embeddingCost,
     });
@@ -425,7 +438,7 @@ async function recordUsageAndAnalytics(params: {
       operation: 'chat',
       provider: 'anthropic',
       model: params.model,
-      input_tokens: params.inputTokens,
+      input_tokens: params.inputTokens + params.cacheReadTokens + params.cacheWriteTokens,
       output_tokens: params.outputTokens,
       estimated_cost_usd: cost,
       latency_ms: params.latencyMs,

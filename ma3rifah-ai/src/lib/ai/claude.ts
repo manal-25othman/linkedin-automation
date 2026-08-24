@@ -35,6 +35,10 @@ export interface CompletionResult {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  /** رموز قُرئت من التخزين المؤقت — تُسعَّر بعُشر سعر الدخل */
+  cacheReadTokens: number;
+  /** رموز كُتبت إلى التخزين المؤقت — تُسعَّر بضعف وربع */
+  cacheWriteTokens: number;
   latencyMs: number;
   stopReason: string | null;
 }
@@ -72,13 +76,42 @@ export function supportsEffort(model: string): boolean {
   return MODELS_WITH_EFFORT.some((supported) => model.startsWith(supported));
 }
 
+/**
+ * مُعامِلا التخزين المؤقت.
+ *
+ * القراءة من المخزَّن بعُشر سعر الدخل، والكتابة إليه بضعفٍ وربع. وهذا
+ * ما يجعل التخزين المؤقت مجديًا: موجّه النظام ثابت عبر كل أسئلة الشركة،
+ * فيُكتب مرة ويُقرأ مئات المرات.
+ */
+const CACHE_READ_MULTIPLIER = 0.1;
+const CACHE_WRITE_MULTIPLIER = 1.25;
+
+/**
+ * تقدير تكلفة استدعاء.
+ *
+ * **`input_tokens` لا يشمل الرموز المخزَّنة مؤقتًا.** يفصلها المزوّد في
+ * حقلين مستقلّين، فحسابُ الدخل وحده يُسقط تكلفة التخزين كلّها من
+ * الحساب — وهو ما كان يحدث هنا.
+ *
+ * والخطأ في اتجاه واحد: **التكلفة تظهر أقلّ مما هي**، فيظهر الربح في
+ * اللوحة المالية أعلى مما هو. وهذا أسوأ اتجاهي الخطأ، لأن الرقم
+ * المتفائل لا يدفع أحدًا إلى مراجعته.
+ */
 export function estimateCostUsd(
   model: string,
   inputTokens: number,
   outputTokens: number,
+  cacheReadTokens = 0,
+  cacheWriteTokens = 0,
 ): number {
   const pricing = MODEL_PRICING_USD_PER_MTOK[model] ?? { input: 5, output: 25 };
-  return (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000;
+
+  const inputCost =
+    inputTokens * pricing.input +
+    cacheReadTokens * pricing.input * CACHE_READ_MULTIPLIER +
+    cacheWriteTokens * pricing.input * CACHE_WRITE_MULTIPLIER;
+
+  return (inputCost + outputTokens * pricing.output) / 1_000_000;
 }
 
 /**
@@ -137,6 +170,8 @@ export async function generateAnswer(params: {
         model,
         inputTokens: response.usage.input_tokens,
         outputTokens: response.usage.output_tokens,
+        cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+        cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
         latencyMs: Date.now() - startedAt,
         stopReason: response.stop_reason,
       };
@@ -159,6 +194,8 @@ export async function generateAnswer(params: {
         model,
         inputTokens: response.usage.input_tokens,
         outputTokens: response.usage.output_tokens,
+        cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+        cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
         latencyMs: Date.now() - startedAt,
         stopReason: response.stop_reason,
       };
@@ -169,6 +206,8 @@ export async function generateAnswer(params: {
       model,
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
+      cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
       latencyMs: Date.now() - startedAt,
       stopReason: response.stop_reason,
     };
