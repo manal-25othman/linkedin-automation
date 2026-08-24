@@ -1,9 +1,9 @@
-import 'server-only';
+import "server-only";
 
-import { createHash } from 'node:crypto';
-import { serverEnv } from '@/lib/env';
-import { AppError } from '@/lib/errors';
-import { logger } from '@/lib/logger';
+import { createHash } from "node:crypto";
+import { serverEnv } from "@/lib/env";
+import { AppError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
 /**
  * طبقة تجريد لمزوّد التضمينات (Embeddings).
@@ -25,7 +25,7 @@ export interface EmbeddingProvider {
   readonly dimensions: number;
   /** true إذا كان مزوّدًا حقيقيًا صالحًا للإنتاج */
   readonly isProduction: boolean;
-  embed(texts: string[], kind: 'document' | 'query'): Promise<number[][]>;
+  embed(texts: string[], kind: "document" | "query"): Promise<number[][]>;
 }
 
 const MAX_BATCH_SIZE = 64;
@@ -39,7 +39,10 @@ function l2Normalize(vector: number[]): number[] {
   return vector.map((value) => value / norm);
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -49,10 +52,80 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   }
 }
 
+/**
+ * إعادة المحاولة عند تجاوز الحدّ أو عطل مؤقّت.
+ *
+ * الحساب الجديد لدى مزوّد التضمين يبدأ بحدّ منخفض جدًّا — ثلاثة طلبات في
+ * الدقيقة قبل إضافة وسيلة الدفع. ومستندٌ من عشرين صفحة يُقطَّع إلى عدّة
+ * دفعات، فيصطدم بالحدّ من الدفعة الثانية ويسقط المستند كلّه.
+ *
+ * وكان السقوط فوريًّا بلا محاولة واحدة. والانتظار ثوانيَ معدودة يُنجح
+ * المستند بدل أن يُطلَب من المستخدم رفعه مرارًا — وهو ما كان سيفعله،
+ * فيستهلك الحدّ نفسه في كل مرة ويفشل ثانيةً.
+ *
+ * ويُحترم `Retry-After` حين يرسله المزوّد لأنه أدقّ من أي تخمين، ويُقصّ
+ * إلى خمس وعشرين ثانية: الدالّة تعمل في بيئة لها سقف زمني، وانتظارٌ
+ * أطول يُسقط الطلب كلّه بدل أن ينقذه.
+ */
+const MAX_ATTEMPTS = 3;
+const MAX_BACKOFF_MS = 25_000;
+
+/** 429 تجاوز حدّ · 5xx عطل مؤقّت لدى المزوّد */
+function isRetryable(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function backoffMs(attempt: number, retryAfterHeader: string | null): number {
+  const retryAfter = Number(retryAfterHeader);
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.min(retryAfter * 1000, MAX_BACKOFF_MS);
+  }
+  // 5 ثوانٍ ثم 15 — يكفي حدَّ ثلاثة طلبات في الدقيقة لدفعتين
+  return Math.min(5_000 * 3 ** attempt, MAX_BACKOFF_MS);
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  provider: string,
+): Promise<Response> {
+  let lastStatus = 0;
+  let lastBody = "";
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetchWithTimeout(url, init);
+    if (response.ok) return response;
+
+    lastStatus = response.status;
+    lastBody = await response.text();
+
+    if (!isRetryable(response.status) || attempt === MAX_ATTEMPTS - 1) break;
+
+    const wait = backoffMs(attempt, response.headers.get("retry-after"));
+    logger.warn("تجاوز حدّ مزوّد التضمين — إعادة المحاولة", {
+      provider,
+      status: response.status,
+      waitMs: wait,
+      attempt: attempt + 1,
+    });
+    await sleep(wait);
+  }
+
+  throw new AppError(
+    "EMBEDDINGS_UNAVAILABLE",
+    lastStatus === 429
+      ? "تجاوزت خدمة تحليل النصوص حدّها المسموح. إن كان الحساب جديدًا فقد يكون الحدّ منخفضًا حتى تُضاف وسيلة دفع لدى المزوّد. أعد المحاولة بعد دقيقة."
+      : undefined,
+    `${provider} ${lastStatus}: ${lastBody.slice(0, 300)}`,
+  );
+}
+
 // ---------------------------------------------------------------- Voyage AI
 
 class VoyageProvider implements EmbeddingProvider {
-  readonly name = 'voyage';
+  readonly name = "voyage";
   readonly isProduction = true;
 
   constructor(
@@ -61,29 +134,27 @@ class VoyageProvider implements EmbeddingProvider {
     readonly dimensions: number,
   ) {}
 
-  async embed(texts: string[], kind: 'document' | 'query'): Promise<number[][]> {
-    const response = await fetchWithTimeout('https://api.voyageai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
+  async embed(
+    texts: string[],
+    kind: "document" | "query",
+  ): Promise<number[][]> {
+    const response = await fetchWithRetry(
+      "https://api.voyageai.com/v1/embeddings",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          input: texts,
+          model: this.model,
+          input_type: kind,
+          output_dimension: this.dimensions,
+        }),
       },
-      body: JSON.stringify({
-        input: texts,
-        model: this.model,
-        input_type: kind,
-        output_dimension: this.dimensions,
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new AppError(
-        'EMBEDDINGS_UNAVAILABLE',
-        undefined,
-        `Voyage ${response.status}: ${body.slice(0, 300)}`,
-      );
-    }
+      "Voyage",
+    );
 
     const payload = (await response.json()) as {
       data: Array<{ embedding: number[]; index: number }>;
@@ -98,7 +169,7 @@ class VoyageProvider implements EmbeddingProvider {
 // -------------------------------------------------- OpenAI-compatible API
 
 class OpenAiCompatibleProvider implements EmbeddingProvider {
-  readonly name = 'openai';
+  readonly name = "openai";
   readonly isProduction = true;
 
   constructor(
@@ -109,27 +180,22 @@ class OpenAiCompatibleProvider implements EmbeddingProvider {
   ) {}
 
   async embed(texts: string[]): Promise<number[][]> {
-    const response = await fetchWithTimeout(`${this.baseUrl}/embeddings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
+    const response = await fetchWithRetry(
+      `${this.baseUrl}/embeddings`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          input: texts,
+          model: this.model,
+          dimensions: this.dimensions,
+        }),
       },
-      body: JSON.stringify({
-        input: texts,
-        model: this.model,
-        dimensions: this.dimensions,
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new AppError(
-        'EMBEDDINGS_UNAVAILABLE',
-        undefined,
-        `OpenAI ${response.status}: ${body.slice(0, 300)}`,
-      );
-    }
+      "OpenAI",
+    );
 
     const payload = (await response.json()) as {
       data: Array<{ embedding: number[]; index: number }>;
@@ -151,18 +217,18 @@ class OpenAiCompatibleProvider implements EmbeddingProvider {
  * دون مفاتيح خارجية، لكنه لا يفهم الترادف ولا يصلح للإنتاج.
  */
 class LocalProvider implements EmbeddingProvider {
-  readonly name = 'local';
-  readonly model = 'hashed-bow-v1';
+  readonly name = "local";
+  readonly model = "hashed-bow-v1";
   readonly isProduction = false;
 
   constructor(readonly dimensions: number) {}
 
   private static normalizeArabic(text: string): string {
     return text
-      .replace(/[أإآٱ]/g, 'ا')
-      .replace(/ى/g, 'ي')
-      .replace(/ة/g, 'ه')
-      .replace(/[ً-ْـ]/g, '')
+      .replace(/[أإآٱ]/g, "ا")
+      .replace(/ى/g, "ي")
+      .replace(/ة/g, "ه")
+      .replace(/[ً-ْـ]/g, "")
       .toLowerCase();
   }
 
@@ -177,7 +243,7 @@ class LocalProvider implements EmbeddingProvider {
       // جذوع تقريبية: تحسّن التطابق بين «الإجازات» و«إجازة»
       if (word.length > 4) tokens.push(word.slice(0, -1));
       if (word.length > 5) tokens.push(word.slice(0, -2));
-      if (word.length > 3 && word.startsWith('ال')) tokens.push(word.slice(2));
+      if (word.length > 3 && word.startsWith("ال")) tokens.push(word.slice(2));
     }
 
     // ثنائيات الكلمات لالتقاط بعض السياق
@@ -189,7 +255,7 @@ class LocalProvider implements EmbeddingProvider {
   }
 
   private bucket(token: string): { index: number; sign: number } {
-    const digest = createHash('sha256').update(token).digest();
+    const digest = createHash("sha256").update(token).digest();
     const index = digest.readUInt32BE(0) % this.dimensions;
     const sign = (digest[4] & 1) === 0 ? 1 : -1;
     return { index, sign };
@@ -201,7 +267,8 @@ class LocalProvider implements EmbeddingProvider {
       const tokens = LocalProvider.tokenize(text);
 
       const counts = new Map<string, number>();
-      for (const token of tokens) counts.set(token, (counts.get(token) ?? 0) + 1);
+      for (const token of tokens)
+        counts.set(token, (counts.get(token) ?? 0) + 1);
 
       for (const [token, count] of counts) {
         const { index, sign } = this.bucket(token);
@@ -224,16 +291,20 @@ export function getEmbeddingProvider(): EmbeddingProvider {
   const dimensions = serverEnv.embeddingsDimensions;
   const configured = serverEnv.embeddingsProvider;
 
-  if (configured === 'voyage') {
+  if (configured === "voyage") {
     const key = serverEnv.voyageApiKey;
     if (key) {
-      cachedProvider = new VoyageProvider(key, serverEnv.voyageModel, dimensions);
+      cachedProvider = new VoyageProvider(
+        key,
+        serverEnv.voyageModel,
+        dimensions,
+      );
       return cachedProvider;
     }
-    logger.warn('VOYAGE_API_KEY مفقود — التحوّل إلى المزوّد المحلي.');
+    logger.warn("VOYAGE_API_KEY مفقود — التحوّل إلى المزوّد المحلي.");
   }
 
-  if (configured === 'openai') {
+  if (configured === "openai") {
     const key = serverEnv.openaiApiKey;
     if (key) {
       cachedProvider = new OpenAiCompatibleProvider(
@@ -244,7 +315,7 @@ export function getEmbeddingProvider(): EmbeddingProvider {
       );
       return cachedProvider;
     }
-    logger.warn('OPENAI_API_KEY مفقود — التحوّل إلى المزوّد المحلي.');
+    logger.warn("OPENAI_API_KEY مفقود — التحوّل إلى المزوّد المحلي.");
   }
 
   cachedProvider = new LocalProvider(dimensions);
@@ -259,7 +330,7 @@ export function resetEmbeddingProvider(): void {
 /** تضمين مجموعة نصوص على دفعات مع إعادة محاولة عند فشل الشبكة */
 export async function embedTexts(
   texts: string[],
-  kind: 'document' | 'query' = 'document',
+  kind: "document" | "query" = "document",
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
 
@@ -279,20 +350,23 @@ export async function embedTexts(
       } catch (error) {
         lastError = error;
         if (attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 750));
+          await new Promise((resolve) =>
+            setTimeout(resolve, 2 ** attempt * 750),
+          );
         }
       }
     }
 
     if (!embedded) {
-      logger.error('فشل توليد التضمينات', {
+      logger.error("فشل توليد التضمينات", {
         provider: provider.name,
         batchSize: batch.length,
-        reason: lastError instanceof Error ? lastError.message : String(lastError),
+        reason:
+          lastError instanceof Error ? lastError.message : String(lastError),
       });
       throw lastError instanceof AppError
         ? lastError
-        : new AppError('EMBEDDINGS_UNAVAILABLE');
+        : new AppError("EMBEDDINGS_UNAVAILABLE");
     }
 
     results.push(...embedded);
@@ -302,12 +376,12 @@ export async function embedTexts(
 }
 
 export async function embedQuery(text: string): Promise<number[]> {
-  const [vector] = await embedTexts([text], 'query');
-  if (!vector) throw new AppError('EMBEDDINGS_UNAVAILABLE');
+  const [vector] = await embedTexts([text], "query");
+  if (!vector) throw new AppError("EMBEDDINGS_UNAVAILABLE");
   return vector;
 }
 
 /** تنسيق pgvector النصي: '[0.1,0.2,...]' */
 export function toPgVector(vector: number[]): string {
-  return `[${vector.join(',')}]`;
+  return `[${vector.join(",")}]`;
 }
