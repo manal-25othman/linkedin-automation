@@ -5,6 +5,7 @@ import {
   Building2,
   FileText,
   Files,
+  KeyRound,
   LayoutDashboard,
   LifeBuoy,
   LogOut,
@@ -44,6 +45,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               <Banknote className="me-2 inline size-4" aria-hidden />
               المالية
+            </Link>
+            <Link
+              href="/admin/invites"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <KeyRound className="me-2 inline size-4" aria-hidden />
+              الدعوات
             </Link>
             <Link
               href="/admin/companies"

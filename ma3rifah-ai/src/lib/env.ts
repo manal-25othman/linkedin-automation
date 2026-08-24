@@ -97,6 +97,16 @@ export const serverEnv = {
    *
    * ومن أراد opus فليضبط `ANTHROPIC_MODEL` صراحةً — وليراجع الحصص.
    */
+  /**
+   * وضع التسجيل: `invite` أو `open`.
+   *
+   * والافتراضي **مغلق**: متغيّر غائب أو مكتوب خطأً يعني «بدعوة».
+   * والاتجاه مقصود — خطأُ إعدادٍ يمنع تسجيلًا مشروعًا يُكتشف في دقائق
+   * ويُصلَح، وخطأٌ يفتح الباب للعالم لا يُكتشف إلا بعد أن يدخل من دخل.
+   */
+  get registrationMode() {
+    return optional('REGISTRATION_MODE', 'invite') === 'open' ? 'open' : 'invite';
+  },
   get anthropicModel() {
     return optional('ANTHROPIC_MODEL', 'claude-sonnet-5');
   },

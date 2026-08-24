@@ -393,6 +393,28 @@ type AiUsageLogRow = {
   created_at: string;
 };
 
+type InviteCodeRow = {
+  id: string;
+  code: string;
+  label: string;
+  max_uses: number;
+  used_count: number;
+  expires_at: string | null;
+  revoked_at: string | null;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+type InviteRedemptionRow = {
+  id: string;
+  invite_id: string;
+  company_id: string | null;
+  user_id: string | null;
+  email: string;
+  redeemed_at: string;
+};
+
 type PlatformExpenseRow = {
   id: string;
   label: string;
@@ -500,6 +522,8 @@ export interface Database {
       site_content: Table<SiteContentRow>;
       site_pages: Table<SitePageRow>;
       platform_expenses: Table<PlatformExpenseRow>;
+      invite_codes: Table<InviteCodeRow>;
+      invite_redemptions: Table<InviteRedemptionRow>;
       payments: Table<PaymentRow>;
       subscriptions: Table<SubscriptionRow>;
       usage_records: Table<UsageRecordRow>;
@@ -540,6 +564,34 @@ export interface Database {
       notify_quota_warning: {
         Args: Record<string, never>;
         Returns: void;
+      };
+      check_invite_code: {
+        Args: { p_code: string };
+        Returns: { valid: boolean; label: string | null }[];
+      };
+      redeem_invite_code: {
+        Args: {
+          p_code: string;
+          p_email: string;
+          p_company_id?: string | null;
+          p_user_id?: string | null;
+        };
+        Returns: boolean;
+      };
+      invite_codes_report: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          code: string;
+          label: string;
+          max_uses: number;
+          used_count: number;
+          expires_at: string | null;
+          revoked_at: string | null;
+          note: string | null;
+          created_at: string;
+          is_active: boolean;
+        }[];
       };
       check_rate_limit: {
         Args: { p_key: string; p_limit: number; p_window_ms: number };

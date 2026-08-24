@@ -18,7 +18,13 @@ function SubmitButton() {
   );
 }
 
-export function RegisterForm() {
+export function RegisterForm({
+  inviteRequired,
+  presetCode,
+}: {
+  inviteRequired: boolean;
+  presetCode?: string;
+}) {
   const [state, formAction] = useActionState(registerAction, AUTH_INITIAL_STATE);
 
   if (state.status === 'pending_confirmation') {
@@ -40,6 +46,31 @@ export function RegisterForm() {
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
           <p className="text-sm text-destructive">{state.message}</p>
+        </div>
+      ) : null}
+
+      {inviteRequired ? (
+        <div className="space-y-2">
+          <Label htmlFor="inviteCode">رمز الدعوة</Label>
+          <Input
+            id="inviteCode"
+            name="inviteCode"
+            required
+            defaultValue={presetCode}
+            maxLength={64}
+            autoComplete="off"
+            spellCheck={false}
+            dir="ltr"
+            className="text-start font-mono tracking-wide"
+            placeholder="ALFA-2026"
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            التسجيل بدعوة في هذه المرحلة. إن لم يكن لديكِ رمز،{' '}
+            <a href="/contact" className="font-medium text-primary underline underline-offset-4">
+              اطلبي دعوة
+            </a>
+            .
+          </p>
         </div>
       ) : null}
 

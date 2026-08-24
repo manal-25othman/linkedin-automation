@@ -38,6 +38,9 @@ export const registerSchema = z.object({
   password: passwordSchema,
   companyName: trimmed(2, 150, 'اسم الشركة'),
   jobTitle: z.string().trim().max(120).optional().or(z.literal('')),
+  // الرمز اختياري في المخطّط ومطلوب في الإجراء حسب وضع التسجيل:
+  // المخطّط لا يعرف الإعداد، والتحقّق الحقيقي على الخادم لا هنا.
+  inviteCode: z.string().trim().max(64).optional().or(z.literal('')),
 });
 
 export const contactSchema = z.object({

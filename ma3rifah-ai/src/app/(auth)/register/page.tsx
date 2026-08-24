@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { RegisterForm } from './register-form';
 import { markVisitorConverted } from '@/lib/ai/site-chat';
+import { inviteRequired } from '@/lib/auth/invite';
 
 export const metadata: Metadata = {
   title: 'إنشاء حساب',
@@ -17,19 +18,30 @@ export const metadata: Metadata = {
  */
 export const dynamic = 'force-dynamic';
 
-export default async function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
   const visitorKey = (await cookies()).get('ma3rifah_visitor')?.value;
   if (visitorKey) await markVisitorConverted(visitorKey);
+
+  // الرمز يُملأ من الرابط تسهيلًا فقط — والتحقّق منه على الخادم في
+  // `registerAction`، فرابطٌ بلا رمز صحيح لا يفتح شيئًا.
+  const { code } = await searchParams;
+  const needsInvite = inviteRequired();
 
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">أنشئ حساب شركتك</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        ستصبح مدير الشركة، ويمكنك دعوة فريقك بعد ذلك مباشرة.
+        {needsInvite
+          ? 'التسجيل بدعوة في هذه المرحلة. ستصبحين مديرة الشركة، ويمكنك دعوة فريقك بعدها.'
+          : 'ستصبح مدير الشركة، ويمكنك دعوة فريقك بعد ذلك مباشرة.'}
       </p>
 
       <div className="mt-8">
-        <RegisterForm />
+        <RegisterForm inviteRequired={needsInvite} presetCode={code} />
       </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">

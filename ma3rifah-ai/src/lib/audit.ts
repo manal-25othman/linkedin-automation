@@ -14,6 +14,8 @@ export type AuditAction =
   | 'plan.updated'
   | 'platform.expense.added'
   | 'platform.expense.ended'
+  | 'invite.created'
+  | 'invite.revoked'
   | 'site_content.updated'
   | 'site_page.created'
   | 'site_page.updated'

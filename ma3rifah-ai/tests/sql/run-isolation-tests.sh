@@ -63,6 +63,9 @@ run_sql -f "$ROOT/tests/sql/03_rate_limit_tests.sql" >/dev/null
 echo "▸ اختبارات التقرير المالي"
 run_sql -f "$ROOT/tests/sql/04_finance_tests.sql" >/dev/null
 
+echo "▸ اختبارات رموز الدعوة"
+run_sql -f "$ROOT/tests/sql/05_invite_tests.sql" >/dev/null
+
 echo
 "${PSQL_BASE[@]}" -d "$TEST_DB" -P pager=off -c "
   select id as \"#\",

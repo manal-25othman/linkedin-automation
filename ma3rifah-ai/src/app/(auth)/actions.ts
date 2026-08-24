@@ -11,6 +11,12 @@ import { logger } from '@/lib/logger';
 import { serverEnv } from '@/lib/env';
 import { headers } from 'next/headers';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import {
+  INVITE_REJECTED_MESSAGE,
+  checkInviteCode,
+  inviteRequired,
+  redeemInviteCode,
+} from '@/lib/auth/invite';
 import { stampSession, clearSessionStamp } from '@/lib/auth/session-stamp';
 
 import type { AuthFormState } from './form-state';
@@ -151,17 +157,32 @@ export async function registerAction(
     password: formData.get('password'),
     companyName: formData.get('companyName'),
     jobTitle: formData.get('jobTitle'),
+    inviteCode: formData.get('inviteCode'),
   });
 
   if (!parsed.success) {
     return { status: 'error', message: firstIssueMessage(parsed.error) };
   }
 
-  const { fullName, email, password, companyName, jobTitle } = parsed.data;
+  const { fullName, email, password, companyName, jobTitle, inviteCode } = parsed.data;
 
   if (await authRateLimited(email)) {
     logger.warn('تجاوز حدّ محاولات التسجيل');
     return { status: 'error', message: RATE_LIMIT_MESSAGE };
+  }
+
+  // الدعوة تُفحص **قبل** إنشاء الحساب: التحقّق بعده يترك حسابًا يتيمًا
+  // في Supabase Auth بلا شركة، فيتعذّر على صاحبه التسجيل ثانيةً بالبريد
+  // نفسه ولو حصل على دعوة صحيحة.
+  //
+  // ولا يُستهلك الرمز هنا — الاستهلاك بعد نجاح التجهيز، وإلا لأحرق
+  // خطأٌ في كلمة المرور دعوةً كاملة.
+  if (inviteRequired()) {
+    const invite = await checkInviteCode(inviteCode ?? '');
+    if (!invite.valid) {
+      logger.warn('محاولة تسجيل برمز دعوة غير صالح');
+      return { status: 'error', message: INVITE_REJECTED_MESSAGE };
+    }
   }
 
   const supabase = await createClient();
@@ -182,14 +203,16 @@ export async function registerAction(
   }
 
   // تجهيز الشركة والأقسام والتصنيفات والاشتراك التجريبي
+  let companyId: string | null = null;
   try {
-    await bootstrapCompany({
+    const bootstrapped = await bootstrapCompany({
       userId: data.user.id,
       email,
       fullName,
       companyName,
       jobTitle: jobTitle || undefined,
     });
+    companyId = bootstrapped.companyId;
   } catch (bootstrapError) {
     logger.error('فشل تجهيز الشركة بعد التسجيل', {
       reason: bootstrapError instanceof Error ? bootstrapError.message : String(bootstrapError),
@@ -200,8 +223,25 @@ export async function registerAction(
     };
   }
 
+  // الاستهلاك بعد نجاح التجهيز — فلا تُحرق دعوةٌ على حساب لم يكتمل.
+  //
+  // وفشلُه لا يُسقط التسجيل: الحساب أُنشئ فعلًا والشركة جُهّزت، ورفضُه
+  // هنا يترك المستخدم بحسابٍ يعمل ورسالةِ خطأ لا معنى لها. يُسجَّل
+  // ليُراجَع بدل أن يُعاقَب عليه من لا ذنب له.
+  if (inviteRequired()) {
+    const redeemed = await redeemInviteCode({
+      code: inviteCode ?? '',
+      email,
+      companyId,
+      userId: data.user.id,
+    });
+    if (!redeemed) {
+      logger.warn('تعذّر استهلاك رمز دعوة بعد تسجيل ناجح', { companyId });
+    }
+  }
+
   await recordAudit({
-    companyId: null,
+    companyId,
     actorId: data.user.id,
     actorEmail: email,
     action: 'auth.register',

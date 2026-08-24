@@ -577,3 +577,113 @@ export async function endPlatformExpenseAction(
     return { ok: false, message: toAppError(error).displayMessage };
   }
 }
+
+// =====================================================================
+// رموز الدعوة
+// =====================================================================
+
+/** حروف بلا التباس بصري: لا 0/O ولا 1/I/L */
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function generateCode(label: string): string {
+  // بادئة من اسم الشركة تجعل الرمز مقروءًا في رسالة، فيُعرف لمن أُرسل
+  const prefix =
+    label
+      .replace(/[^A-Za-zء-ي]/g, '')
+      .slice(0, 4)
+      .toUpperCase() || 'MA3';
+
+  const random = Array.from(
+    crypto.getRandomValues(new Uint8Array(6)),
+    (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length],
+  ).join('');
+
+  return `${prefix}-${random}`;
+}
+
+export async function createInviteCodeAction(input: {
+  label: string;
+  maxUses: number;
+  expiresInDays: number;
+  note?: string;
+}): Promise<ActionResult & { code?: string }> {
+  try {
+    const session = await requireSuperAdmin();
+
+    const label = input.label.trim();
+    if (label.length < 2 || label.length > 120) {
+      throw new AppError('VALIDATION', 'اسم الجهة بين حرفين ومئة وعشرين حرفًا.');
+    }
+    if (!Number.isInteger(input.maxUses) || input.maxUses < 1 || input.maxUses > 500) {
+      throw new AppError('VALIDATION', 'عدد الاستعمالات بين ١ و٥٠٠.');
+    }
+    if (!Number.isInteger(input.expiresInDays) || input.expiresInDays < 1) {
+      throw new AppError('VALIDATION', 'مدة الصلاحية يوم واحد على الأقل.');
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + input.expiresInDays);
+
+    const admin = createAdminClient();
+    const code = generateCode(label);
+
+    const { error } = await admin.from('invite_codes').insert({
+      code,
+      label,
+      max_uses: input.maxUses,
+      expires_at: expiresAt.toISOString(),
+      note: input.note?.trim() || null,
+      created_by: session.profile.id,
+    });
+    if (error) throw error;
+
+    // الرمز نفسه لا يدخل سجلّ التدقيق: السجلّ يُقرأ ويُصدَّر، والرمز مفتاح
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'invite.created',
+      entityType: 'invite_code',
+      entityId: null,
+      metadata: { label, maxUses: input.maxUses },
+    });
+
+    revalidatePath('/admin/invites');
+    return { ok: true, message: 'أُنشئ الرمز.', code };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+/**
+ * إلغاء رمز — ولا يُحذف.
+ *
+ * الحذف يمحو من استُعمل الرمز لأجله، فيضيع أثر الحسابات التي أُنشئت به.
+ * والإلغاء يوقفه فورًا ويُبقي السجلّ.
+ */
+export async function revokeInviteCodeAction(inviteId: string): Promise<ActionResult> {
+  try {
+    const session = await requireSuperAdmin();
+    const admin = createAdminClient();
+
+    const { error } = await admin
+      .from('invite_codes')
+      .update({ revoked_at: new Date().toISOString() })
+      .eq('id', inviteId);
+    if (error) throw error;
+
+    await recordAudit({
+      companyId: null,
+      actorId: session.profile.id,
+      actorEmail: session.profile.email,
+      action: 'invite.revoked',
+      entityType: 'invite_code',
+      entityId: inviteId,
+    });
+
+    revalidatePath('/admin/invites');
+    return { ok: true, message: 'أُلغي الرمز.' };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
