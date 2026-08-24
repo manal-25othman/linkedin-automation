@@ -112,16 +112,16 @@ export function ChatBubblePanel({
           aria-label={title}
           className="flex h-[min(32rem,calc(100vh-7rem))] w-[min(23rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
         >
-          <header className="flex items-start justify-between gap-3 bg-teal-700 px-4 py-3 text-white">
+          <header className="flex items-start justify-between gap-3 bg-primary px-4 py-3 text-white">
             <div className="min-w-0">
               <p className="truncate font-semibold">{title}</p>
-              <p className="truncate text-xs text-teal-100">{subtitle}</p>
+              <p className="truncate text-xs text-primary-foreground/75">{subtitle}</p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="إغلاق المحادثة"
-              className="rounded-md p-1 text-teal-100 transition hover:bg-white/15 hover:text-white"
+              className="rounded-md p-1 text-primary-foreground/75 transition hover:bg-white/15 hover:text-white"
             >
               <X className="h-5 w-5" />
             </button>
@@ -137,7 +137,7 @@ export function ChatBubblePanel({
                     key={suggestion}
                     type="button"
                     onClick={() => void send(suggestion)}
-                    className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-800 transition hover:bg-teal-100"
+                    className="rounded-full border border-primary/25 bg-accent px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-accent/70"
                   >
                     {suggestion}
                   </button>
@@ -174,13 +174,13 @@ export function ChatBubblePanel({
               placeholder={placeholder}
               aria-label={placeholder}
               maxLength={500}
-              className="h-10 flex-1 rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
+              className="h-10 flex-1 rounded-lg border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <button
               type="submit"
               disabled={pending || draft.trim().length === 0}
               aria-label="إرسال"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-white transition hover:bg-teal-800 disabled:opacity-40"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white transition hover:bg-primary/90 disabled:opacity-40"
             >
               <Send className="h-4 w-4 rtl:-scale-x-100" />
             </button>
@@ -201,7 +201,7 @@ export function ChatBubblePanel({
           aria-label={launcherLabel}
           aria-expanded={false}
           aria-controls={panelId}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-700 text-white shadow-lg transition hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <MessageCircle className="h-6 w-6" />
         </button>
@@ -226,9 +226,9 @@ function Bubble({
         className={cn(
           'max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-6',
           isUser
-            ? 'rounded-ss-sm bg-teal-700 text-white'
+            ? 'rounded-ss-sm bg-primary text-white'
             : tone === 'warning'
-              ? 'rounded-se-sm bg-amber-50 text-amber-950'
+              ? 'rounded-se-sm bg-secondary text-secondary-foreground'
               : 'rounded-se-sm bg-muted text-foreground',
         )}
       >

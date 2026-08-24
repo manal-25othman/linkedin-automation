@@ -11,10 +11,11 @@ export function LogoMark({ className }: { className?: string }) {
     >
       <rect width="32" height="32" rx="8" className="fill-primary" />
       {/* ثلاث طبقات: المستندات تتحوّل إلى معرفة */}
+      {/* الطبقة العليا ذهبية وحدها: لمسةٌ واحدة تكفي.
+          والذهبيّ الموزَّع على كل الطبقات يُفقد العلامة رصانتها. */}
       <path
         d="M8 11.5 16 7.5l8 4-8 4-8-4Z"
-        className="fill-primary-foreground"
-        opacity="0.95"
+        className="fill-gold"
       />
       <path
         d="M8 16l8 4 8-4"

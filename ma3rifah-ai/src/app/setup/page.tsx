@@ -29,26 +29,26 @@ type Check = {
 
 function StatusRow({ check }: { check: Check }) {
   return (
-    <li className="border-b border-slate-200 py-5 last:border-0">
+    <li className="border-b border-border py-5 last:border-0">
       <div className="flex items-start gap-3">
         <span
           aria-hidden
           className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${
-            check.ok ? 'bg-teal-600' : 'bg-rose-600'
+            check.ok ? 'bg-[hsl(var(--success))]' : 'bg-destructive'
           }`}
         >
           {check.ok ? '✓' : '!'}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-900">
+          <p className="font-semibold text-foreground">
             {check.label}
             <span className="sr-only">{check.ok ? ' — سليم' : ' — يحتاج إصلاحًا'}</span>
           </p>
           {check.detail ? (
-            <p className="mt-1 break-words text-sm text-slate-600">{check.detail}</p>
+            <p className="mt-1 break-words text-sm text-muted-foreground">{check.detail}</p>
           ) : null}
           {!check.ok && check.fix ? (
-            <div className="mt-3 rounded-lg bg-amber-50 p-4 text-sm leading-7 text-amber-950">
+            <div className="mt-3 rounded-lg bg-[hsl(var(--warning))]/10 p-4 text-sm leading-7 text-[hsl(var(--warning))]">
               <p className="mb-2 font-semibold">ما العمل</p>
               {check.fix}
             </div>
@@ -65,7 +65,7 @@ function Ext({ href, children }: { href: string; children: React.ReactNode }) {
       href={href}
       target="_blank"
       rel="noreferrer"
-      className="font-medium text-teal-700 underline underline-offset-4"
+      className="font-medium text-primary underline underline-offset-4"
     >
       {children}
     </a>
@@ -259,12 +259,12 @@ export default async function SetupPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl bg-white px-5 py-10">
-      <p className="text-sm text-slate-500">معرفة AI</p>
-      <h1 className="mt-1 text-2xl font-bold text-slate-900">حالة التجهيز</h1>
+      <p className="text-sm text-muted-foreground">معرفة AI</p>
+      <h1 className="mt-1 text-2xl font-bold text-foreground">حالة التجهيز</h1>
 
       <div
         className={`mt-6 rounded-xl p-5 ${
-          ready ? 'bg-teal-50 text-teal-950' : 'bg-rose-50 text-rose-950'
+          ready ? 'bg-accent text-accent-foreground' : 'bg-destructive/10 text-destructive'
         }`}
       >
         {ready ? (
@@ -276,7 +276,7 @@ export default async function SetupPage() {
             </p>
             <Link
               href="/register"
-              className="mt-4 inline-block rounded-lg bg-teal-700 px-5 py-2.5 font-semibold text-white"
+              className="mt-4 inline-block rounded-lg bg-primary px-5 py-2.5 font-semibold text-white"
             >
               أنشئ حساب شركتك
             </Link>
@@ -300,12 +300,12 @@ export default async function SetupPage() {
         ))}
       </ol>
 
-      <div className="mt-8 rounded-xl bg-slate-50 p-5 text-sm leading-7 text-slate-700">
-        <p className="font-semibold text-slate-900">بعد أي تعديل في Vercel</p>
+      <div className="mt-8 rounded-xl bg-muted p-5 text-sm leading-7 text-foreground">
+        <p className="font-semibold text-foreground">بعد أي تعديل في Vercel</p>
         <p className="mt-1">
           لا يُطبَّق التغيير إلا بنشر جديد: Deployments ← ⋯ ← Redeploy. ثم حدّثي هذه الصفحة.
         </p>
-        <p className="mt-4 font-semibold text-slate-900">أين تجدين سبب أي خطأ آخر</p>
+        <p className="mt-4 font-semibold text-foreground">أين تجدين سبب أي خطأ آخر</p>
         <ul className="mt-1 list-inside list-disc">
           <li>
             <Ext href="https://vercel.com/dashboard">سجلات Vercel</Ext> — أخطاء الخادم
@@ -319,7 +319,7 @@ export default async function SetupPage() {
         </ul>
       </div>
 
-      <p className="mt-6 text-xs leading-6 text-slate-500">
+      <p className="mt-6 text-xs leading-6 text-muted-foreground">
         لا تعرض هذه الصفحة أي مفتاح سرّي. الرابط الظاهر أعلاه عام بطبيعته ويُرسل إلى متصفح كل زائر
         ضمن ملفات الواجهة.
       </p>

@@ -27,7 +27,7 @@ export function AssistantWidget({ companyName }: { companyName: string }) {
       footer={
         <>
           للمحادثة الكاملة مع المصادر:{' '}
-          <Link href="/assistant" className="font-medium text-teal-700 underline">
+          <Link href="/assistant" className="font-medium text-primary underline">
             افتح المساعد
           </Link>
         </>

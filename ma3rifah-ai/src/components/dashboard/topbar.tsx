@@ -133,7 +133,7 @@ export function Topbar({
       {isMobileNavOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-slate-900/45"
+            className="absolute inset-0 bg-foreground/45"
             onClick={() => setIsMobileNavOpen(false)}
             aria-hidden
           />
