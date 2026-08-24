@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { repairLamAlefOrder } from '@/lib/rag/extract';
+import { cleanText, repairLamAlefOrder } from '@/lib/rag/extract';
 
 /**
  * رباط لام-ألف المفكوك مقلوبًا.
@@ -74,6 +74,31 @@ describe('ما لا يجوز أن يُمَسّ', () => {
   it('نصّ سليم أصلًا لا يتغيّر', () => {
     const sound = 'المادة الأولى: لا يجوز إلا بإذن الإدارة الآتية';
     expect(repairLamAlefOrder(sound)).toBe(sound);
+  });
+});
+
+/**
+ * محارف الاتجاه غير المرئية.
+ *
+ * كانت مكتوبة في `cleanText` بذاتها لا بهروبها، وفيها محرف NUL. ومحرفٌ
+ * غير مرئيّ في الشيفرة لا يُرى حين يضيع: يمرّ الملفّ في نقلٍ أو محرّرٍ
+ * أو أداة تنسيق فيسقط، ولا يشكو مترجمٌ ولا مدقّق — ويبقى النصّ
+ * المستخرَج محشوًّا بها فتفسد المطابقة والتقطيع.
+ *
+ * فكُتبت بالهروب، وهذا الحارس يثبت أن الهروب يكافئ الحرف.
+ */
+describe('كل محرف اتجاه غير مرئيّ ما زال يُزال', () => {
+  const INVISIBLES = [
+    0x0000, 0x200b, 0x200c, 0x200d, 0x200e, 0x200f, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066,
+    0x2067, 0x2068, 0x2069, 0xfeff,
+  ];
+
+  it.each(INVISIBLES)('U+%s يُزال', (code) => {
+    expect(cleanText(`أ${String.fromCodePoint(code)}ب`)).toBe('أب');
+  });
+
+  it('النصّ العربيّ السليم لا يُمَسّ', () => {
+    expect(cleanText('المادة الأولى')).toBe('المادة الأولى');
   });
 });
 
