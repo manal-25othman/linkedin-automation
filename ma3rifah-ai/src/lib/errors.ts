@@ -19,9 +19,11 @@ export type AppErrorCode =
   | 'DOCUMENT_PROCESSING'
   | 'UNSUPPORTED_FILE'
   | 'FILE_TOO_LARGE'
+  | 'SCHEMA_OUTDATED'
   | 'INTERNAL';
 
 const STATUS_BY_CODE: Record<AppErrorCode, number> = {
+  SCHEMA_OUTDATED: 503,
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
   NOT_FOUND: 404,
@@ -48,6 +50,8 @@ const DEFAULT_MESSAGE: Record<AppErrorCode, string> = {
   DOCUMENT_PROCESSING: 'تعذّر معالجة المستند. حاول مرة أخرى.',
   UNSUPPORTED_FILE: 'نوع الملف غير مدعوم.',
   FILE_TOO_LARGE: 'حجم الملف يتجاوز الحد المسموح.',
+  SCHEMA_OUTDATED:
+    'قاعدة البيانات لم تُحدَّث بعد. شغّلي ملف supabase/ALL_MIGRATIONS.sql في محرّر SQL على Supabase ثم أعيدي المحاولة.',
   INTERNAL: 'حدث خطأ غير متوقع. تم تسجيل المشكلة وسنعمل على معالجتها.',
 };
 
@@ -132,8 +136,49 @@ export function isAppError(error: unknown): error is AppError {
  * مستدعيًا نسي أن يسجّله. والمستخدم يرى الرقم، والمطوّر يجده بالبحث
  * عنه في السجلّ ومعه سبب الخطأ الحقيقي.
  */
+/**
+ * أخطاء «القاعدة لم تُحدَّث».
+ *
+ *   42P01 — جدول غير موجود
+ *   42883 — دالّة غير موجودة
+ *   42703 — عمود غير موجود
+ *
+ * وهي أكثر ما يُرى بعد نشرٍ لم تُشغَّل ترحيلاته: الشيفرة الجديدة تنادي
+ * جدولًا لم يُنشأ بعد. ورسالة «حدث خطأ غير متوقع» هنا تُضيّع ساعة على
+ * من يبحث عن عطل في الشيفرة، والعطل ليس فيها — إنما في خطوةٍ لم تُنفَّذ.
+ *
+ * والقاعدة العامة تبقى: لا تُعرض تفاصيل تقنية للمستخدم. وهذا استثناء
+ * مقصود ومحصور، لأن المتلقّي هنا هو مالكة المنصّة نفسها، والرسالة
+ * تُخبرها بما تفعله لا بما انكسر.
+ */
+const SCHEMA_ERROR_CODES = new Set(['42P01', '42883', '42703']);
+
+function isSchemaOutdated(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const code = (error as { code?: unknown }).code;
+  if (typeof code === 'string' && SCHEMA_ERROR_CODES.has(code)) return true;
+
+  const message = (error as { message?: unknown }).message;
+  return (
+    typeof message === 'string' &&
+    /does not exist|schema cache/i.test(message) &&
+    /relation|function|column/i.test(message)
+  );
+}
+
 export function toAppError(error: unknown): AppError {
   if (isAppError(error)) return error;
+
+  if (isSchemaOutdated(error)) {
+    const detail = error instanceof Error ? error.message : String(error);
+    logger.error('القاعدة لم تُحدَّث — ترحيلة لم تُشغَّل', {
+      detail: sanitizeTechnicalDetail(detail),
+    });
+    return new AppError(
+      'SCHEMA_OUTDATED',
+      'قاعدة البيانات لم تُحدَّث بعد. شغّلي ملف supabase/ALL_MIGRATIONS.sql في محرّر SQL على Supabase ثم أعيدي المحاولة.',
+    );
+  }
 
   const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
   const wrapped = new AppError('INTERNAL', undefined, detail);

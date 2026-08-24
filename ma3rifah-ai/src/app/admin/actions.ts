@@ -585,13 +585,32 @@ export async function endPlatformExpenseAction(
 /** حروف بلا التباس بصري: لا 0/O ولا 1/I/L */
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
+/**
+ * نقل الحروف العربية إلى ما يقابلها لاتينيًا — للبادئة وحدها.
+ *
+ * البادئة كانت تُؤخذ من الاسم كما هو، فيُنتج «شركة خبراء الأعمال» رمزًا
+ * مختلط الاتجاه: `شركة-AKF4WZ`. وهو صحيح في القاعدة ومعطوب في الاستعمال
+ * — يُنسخ في رسالة فينقلب ترتيبه، ويُملى على الهاتف فيُخطئ، ويُكتب في
+ * حقل `dir="ltr"` فيقفز المؤشّر.
+ *
+ * والنقل يبقي البادئة دالّة على صاحبها — وهي فائدتها كلّها — بلا أن
+ * تكسر الاتجاه.
+ */
+const ARABIC_TO_LATIN: Record<string, string> = {
+  ا: 'A', أ: 'A', إ: 'A', آ: 'A', ب: 'B', ت: 'T', ث: 'TH', ج: 'J',
+  ح: 'H', خ: 'KH', د: 'D', ذ: 'Z', ر: 'R', ز: 'Z', س: 'S', ش: 'SH',
+  ص: 'S', ض: 'D', ط: 'T', ظ: 'Z', ع: 'A', غ: 'G', ف: 'F', ق: 'Q',
+  ك: 'K', ل: 'L', م: 'M', ن: 'N', ه: 'H', ة: 'H', و: 'W', ي: 'Y',
+  ى: 'Y', ئ: 'Y', ء: 'A', ؤ: 'W',
+};
+
 function generateCode(label: string): string {
   // بادئة من اسم الشركة تجعل الرمز مقروءًا في رسالة، فيُعرف لمن أُرسل
-  const prefix =
-    label
-      .replace(/[^A-Za-zء-ي]/g, '')
-      .slice(0, 4)
-      .toUpperCase() || 'MA3';
+  const latin = [...label]
+    .map((char) => ARABIC_TO_LATIN[char] ?? (/[A-Za-z]/.test(char) ? char : ''))
+    .join('');
+
+  const prefix = latin.slice(0, 4).toUpperCase() || 'MA3';
 
   const random = Array.from(
     crypto.getRandomValues(new Uint8Array(6)),
