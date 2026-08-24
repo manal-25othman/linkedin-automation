@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 /**
  * طبقة تجريد لمزوّد التضمينات (Embeddings).
  *
- * لماذا طبقة منفصلة: Claude API لا يوفّر endpoint للتضمينات، وهي
+ * لماذا طبقة منفصلة: Claude API لا يوفر endpoint للتضمينات، وهي
  * ركن أساسي في RAG. بدل ربط المنتج بمزوّد واحد، نعرّف واجهة واحدة
  * ونضع خلفها عدة تطبيقات. تبديل المزوّد لاحقًا = تغيير متغيّر بيئة
  * وإعادة توليد التضمينات، دون لمس أي كود آخر.
@@ -49,6 +49,93 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   }
 }
 
+/**
+ * إعادة المحاولة عند تجاوز الحدّ أو عطل مؤقّت.
+ *
+ * الحساب الجديد لدى مزوّد التضمين يبدأ بحدّ منخفض جدًّا — ثلاثة طلبات في
+ * الدقيقة قبل إضافة وسيلة الدفع. ومستندٌ من عشرين صفحة يُقطَّع إلى عدّة
+ * دفعات، فيصطدم بالحدّ من الدفعة الثانية ويسقط المستند كلّه.
+ *
+ * وكان السقوط فوريًّا بلا محاولة واحدة. والانتظار ثوانيَ معدودة يُنجح
+ * المستند بدل أن يُطلَب من المستخدم رفعه مرارًا — وهو ما كان سيفعله،
+ * فيستهلك الحدّ نفسه في كل مرة ويفشل ثانيةً.
+ *
+ * ويُحترم `Retry-After` حين يرسله المزوّد لأنه أدقّ من أي تخمين، ويُقصّ
+ * إلى خمس وعشرين ثانية: الدالّة تعمل في بيئة لها سقف زمني، وانتظارٌ
+ * أطول يُسقط الطلب كلّه بدل أن ينقذه.
+ */
+const MAX_ATTEMPTS = 3;
+const MAX_BACKOFF_MS = 25_000;
+
+/** 429 تجاوز حدّ · 5xx عطل مؤقّت لدى المزوّد */
+function isRetryable(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function backoffMs(attempt: number, retryAfterHeader: string | null): number {
+  const retryAfter = Number(retryAfterHeader);
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.min(retryAfter * 1000, MAX_BACKOFF_MS);
+  }
+  // 5 ثوانٍ ثم 15 — يكفي حدَّ ثلاثة طلبات في الدقيقة لدفعتين
+  return Math.min(5_000 * 3 ** attempt, MAX_BACKOFF_MS);
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  provider: string,
+): Promise<Response> {
+  let lastStatus = 0;
+  let lastBody = '';
+  let networkError: unknown = null;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+    let response: Response;
+
+    // انقطاع الشبكة يُرمى ولا يُرَدّ، فيُعالَج هنا أيضًا: طبقةٌ واحدة
+    // تعيد المحاولة لكل أسباب الفشل العابرة، لا طبقةٌ للردود وأخرى
+    // للانقطاع.
+    try {
+      response = await fetchWithTimeout(url, init);
+      networkError = null;
+    } catch (error) {
+      networkError = error;
+      if (attempt === MAX_ATTEMPTS - 1) break;
+      await sleep(backoffMs(attempt, null));
+      continue;
+    }
+
+    if (response.ok) return response;
+
+    lastStatus = response.status;
+    lastBody = await response.text();
+
+    if (!isRetryable(response.status) || attempt === MAX_ATTEMPTS - 1) break;
+
+    const wait = backoffMs(attempt, response.headers.get('retry-after'));
+    logger.warn('تجاوز حدّ مزوّد التضمين — إعادة المحاولة', {
+      provider,
+      status: response.status,
+      waitMs: wait,
+      attempt: attempt + 1,
+    });
+    await sleep(wait);
+  }
+
+  throw new AppError(
+    'EMBEDDINGS_UNAVAILABLE',
+    lastStatus === 429
+      ? 'تجاوزت خدمة تحليل النصوص حدّها المسموح. إن كان الحساب جديدًا فقد يكون الحدّ منخفضًا حتى تُضاف وسيلة دفع لدى المزوّد. أعد المحاولة بعد دقيقة.'
+      : undefined,
+    networkError instanceof Error
+      ? `${provider} network: ${networkError.message}`
+      : `${provider} ${lastStatus}: ${lastBody.slice(0, 300)}`,
+  );
+}
+
 // ---------------------------------------------------------------- Voyage AI
 
 class VoyageProvider implements EmbeddingProvider {
@@ -62,28 +149,23 @@ class VoyageProvider implements EmbeddingProvider {
   ) {}
 
   async embed(texts: string[], kind: 'document' | 'query'): Promise<number[][]> {
-    const response = await fetchWithTimeout('https://api.voyageai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
+    const response = await fetchWithRetry(
+      'https://api.voyageai.com/v1/embeddings',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          input: texts,
+          model: this.model,
+          input_type: kind,
+          output_dimension: this.dimensions,
+        }),
       },
-      body: JSON.stringify({
-        input: texts,
-        model: this.model,
-        input_type: kind,
-        output_dimension: this.dimensions,
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new AppError(
-        'EMBEDDINGS_UNAVAILABLE',
-        undefined,
-        `Voyage ${response.status}: ${body.slice(0, 300)}`,
-      );
-    }
+      'Voyage',
+    );
 
     const payload = (await response.json()) as {
       data: Array<{ embedding: number[]; index: number }>;
@@ -109,27 +191,22 @@ class OpenAiCompatibleProvider implements EmbeddingProvider {
   ) {}
 
   async embed(texts: string[]): Promise<number[][]> {
-    const response = await fetchWithTimeout(`${this.baseUrl}/embeddings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
+    const response = await fetchWithRetry(
+      `${this.baseUrl}/embeddings`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          input: texts,
+          model: this.model,
+          dimensions: this.dimensions,
+        }),
       },
-      body: JSON.stringify({
-        input: texts,
-        model: this.model,
-        dimensions: this.dimensions,
-      }),
-    });
-
-    if (!response.ok) {
-      const body = await response.text();
-      throw new AppError(
-        'EMBEDDINGS_UNAVAILABLE',
-        undefined,
-        `OpenAI ${response.status}: ${body.slice(0, 300)}`,
-      );
-    }
+      'OpenAI',
+    );
 
     const payload = (await response.json()) as {
       data: Array<{ embedding: number[]; index: number }>;
@@ -256,7 +333,23 @@ export function resetEmbeddingProvider(): void {
   cachedProvider = null;
 }
 
-/** تضمين مجموعة نصوص على دفعات مع إعادة محاولة عند فشل الشبكة */
+/**
+ * تضمين مجموعة نصوص على دفعات.
+ *
+ * **وإعادة المحاولة في طبقة واحدة** — هي `fetchWithRetry`. وكانت هنا
+ * حلقةٌ ثانية تلفّ هذه، فتضاعفتا: ثلاث محاولات داخلية × ثلاث خارجية =
+ * تسعة طلبات، وانتظارٌ مجموعه اثنتان وستون ثانية.
+ *
+ * وكلا الرقمين ضارّ:
+ *
+ *   • تسعة طلبات على حدّ **ثلاثة في الدقيقة** تُعمّق التجاوز ولا
+ *     تعالجه — فتزيد الحال سوءًا بمحاولة إصلاحها.
+ *   • واثنتان وستون ثانية تتجاوز سقف الدالّة، فيسقط الطلب كلّه قبل أن
+ *     تصل المحاولة الأخيرة أصلًا.
+ *
+ * وطبقتا إعادة محاولة متداخلتان خطأ يتكرّر لأن كلًّا منهما تبدو صحيحة
+ * وحدها. والصحّة هنا في المجموع لا في الجزء.
+ */
 export async function embedTexts(
   texts: string[],
   kind: 'document' | 'query' = 'document',
@@ -269,33 +362,16 @@ export async function embedTexts(
   for (let offset = 0; offset < texts.length; offset += MAX_BATCH_SIZE) {
     const batch = texts.slice(offset, offset + MAX_BATCH_SIZE);
 
-    let lastError: unknown;
-    let embedded: number[][] | null = null;
-
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        embedded = await provider.embed(batch, kind);
-        break;
-      } catch (error) {
-        lastError = error;
-        if (attempt < 2) {
-          await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 750));
-        }
-      }
-    }
-
-    if (!embedded) {
+    try {
+      results.push(...(await provider.embed(batch, kind)));
+    } catch (error) {
       logger.error('فشل توليد التضمينات', {
         provider: provider.name,
         batchSize: batch.length,
-        reason: lastError instanceof Error ? lastError.message : String(lastError),
+        reason: error instanceof Error ? error.message : String(error),
       });
-      throw lastError instanceof AppError
-        ? lastError
-        : new AppError('EMBEDDINGS_UNAVAILABLE');
+      throw error instanceof AppError ? error : new AppError('EMBEDDINGS_UNAVAILABLE');
     }
-
-    results.push(...embedded);
   }
 
   return results;
