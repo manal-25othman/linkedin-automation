@@ -467,6 +467,8 @@ type SiteChatMessageRow = {
   model: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
+  /** تكلفة الاستدعاء — تُحسب في التطبيق وتُخزَّن، فلا يُكرَّر جدول الأسعار */
+  estimated_cost_usd: number;
   created_at: string;
 };
 
@@ -735,11 +737,14 @@ export interface Database {
           period_month: string;
           revenue_sar: number;
           ai_cost_usd: number;
+          /** تكلفة مساعد الزوّار — مصروف اكتساب لا تكلفة خدمة */
+          visitor_cost_usd: number;
           fixed_cost_usd: number;
           net_profit_sar: number;
           margin_percent: number | null;
           paying_companies: number;
           questions_count: number;
+          visitor_messages: number;
         }[];
       };
       platform_company_pnl: {

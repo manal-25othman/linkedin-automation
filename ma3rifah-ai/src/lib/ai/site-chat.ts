@@ -135,6 +135,17 @@ export async function askSiteAssistant(input: {
 
   const isUnanswered = answer.includes(SITE_UNANSWERED_MARKER);
 
+  // التكلفة تُحسب هنا وتُخزَّن، ولا تُترك للتقرير يحسبها من الرموز:
+  // تسعيرُها في SQL يكرّر جدول الأسعار في مكانين فيتعفّن أحدهما عند أول
+  // تغيير سعر، ولا يظهر التعفّن إلا في تقرير الأرباح.
+  const costUsd = estimateCostUsd(
+    completion.model,
+    completion.inputTokens,
+    completion.outputTokens,
+    completion.cacheReadTokens,
+    completion.cacheWriteTokens,
+  );
+
   await admin.from('site_chat_messages').insert({
     visitor_id: visitor.id,
     role: 'ASSISTANT',
@@ -142,8 +153,9 @@ export async function askSiteAssistant(input: {
     status: isUnanswered ? 'UNANSWERED' : 'ANSWERED',
     latency_ms: completion.latencyMs,
     model: completion.model,
-    input_tokens: completion.inputTokens,
+    input_tokens: completion.inputTokens + completion.cacheReadTokens + completion.cacheWriteTokens,
     output_tokens: completion.outputTokens,
+    estimated_cost_usd: costUsd,
   });
 
   await admin
@@ -154,19 +166,17 @@ export async function askSiteAssistant(input: {
     })
     .eq('id', visitor.id);
 
-  // تكلفة مساعد الزوّار تقع على المنصة لا على شركة، فتُسجَّل في
-  // site_chat_messages وحدها ويُجمَّعها تقرير المنصة. تحميلها على شركة
-  // ما كان سيشوّه هامشها بتكلفة لم تُحدثها.
+  // تكلفة مساعد الزوّار تقع على المنصّة لا على شركة، فتُسجَّل في
+  // `site_chat_messages` ويجمّعها التقرير المالي في عمود مستقلّ.
+  // وتحميلها على شركة كان سيشوّه هامشها بتكلفة لم تُحدثها.
+  //
+  // وهي **مصروف اكتساب عملاء** لا تكلفة خدمة، فتُعرض منفصلة: جمعُها مع
+  // تكلفة الشركات يُخفي سؤالًا تجاريًّا حقيقيًّا — كم يكلّف الزائر الواحد،
+  // وكم منهم يتحوّل.
   logger.info('سؤال زائر', {
     unanswered: isUnanswered,
     latencyMs: completion.latencyMs,
-    costUsd: estimateCostUsd(
-      completion.model,
-      completion.inputTokens,
-      completion.outputTokens,
-      completion.cacheReadTokens,
-      completion.cacheWriteTokens,
-    ),
+    costUsd,
   });
 
   return { answer, isUnanswered };

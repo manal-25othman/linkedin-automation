@@ -33,12 +33,16 @@ describe('التقرير المالي حين يتعذّر', () => {
     expect(FINANCE).toMatch(/months\.length === 0/);
   });
 
-  it('البطاقات الأربع كلّها تُخفي رقمها عند التعذّر', () => {
-    // ولا تُترك بطاقة واحدة تعرض صفرًا بينما أخواتها تعرض «غير متاح»
-    const cards = FINANCE.split('<StatCard');
-    expect(cards.length).toBe(5); // النصّ قبل الأولى + أربع بطاقات
+  it('كل بطاقة تُخفي رقمها عند التعذّر — مهما بلغ عددها', () => {
+    // ولا تُترك بطاقة واحدة تعرض صفرًا بينما أخواتها تعرض «غير متاح».
+    //
+    // والعدد غير مثبَّت عمدًا: تثبيتُه أسقط هذا الاختبار عند إضافة بطاقة
+    // خامسة سليمة، والمقصود «كلّها» لا «أربع». وحارسٌ يسقط على إضافةٍ
+    // صحيحة يُعلَّم تجاهُله.
+    const cards = FINANCE.split('<StatCard').slice(1);
+    expect(cards.length, 'لا بطاقات — الحارس يحرس فراغًا').toBeGreaterThanOrEqual(4);
 
-    for (const card of cards.slice(1)) {
+    for (const card of cards) {
       expect(card, 'بطاقة لا تراعي تعذّر التقرير').toMatch(
         /reportUnavailable|shown\(/,
       );

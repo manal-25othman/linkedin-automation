@@ -360,3 +360,110 @@ begin
 end $$;
 
 commit;
+
+-- =====================================================================
+-- المجموعة 5 — تكلفة مساعد الزوّار تدخل التقرير (0031)
+--
+-- كان التقرير يقرأ `usage_records` وحدها، وهي لا تحوي محادثات الزوّار
+-- لأن تكلفتها لا تُحمَّل على شركة. فكانت كل محادثة زائر تُنادي النموذج
+-- وتُفوتَر على المالكة **ولا تظهر في أي رقم** — فتُخفى التكلفة ويظهر
+-- الربح أعلى مما هو.
+-- =====================================================================
+
+begin;
+
+insert into public.site_visitors (id, visitor_key)
+values ('dddddddd-0001-4000-8000-000000000001', 'test-visitor-cost')
+on conflict do nothing;
+
+insert into public.site_chat_messages
+  (visitor_id, role, content, status, model, input_tokens, output_tokens, estimated_cost_usd)
+values
+  ('dddddddd-0001-4000-8000-000000000001', 'ASSISTANT', 'جواب تجريبي',
+   'ANSWERED', 'claude-haiku-4-5', 2000, 500, 0.0045),
+  ('dddddddd-0001-4000-8000-000000000001', 'ASSISTANT', 'جواب آخر',
+   'ANSWERED', 'claude-haiku-4-5', 1000, 300, 0.0025);
+
+-- رسالة الزائر نفسه لا تكلفة لها — ويجب ألّا تُعدّ ردًّا
+insert into public.site_chat_messages (visitor_id, role, content)
+values ('dddddddd-0001-4000-8000-000000000001', 'USER', 'سؤال الزائر');
+
+commit;
+
+begin;
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-2000-4000-8000-000000000001"}';
+
+do $$
+declare
+  v_cost     numeric;
+  v_messages bigint;
+begin
+  select visitor_cost_usd, visitor_messages into v_cost, v_messages
+  from public.platform_finance_summary(1);
+
+  insert into public.test_results (category, name, passed, detail)
+  values ('التقرير المالي', 'تكلفة مساعد الزوّار تظهر في التقرير',
+          abs(v_cost - 0.0070) < 0.0001,
+          'التكلفة: ' || v_cost::text || ' (المتوقّع 0.0070)');
+
+  -- ولا يُفترض جدولٌ فارغ: البيانات التجريبية فيها رسائل زوّار سابقة،
+  -- فتُقارَن نتيجة التقرير بعدٍّ مباشر للردود بدل رقم ثابت. والرقم
+  -- الثابت يجعل الاختبار يسقط كلّما أُضيفت بيانات تجريبية — فيُظنّ
+  -- العطب في الشيفرة وهو في الاختبار.
+  declare
+    v_direct bigint;
+  begin
+    select count(*) into v_direct
+    from public.site_chat_messages
+    where role = 'ASSISTANT'
+      and date_trunc('month', created_at)::date = date_trunc('month', now())::date;
+
+    insert into public.test_results (category, name, passed, detail)
+    values ('التقرير المالي', 'الردود وحدها تُعدّ — لا رسائل الزائر',
+            v_messages = v_direct,
+            'التقرير: ' || v_messages::text || ' · العدّ المباشر: ' || v_direct::text);
+  end;
+end $$;
+
+-- وضابط مستقلّ على الفلترة نفسها: رسالة الزائر لا تكلفة لها ولا تُعدّ
+do $$
+declare
+  v_users bigint;
+  v_msgs  bigint;
+begin
+  select count(*) into v_users
+  from public.site_chat_messages
+  where role = 'USER'
+    and date_trunc('month', created_at)::date = date_trunc('month', now())::date;
+
+  select visitor_messages into v_msgs from public.platform_finance_summary(1);
+
+  insert into public.test_results (category, name, passed, detail)
+  values ('التقرير المالي',
+          'رسائل الزائر موجودة ومستثناة — الفلترة تفعل شيئًا فعلًا',
+          v_users > 0,
+          'رسائل زائر: ' || v_users::text || ' · ردود محسوبة: ' || v_msgs::text);
+end $$;
+
+do $$
+declare
+  v_revenue numeric;
+  v_ai      numeric;
+  v_visitor numeric;
+  v_fixed   numeric;
+  v_net     numeric;
+begin
+  select revenue_sar, ai_cost_usd, visitor_cost_usd, fixed_cost_usd, net_profit_sar
+    into v_revenue, v_ai, v_visitor, v_fixed, v_net
+  from public.platform_finance_summary(1);
+
+  -- ضابط على المعادلة: لو أُسقطت تكلفة الزوّار لظهر الربح أعلى
+  insert into public.test_results (category, name, passed, detail)
+  values ('التقرير المالي',
+          'الربح الصافي يطرح تكلفة الزوّار أيضًا',
+          abs(v_net - (v_revenue - (v_ai + v_visitor + v_fixed) * 3.75)) < 0.01,
+          'صافي: ' || v_net::text);
+end $$;
+
+commit;

@@ -4,6 +4,7 @@ import {
   Cpu,
   Server,
   TrendingDown,
+  MessagesSquare,
   TrendingUp,
   TriangleAlert,
 } from 'lucide-react';
@@ -73,6 +74,7 @@ export default async function AdminFinancePage() {
       : null;
 
   const aiCostSar = current ? current.ai_cost_usd * SAR_PER_USD : 0;
+  const visitorCostSar = current ? current.visitor_cost_usd * SAR_PER_USD : 0;
   const fixedCostSar = current ? current.fixed_cost_usd * SAR_PER_USD : 0;
   const profitable = current !== null && current.net_profit_sar > 0;
 
@@ -87,7 +89,7 @@ export default async function AdminFinancePage() {
       />
 
       {/* البطاقات الأربع */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard
           label="الإيراد المقبوض هذا الشهر"
           value={reportUnavailable ? 'غير متاح' : `${formatSar(current!.revenue_sar)} ريال`}
@@ -110,6 +112,17 @@ export default async function AdminFinancePage() {
             reportUnavailable
               ? 'تعذّر قراءة التقرير'
               : `${formatSar(current?.questions_count ?? 0)} سؤالًا`
+          }
+        />
+        <StatCard
+          label="مساعد الزوّار"
+          value={shown(`${formatSar(Math.round(visitorCostSar))} ريال`)}
+          icon={MessagesSquare}
+          tone="default"
+          hint={
+            reportUnavailable
+              ? 'تعذّر قراءة التقرير'
+              : `${formatSar(current?.visitor_messages ?? 0)} ردًّا — مصروف اكتساب`
           }
         />
         <StatCard
@@ -179,6 +192,7 @@ export default async function AdminFinancePage() {
                   <th className="px-4 py-2.5 text-start font-medium">الشهر</th>
                   <th className="px-4 py-2.5 text-start font-medium">الإيراد</th>
                   <th className="px-4 py-2.5 text-start font-medium">الذكاء</th>
+                  <th className="px-4 py-2.5 text-start font-medium">الزوّار</th>
                   <th className="px-4 py-2.5 text-start font-medium">الثابت</th>
                   <th className="px-4 py-2.5 text-start font-medium">الصافي</th>
                   <th className="px-4 py-2.5 text-start font-medium">شركات دافعة</th>
@@ -196,6 +210,9 @@ export default async function AdminFinancePage() {
                     <td className="numeric px-4 py-3">{formatSar(month.revenue_sar)}</td>
                     <td className="numeric px-4 py-3 text-muted-foreground">
                       {formatSar(Math.round(month.ai_cost_usd * SAR_PER_USD))}
+                    </td>
+                    <td className="numeric px-4 py-3 text-muted-foreground">
+                      {formatSar(Math.round(month.visitor_cost_usd * SAR_PER_USD))}
                     </td>
                     <td className="numeric px-4 py-3 text-muted-foreground">
                       {formatSar(Math.round(month.fixed_cost_usd * SAR_PER_USD))}
@@ -303,6 +320,9 @@ export default async function AdminFinancePage() {
       <ExpensesEditor expenses={expenses.data ?? []} />
 
       <p className="text-xs leading-relaxed text-muted-foreground">
+        <strong>تكلفة الذكاء</strong> من أسئلة موظفي الشركات، و<strong>مساعد
+        الزوّار</strong> من محادثات من لم يشترك بعد — وهي مصروف اكتساب لا تكلفة
+        خدمة، فتُعرض منفصلة كي لا تشوّه هامش الخدمة. وكلتاهما تدخل الربح الصافي.{' '}
         الإيراد يُحسب من المدفوعات <strong>الناجحة</strong> وحدها — لا المستردَّة ولا
         الفاشلة ولا سعر الخطة. وتكلفة الذكاء من سجلّ الاستهلاك الفعلي لا من تقدير.
         والتحويل ٣٫٧٥ ريالًا للدولار (الريال مربوط). ولا تشمل هذه الأرقام ضريبة
