@@ -26,19 +26,26 @@ export interface IngestResult {
 }
 
 /**
- * رسالة الفشل المعروضة لمدير الشركة.
+ * ما يُعرض للمستخدم حين يفشل مستند.
  *
- * الرسالة العربية وحدها لا تكفي لتشخيص سبب تقني (نسخة مكتبة، ملف
- * تالف، بيئة تشغيل)، وتركها بلا تفصيل يحوّل كل عطل إلى جولة أسئلة.
- * نُلحق سطرًا تقنيًا واحدًا مقتضبًا — لا أثر تتبّع ولا مسارات ملفات،
- * فتلك تكشف بنية الخادم ولا تفيد القارئ.
+ * التفصيل التقني كان يُعرض كما هو، فظهر لمالكة المنصّة سطرٌ إنجليزيّ
+ * من ردّ مزوّد خارجي:
+ *
+ *   Voyage 429: {"detail":"You have not yet added your payment method…"}
+ *
+ * وثلاثة أعطال فيه:
+ *
+ *   ١) **إنجليزيّ في واجهة عربية**، ومَن يقرؤه لا يعرف ما يفعل.
+ *   ٢) **يكشف اسم المزوّد وبنيته** لكل مستخدم في كل شركة — وهي معلومة
+ *      لا تخصّهم، وتفيد من يريد تقليد المنصّة أو مهاجمة سلسلتها.
+ *   ٣) و**يخالف القاعدة الموضوعة**: لا تفاصيل تقنية للمستخدم.
+ *
+ * فصار المعروض رسالةً عربية واحدة تقول ما يُفعَل. والتفصيل يبقى في
+ * السجلّات لمن يشخّص، ويظهر في لوحة **مالك المنصّة وحده** — فهو الذي
+ * يستطيع إصلاحه، ولا يكشف له إلا ما يملكه أصلًا.
  */
 function buildFailureMessage(appError: { message: string; detail?: string }): string {
-  if (!appError.detail) return appError.message;
-
-  const hint = sanitizeTechnicalDetail(appError.detail);
-
-  return hint.length > 0 ? `${appError.message}\n\nتفصيل تقني: ${hint}` : appError.message;
+  return appError.message;
 }
 
 export async function ingestDocument(documentId: string): Promise<IngestResult> {
@@ -174,7 +181,7 @@ export async function ingestDocument(documentId: string): Promise<IngestResult> 
     logger.error('فشلت معالجة المستند', {
       documentId,
       code: appError.code,
-      reason: appError.detail ?? appError.message,
+      reason: sanitizeTechnicalDetail(appError.detail ?? appError.message),
     });
 
     await admin
