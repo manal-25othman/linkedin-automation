@@ -256,6 +256,18 @@
     100% { opacity: 1; }
   }
 
+  /* شريط تقدّم عرض المميزات — يمتدّ بعرض اللسان بمقدار ما بقي من
+     المهلة. ومدّته تأتي من الشيفرة لا من هنا، فلو تغيّرت المهلة في
+     مكان واحد تبعها الشريط ولم يكذب. */
+  @keyframes showcase-progress {
+    from { inline-size: 0%; }
+    to   { inline-size: 100%; }
+  }
+
+  .showcase-progress {
+    animation: showcase-progress linear forwards;
+  }
+
   /* اللمعان يبدأ بلا قصّ وينتهي بلا قصّ: لو بقي التدرّج مطبّقًا بعد
      انتهاء الحركة لتجمّد نصف العبارة بلون ونصفها بآخر، فبدا خللًا لا
      تأكيدًا. لذلك يُركَّب القصّ داخل الحركة نفسها ويُرفع في آخر إطار. */
@@ -365,6 +377,7 @@
   .animate-soft-float,
   .animate-aurora,
   .animate-caret,
+  .showcase-progress,
   .text-shimmer {
     animation: none !important;
   }

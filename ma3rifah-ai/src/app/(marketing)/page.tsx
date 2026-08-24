@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import {
   ArrowLeft,
-  BadgeCheck,
   BrainCircuit,
   Building2,
   ClipboardCheck,
@@ -11,7 +10,6 @@ import {
   Lock,
   MessagesSquare,
   Repeat2,
-  ScanSearch,
   ShieldCheck,
   Sparkles,
   UserMinus,
@@ -22,6 +20,7 @@ import { Section, SectionHeading } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
 import { Pulse } from '@/components/marketing/pulse';
 import { DemoConsole } from '@/components/marketing/demo-console';
+import { FeatureShowcase } from '@/components/marketing/feature-showcase';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { getSiteText } from '@/lib/content/site-text';
@@ -44,7 +43,6 @@ import { pickIcon } from '@/components/marketing/icon-cycle';
  */
 
 const PROBLEM_ICONS = [Repeat2, Clock, UserMinus];
-const DIFF_ICONS = [Languages, BadgeCheck, ScanSearch];
 const SECURITY_ICONS = [Building2, Lock, ClipboardCheck, BrainCircuit];
 const PLATFORM_ICONS = [
   MessagesSquare,
@@ -71,13 +69,19 @@ export default async function HomePage() {
               {t('home.badge')}
             </Badge>
 
-            <h1 className="text-balance text-3xl font-semibold leading-[1.3] tracking-tight sm:text-5xl sm:leading-[1.22]">
+            {/*
+             * مقاس الصدر: كان 3xl/5xl فبلغ ثمانية وأربعين بكسلًا على
+             * الحاسب — يملأ الشاشة ويدفع البرهان تحت الطيّة. والعنوان
+             * العربي أعرض من الإنجليزي بالمقاس نفسه، فيلتفّ سطرًا
+             * ثالثًا. فخُفّض درجةً وضُيّق التتبّع.
+             */}
+            <h1 className="text-balance text-[1.6rem] font-semibold leading-[1.35] tracking-tight sm:text-4xl sm:leading-[1.25]">
               {t('home.hero.line1')}
               <br />
               <span className="text-shimmer">{t('home.hero.line2')}</span>
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-loose text-muted-foreground sm:text-lg">
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-[0.95rem] leading-loose text-muted-foreground sm:text-base">
               {t('home.hero.subtitle')}
             </p>
 
@@ -145,33 +149,17 @@ export default async function HomePage() {
           />
         </Reveal>
 
-        <div className="mt-14 space-y-6">
-          {t.list('home.diff.cards').map((item, index) => {
-            const Icon = pickIcon(DIFF_ICONS, index);
-            return (
-              <Reveal key={`${item.title}-${index}`} delay={index * 90}>
-                <article className="lift rounded-2xl border bg-card p-6 sm:p-8">
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                      <Icon className="size-6 text-primary" aria-hidden />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      {item.badge ? (
-                        <Badge variant="secondary" className="mb-2">
-                          {item.badge}
-                        </Badge>
-                      ) : null}
-                      <h3 className="text-lg font-semibold leading-snug">{item.title}</h3>
-                      <p className="mt-3 text-sm leading-loose text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              </Reveal>
-            );
-          })}
-        </div>
+        <Reveal>
+          <div className="mt-14">
+            <FeatureShowcase
+              items={t.list('home.diff.cards').map((item) => ({
+                badge: item.badge,
+                title: item.title,
+                description: item.description,
+              }))}
+            />
+          </div>
+        </Reveal>
       </Section>
 
       {/* ------------------------------------------------------- كيف تعمل */}
