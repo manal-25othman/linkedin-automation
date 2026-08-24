@@ -45,6 +45,21 @@ export default async function AdminFinancePage() {
   }
 
   const months = summary.data ?? [];
+
+  // =====================================================================
+  // مؤشّر معطّل يجب أن يقول إنه معطّل
+  //
+  // كانت بطاقتا التكلفة تعرضان «٠ ريال» حين يتعذّر التقرير، بينما تعرض
+  // بطاقتا الإيراد والربح «—». والصفر هنا **ادّعاء بأن القياس تمّ ولم
+  // يجد شيئًا** — وهو أسوأ من الفراغ: قرأته المالكة «لا تكلفة عليّ»
+  // وهي تستعمل المنصّة فعلًا، فسألت عن سبب غياب التكلفة بدل أن تُخبَر
+  // أن التقرير نفسه لم يعمل.
+  //
+  // والدالّة تُنشئ صفوف الأشهر بـ`generate_series`، فهي تُرجع صفًّا لكل
+  // شهر ولو لم يكن في القاعدة معطًى واحد. فصفرُ الصفوف لا يعني «لا
+  // بيانات» بل **«لم يُقرأ التقرير»** — ولا سبيل لخلطهما.
+  // =====================================================================
+  const reportUnavailable = Boolean(summary.error) || months.length === 0;
   const current = months.length > 0 ? months[months.length - 1] : null;
   const previous = months.length > 1 ? months[months.length - 2] : null;
 
@@ -61,6 +76,9 @@ export default async function AdminFinancePage() {
   const fixedCostSar = current ? current.fixed_cost_usd * SAR_PER_USD : 0;
   const profitable = current !== null && current.net_profit_sar > 0;
 
+  /** قيمة البطاقة، أو «غير متاح» إن تعذّر التقرير */
+  const shown = (value: string): string => (reportUnavailable ? 'غير متاح' : value);
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -72,43 +90,72 @@ export default async function AdminFinancePage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="الإيراد المقبوض هذا الشهر"
-          value={current ? `${formatSar(current.revenue_sar)} ريال` : '—'}
+          value={reportUnavailable ? 'غير متاح' : `${formatSar(current!.revenue_sar)} ريال`}
           icon={Banknote}
           tone="success"
           hint={
-            growth === null
-              ? 'لا مقارنة بعد'
-              : `${growth >= 0 ? '+' : ''}${growth.toFixed(0)}٪ عن الشهر السابق`
+            reportUnavailable
+              ? 'تعذّر قراءة التقرير'
+              : growth === null
+                ? 'لا مقارنة بعد'
+                : `${growth >= 0 ? '+' : ''}${growth.toFixed(0)}٪ عن الشهر السابق`
           }
         />
         <StatCard
           label="تكلفة الذكاء"
-          value={`${formatSar(Math.round(aiCostSar))} ريال`}
+          value={shown(`${formatSar(Math.round(aiCostSar))} ريال`)}
           icon={Cpu}
           tone="default"
-          hint={current ? `${formatSar(current.questions_count)} سؤالًا` : undefined}
+          hint={
+            reportUnavailable
+              ? 'تعذّر قراءة التقرير'
+              : `${formatSar(current?.questions_count ?? 0)} سؤالًا`
+          }
         />
         <StatCard
           label="المصاريف الثابتة"
-          value={`${formatSar(Math.round(fixedCostSar))} ريال`}
+          value={shown(`${formatSar(Math.round(fixedCostSar))} ريال`)}
           icon={Server}
           tone="default"
-          hint={fixedCostSar === 0 ? 'لم تُدخَل بعد — الربح يبدو أكبر مما هو' : undefined}
+          hint={
+            reportUnavailable
+              ? 'تعذّر قراءة التقرير'
+              : fixedCostSar === 0
+                ? 'لم تُدخَل بعد — الربح يبدو أكبر مما هو'
+                : undefined
+          }
         />
         <StatCard
           label="الربح الصافي"
-          value={current ? `${formatSar(current.net_profit_sar)} ريال` : '—'}
+          value={reportUnavailable ? 'غير متاح' : `${formatSar(current!.net_profit_sar)} ريال`}
           icon={profitable ? TrendingUp : TrendingDown}
-          tone={profitable ? 'success' : 'destructive'}
+          tone={reportUnavailable ? 'default' : profitable ? 'success' : 'destructive'}
           hint={
-            current?.margin_percent !== null && current?.margin_percent !== undefined
-              ? `هامش ${current.margin_percent}٪`
-              : 'لا إيراد بعد'
+            reportUnavailable
+              ? 'تعذّر قراءة التقرير'
+              : current?.margin_percent !== null && current?.margin_percent !== undefined
+                ? `هامش ${current.margin_percent}٪`
+                : 'لا إيراد بعد'
           }
         />
       </div>
 
-      {fixedCostSar === 0 ? (
+      {reportUnavailable ? (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+          <div className="text-sm leading-relaxed">
+            <strong>تعذّر قراءة التقرير المالي.</strong> والأرجح أن قاعدة البيانات لم
+            تُحدَّث بعد: شغّلي{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+              supabase/ALL_MIGRATIONS.sql
+            </code>{' '}
+            في محرّر SQL على Supabase ثم حدّثي هذه الصفحة.
+            <span className="mt-1.5 block text-muted-foreground">
+              ولا تُقرأ الأصفار أعلاه قياسًا: لم يُقرأ شيء بعد.
+            </span>
+          </div>
+        </div>
+      ) : fixedCostSar === 0 ? (
         <div className="flex items-start gap-3 rounded-xl border border-[hsl(var(--warning))]/30 bg-[hsl(var(--warning))]/10 p-4">
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-[hsl(var(--warning))]" aria-hidden />
           <p className="text-sm leading-relaxed">
