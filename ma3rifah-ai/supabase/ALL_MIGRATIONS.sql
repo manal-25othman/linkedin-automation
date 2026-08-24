@@ -4456,3 +4456,81 @@ $$;
 revoke all on function public.platform_company_pnl(date) from public, anon;
 grant execute on function public.platform_company_pnl(date) to authenticated;
 
+-- ═══════════════════════════════════════════════════════════
+-- 0029_trial_plan.sql
+-- ═══════════════════════════════════════════════════════════
+-- =====================================================================
+-- 0029 — خطة التجربة: حدودٌ خاصّة بها لا حدود Starter
+--
+-- كانت الشركة الجديدة تُسنَد إلى خطة **Starter** بحالة `TRIALING`. أي
+-- أن المجرِّب يأخذ حدود الخطة المدفوعة كاملة: خمسين مستندًا وستمئة
+-- سؤال — اثنا عشر ضعف ما تقوله وثيقة التسعير.
+--
+-- وثلاثة أضرار في ذلك، وليست تقنية:
+--
+--   ١) **التكلفة.** ستّمئة سؤال تجريبيّ × عشر شركات مجرِّبة = ستّة
+--      آلاف سؤال بلا مقابل.
+--
+--   ٢) **الأهمّ: التجربة السخيّة لا تبيع.** من يكفيه المجّاني لا
+--      يشتري. والحدّ الذي يُبلَغ في الأسبوع الأول هو ما يصنع القرار،
+--      والحدّ الذي لا يُبلَغ أبدًا لا يبيع شيئًا — وهو نفس العطب الذي
+--      عولج في 0025 للخطط المدفوعة، وبقي هنا.
+--
+--   ٣) **لا تُقاس التجربة.** لا تمييز بين مجرِّب ومشترٍ في التقارير،
+--      فلا يُعرف كم مجرِّبًا بلغ حدّه — وهو أهمّ مؤشّر تحويل.
+--
+-- فتُنشأ خطة `TRIAL` مستقلّة: بلا سعر، غير معروضة في صفحة الأسعار،
+-- وبحدود التجربة المعلنة. والمدة سبعة أيام لا أربعة عشر — القرار يُتخذ
+-- في الأسبوع الأول أو لا يُتخذ، والأسبوع الثاني إطالةُ تردّد لا تقييم.
+-- =====================================================================
+
+insert into public.plans (
+  code, name, description,
+  price_amount, currency, billing_interval,
+  max_users, max_documents, max_questions_monthly, max_storage_mb,
+  features, is_public, is_custom_priced, sort_order
+)
+values (
+  'TRIAL',
+  'تجربة',
+  'سبعة أيام لتجربة المنصّة على مستنداتكم الحقيقية، بلا بطاقة ائتمانية.',
+  0,
+  'SAR',
+  'MONTHLY',
+  3,      -- ثلاثة مستخدمين: تكفي لتجربة الصلاحيات ولا تكفي لتشغيل قسم
+  10,     -- عشرة مستندات: تكفي لإثبات الجودة على لوائح حقيقية
+  50,     -- خمسون سؤالًا: تُبلَغ في أسبوع فتصنع قرار الشراء
+  512,
+  '["المساعد الذكي على مستنداتكم","المصدر والصفحة مع كل إجابة","التحقق من الأرقام","ثلاثة مستخدمين"]'::jsonb,
+  false,  -- لا تظهر في صفحة الأسعار: هي حالةٌ لا خطةٌ تُشترى
+  false,
+  0
+)
+on conflict (code) do update set
+  name                  = excluded.name,
+  description           = excluded.description,
+  price_amount          = excluded.price_amount,
+  max_users             = excluded.max_users,
+  max_documents         = excluded.max_documents,
+  max_questions_monthly = excluded.max_questions_monthly,
+  max_storage_mb        = excluded.max_storage_mb,
+  features              = excluded.features,
+  is_public             = excluded.is_public,
+  sort_order            = excluded.sort_order,
+  updated_at            = now();
+
+-- =====================================================================
+-- الاشتراكات التجريبية القائمة تُنقل إلى الخطة الجديدة
+--
+-- ولا تُنقل إلا **التجريبية القائمة**: من انتهت تجربته أو دفع فعلًا
+-- يبقى حيث هو. وتخفيضُ حدود شركةٍ دافعة بترحيلةٍ صامتة أسوأ من ترك
+-- الخلل قائمًا.
+-- =====================================================================
+
+update public.subscriptions s
+set plan_id = (select id from public.plans where code = 'TRIAL'),
+    updated_at = now()
+where s.status = 'TRIALING'
+  and s.trial_ends_at > now()
+  and s.plan_id = (select id from public.plans where code = 'STARTER');
+

@@ -229,7 +229,7 @@ export function RoiCalculator() {
 
           <Button asChild className="mt-6 w-full">
             <Link href={result.planCostSar === null ? '/contact' : '/register'}>
-              {result.planCostSar === null ? 'تواصلوا معنا' : 'ابدأ التجربة — ١٤ يومًا بلا بطاقة'}
+              {result.planCostSar === null ? 'تواصلوا معنا' : 'ابدأ التجربة — ٧ أيام بلا بطاقة'}
               <ArrowLeft className="size-4" aria-hidden />
             </Link>
           </Button>

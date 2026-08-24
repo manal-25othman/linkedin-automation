@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/misc';
 import { formatDate } from '@/lib/utils';
 import type { SubscriptionView } from '@/lib/billing/subscription-state';
+import { TRIAL_PERIOD_DAYS } from '@/lib/config/plans';
 
 /**
  * بطاقة حالة الاشتراك في صفحة الفوترة.
@@ -28,11 +29,19 @@ export function SubscriptionStatusCard({ view }: { view: SubscriptionView }) {
   const Icon =
     view.tone === 'danger' ? CircleSlash : view.isTrial ? Clock : CircleCheck;
 
-  // نسبة ما انقضى من التجربة — تحسب على أربعة عشر يومًا
-  const TRIAL_DAYS = 14;
+  // نسبة ما انقضى من التجربة.
+  //
+  // تُقرأ المدة من الثابت المشترك لا تُكتب هنا: الرقم المكرَّر يتعفّن
+  // عند أول تغيير للمدة، فيُظهر شريط تقدّم لا يبلغ نهايته أبدًا.
   const elapsed =
     view.isTrial && view.daysLeft !== null
-      ? Math.min(100, Math.max(0, Math.round(((TRIAL_DAYS - view.daysLeft) / TRIAL_DAYS) * 100)))
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(((TRIAL_PERIOD_DAYS - view.daysLeft) / TRIAL_PERIOD_DAYS) * 100),
+          ),
+        )
       : null;
 
   return (
