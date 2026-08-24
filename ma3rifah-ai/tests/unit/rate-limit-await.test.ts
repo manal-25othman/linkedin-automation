@@ -19,7 +19,26 @@ import { join } from 'node:path';
  */
 
 const SOURCE_ROOT = join(process.cwd(), 'src');
-const LIMITER_FILE = join('lib', 'rate-limit.ts');
+
+/**
+ * الحرّاس غير المتزامنة التي يُبطلها نسيان `await`.
+ *
+ * وُسِّعت لتشمل حدود الخطة بعد التحقّق من مسار الرفع والسؤال: هي من
+ * عائلة العطل نفسها تمامًا — دالّة تمنع، تُستدعى بلا انتظار، فيمضي
+ * الطلب قبل جوابها. والفرق أن أثرها ماليّ: حساب تجريبيّ يرفع بلا حدّ.
+ */
+const GUARDED = [
+  'enforceRateLimit',
+  'checkRateLimit',
+  'enforceDocumentQuota',
+  'enforceStorageQuota',
+  'enforceUserQuota',
+] as const;
+
+const CALL_PATTERN = new RegExp(`\\b(${GUARDED.join('|')})\\s*\\(`);
+
+/** ملفّات التعريف نفسها — النداء فيها تعريفٌ لا استعمال */
+const DEFINING_FILES = [join('lib', 'rate-limit.ts'), join('lib', 'billing', 'quota.ts')];
 
 function sourceFiles(directory: string): string[] {
   const found: string[] = [];
@@ -47,13 +66,13 @@ function callSites(): CallSite[] {
   const sites: CallSite[] = [];
 
   for (const file of sourceFiles(SOURCE_ROOT)) {
-    if (file.endsWith(LIMITER_FILE)) continue;
+    if (DEFINING_FILES.some((defining) => file.endsWith(defining))) continue;
 
     const lines = readFileSync(file, 'utf8').split('\n');
     lines.forEach((text, index) => {
       // يُتجاهَل سطر الاستيراد — ليس نداءً
       if (/^\s*import\b/.test(text)) return;
-      if (!/\b(enforceRateLimit|checkRateLimit)\s*\(/.test(text)) return;
+      if (!CALL_PATTERN.test(text)) return;
 
       // النداء قد يكون عنصرًا في `await Promise.all([` فُتحت قبله بأسطر.
       // والنظر إلى ثلاثة أسطر يكفي لهذا النمط ولا يبتلع نطاقًا بعيدًا
@@ -72,11 +91,17 @@ function callSites(): CallSite[] {
   return sites;
 }
 
-describe('حارس await على تحديد المعدّل', () => {
-  it('توجد مواضع نداء أصلًا — وإلا فالحارس يحرس فراغًا', () => {
-    // ضابط موجب: لو نُقلت الدوال أو أُعيدت تسميتها لصار الحارس يمرّ
-    // دائمًا وهو لا يفحص شيئًا
-    expect(callSites().length).toBeGreaterThanOrEqual(8);
+describe('حارس await على الحرّاس غير المتزامنة', () => {
+  // ضابط موجب لكل حارس على حدة. والعدّ الإجمالي وحده لا يكفي: لو
+  // أُعيدت تسمية `enforceDocumentQuota` وحدها لبقي المجموع كبيرًا
+  // بنداءات تحديد المعدّل، ومضى الحارس يراقب فراغًا في موضعها.
+  it.each(GUARDED)('%s له موضع نداء واحد على الأقل', (name) => {
+    const sites = callSites().filter((site) => site.text.includes(name));
+    expect(sites.length, `${name}: لا موضع نداء — أعيدت التسمية أو حُذف`).toBeGreaterThan(0);
+  });
+
+  it('مجموع المواضع لم ينقص', () => {
+    expect(callSites().length).toBeGreaterThanOrEqual(12);
   });
 
   it('كل نداء مسبوق بـ await أو return أو داخل مجموعة مُنتظَرة', () => {
