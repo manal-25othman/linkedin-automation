@@ -4296,6 +4296,16 @@ revoke all on public.platform_expenses from anon, authenticated;
 -- والمدى بالأشهر معامل، فيُرسم الاتجاه لا لقطة شهر.
 -- =====================================================================
 
+-- يُسقَط قبل الإنشاء.
+--
+-- `create or replace` لا يغيّر نوع الإرجاع. والحزمة تُشغَّل على قواعد
+-- قائمة لا نظيفة فقط، فإن كانت ترحيلةٌ لاحقة قد وسّعت هذه الدالّة
+-- (0031 أضافت تكلفة الزوّار) ثم أُعيد تشغيل الحزمة، وصل هذا السطر
+-- ليعيدها إلى توقيعها الضيّق فسقط الاستعلام كلّه.
+--
+-- والعطل يقع في الترحيلة **الأقدم** لا الأحدث، وهو ما يُربك تشخيصه.
+drop function if exists public.platform_finance_summary(integer);
+
 create or replace function public.platform_finance_summary(p_months integer default 6)
 returns table (
   period_month    date,
