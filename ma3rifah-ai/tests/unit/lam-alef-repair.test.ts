@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanText, repairLamAlefOrder } from '@/lib/rag/extract';
+import { cleanText, repairCorruptedNumerals, repairLamAlefOrder } from '@/lib/rag/extract';
 
 /**
  * رباط لام-ألف المفكوك مقلوبًا.
@@ -109,5 +109,50 @@ describe('التطبيق مرّتين كالتطبيق مرّة', () => {
     const once = repairLamAlefOrder(raw);
     expect(repairLamAlefOrder(once)).toBe(once);
     expect(once).toBe('الباب الأول: لا يجوز إلا بالأجر');
+  });
+});
+
+/**
+ * ألفاظ العدد.
+ *
+ * ظهر في مستند حقيقي: «تُزاد إلى مدة لا تقل عن **ثالثين** يوما».
+ *
+ * والأثر لم يكن في الإجابة — النموذج قرأ «ثالثين» وكتب «ثلاثين»
+ * صحيحة. بل في **طبقة التحقّق**: بحثت عن «30» في المصدر فلم تجدها،
+ * فوضعت تحذيرًا على رقمٍ صحيح.
+ *
+ * والتحذير الكاذب أخطر من غيابه: يتعلّم المستخدم تجاهله، فيسقط حين
+ * يكون صادقًا.
+ */
+describe('ألفاظ العدد المعطوبة', () => {
+  it('«ثالثين» ⇒ «ثلاثين» — الحالة التي وقعت فعلًا', () => {
+    expect(repairCorruptedNumerals('لا تقل عن ثالثين يوما')).toBe('لا تقل عن ثلاثين يوما');
+  });
+
+  it('«ثالثون» و«ثالثمائة» كذلك', () => {
+    expect(repairCorruptedNumerals('ثالثون')).toBe('ثلاثون');
+    expect(repairCorruptedNumerals('ثالثمائة ريال')).toBe('ثلاثمائة ريال');
+  });
+
+  /**
+   * الضوابط السالبة — وهي سبب حصر القائمة.
+   *
+   * «ثالث» و«ثالثة» كلمتان صحيحتان من العائلة نفسها شكلًا. ولو
+   * أُدرجتا لأفسد الإصلاحُ نصًّا سليمًا — وهو أسوأ من تركه معطوبًا،
+   * لأن المعطوب يُرى والمفسَد لا يُرى.
+   */
+  it('«ثالث» و«ثالثة» لا تُمَسّان — وهما صحيحتان', () => {
+    expect(repairCorruptedNumerals('الباب الثالث')).toBe('الباب الثالث');
+    expect(repairCorruptedNumerals('المادة الثالثة')).toBe('المادة الثالثة');
+    expect(repairCorruptedNumerals('الفصل الثالث والعشرون')).toBe('الفصل الثالث والعشرون');
+  });
+
+  it('«ثلاثين» السليمة تبقى كما هي', () => {
+    expect(repairCorruptedNumerals('ثلاثين يوما')).toBe('ثلاثين يوما');
+  });
+
+  it('التطبيق مرّتين كالتطبيق مرّة', () => {
+    const once = repairCorruptedNumerals('عن ثالثين يوما');
+    expect(repairCorruptedNumerals(once)).toBe(once);
   });
 });

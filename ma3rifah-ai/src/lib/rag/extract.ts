@@ -127,6 +127,34 @@ export function fixArabicGlyphCluster(str: string): string {
  * أيّهما تأويلًا آخر — لأن القلب الأعمى يفسد أكثر ممّا يصلح: «سأل»
  * تصير «سلأ» و«إلى» تصير «لإى».
  */
+/**
+ * ألفاظ العدد التي يفسدها قلب رباط لام-ألف.
+ *
+ * الصنف الثالث من الفساد — ألفٌ مجرّدة ولام داخل الكلمة — لا يفصله
+ * نمط، لأن «خالد» السليمة و«خالفات» المعطوبة سواءٌ في الشكل.
+ *
+ * لكنّ **ألفاظ العدد** حالة خاصّة تستحقّ الاستثناء:
+ *
+ *   ١) أثرها ماليّ ونظاميّ مباشر. ورقمٌ خاطئ في لائحة ليس عطلًا
+ *      تقنيًّا بل مخالفة.
+ *
+ *   ٢) وطبقة التحقّق تبحث عن الأرقام في المصدر. فإن كان المصدر يحمل
+ *      «ثالثين» والإجابة «ثلاثين»، حذّرت من رقمٍ **صحيح** — والتحذير
+ *      الكاذب يعلّم المستخدم تجاهل التحذيرات كلها.
+ *
+ * والمُدرَج هنا صورٌ **لا وجود لها في العربية أصلًا**، فقلبُها قاطع:
+ * «ثالثين» ليست كلمة، بخلاف «ثالث» و«ثالثة» — وهما صحيحتان، فلا
+ * تُمَسّان مهما بدا أنهما من العائلة نفسها.
+ *
+ * وقد ظهر هذا في مستند حقيقي: «تُزاد إلى مدة لا تقل عن ثالثين يوما».
+ */
+const CORRUPTED_NUMERALS: ReadonlyArray<readonly [string, string]> = [
+  ['ثالثين', 'ثلاثين'],
+  ['ثالثون', 'ثلاثون'],
+  ['ثالثمئة', 'ثلاثمئة'],
+  ['ثالثمائة', 'ثلاثمائة'],
+];
+
 export function repairLamAlefOrder(text: string): string {
   return (
     text
@@ -140,6 +168,21 @@ export function repairLamAlefOrder(text: string): string {
       // كلمةً وحدها. وأصلها «لا» — وهي من أكثر كلمات النصّ النظاميّ.
       .replace(/(?<![\u0621-\u064A])\u0627\u0644(?![\u0621-\u064A])/g, '\u0644\u0627')
   );
+}
+
+/**
+ * إصلاح ألفاظ العدد المعطوبة.
+ *
+ * منفصلةٌ عن `repairLamAlefOrder` لأنها من نوع آخر: تلك قاعدةٌ تُبرهَن،
+ * وهذه قائمةٌ تُراجَع. وخلطُهما يُغري بإضافة كلماتٍ ملتبسة إلى قاعدةٍ
+ * كان برهانها هو ضمانها.
+ */
+export function repairCorruptedNumerals(text: string): string {
+  let result = text;
+  for (const [corrupted, correct] of CORRUPTED_NUMERALS) {
+    result = result.split(corrupted).join(correct);
+  }
+  return result;
 }
 
 interface PdfTextItem {
@@ -250,7 +293,9 @@ async function extractPdf(buffer: Buffer): Promise<ExtractionResult> {
       const content = await page.getTextContent();
       // الإصلاح بعد التنظيف: علامات الاتجاه غير المرئية تُزال أولًا،
       // فلا تفصل الألف عن اللام فيفوت النمطُ الحارسَ.
-      const text = repairLamAlefOrder(cleanText(renderPageItems(content.items as PdfTextItem[])));
+      const text = repairCorruptedNumerals(
+        repairLamAlefOrder(cleanText(renderPageItems(content.items as PdfTextItem[]))),
+      );
       if (text.length > 0) pages.push({ pageNumber, text });
       page.cleanup();
     }
