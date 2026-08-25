@@ -555,6 +555,28 @@ export interface Database {
           similarity: number;
         }[];
       };
+      match_document_chunks_hybrid: {
+        Args: {
+          p_query_embedding: string;
+          p_query_text: string;
+          p_match_count?: number;
+          p_min_similarity?: number;
+          p_category_ids?: string[] | null;
+        };
+        Returns: {
+          chunk_id: string;
+          document_id: string;
+          document_name: string;
+          content: string;
+          page_number: number | null;
+          section_title: string | null;
+          similarity: number;
+          lexical_rank: number;
+          fused_score: number;
+          /** dense | sparse | both — أي مسارٍ وجد المقطع */
+          matched_by: string;
+        }[];
+      };
       record_knowledge_gap: {
         Args: { p_question: string };
         Returns: string | null;

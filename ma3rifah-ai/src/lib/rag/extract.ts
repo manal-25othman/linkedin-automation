@@ -340,12 +340,104 @@ export async function extractDocumentText(
     );
   }
 
-  if (result.text.trim().length < 20) {
-    throw new AppError(
-      'DOCUMENT_PROCESSING',
-      'لم يُعثر على نص قابل للقراءة في الملف. إذا كان المستند صورة ممسوحة ضوئيًا فهو يحتاج معالجة OCR أولًا.',
-    );
+  const quality = assessExtraction(result);
+  if (quality.verdict !== 'OK') {
+    throw new AppError('DOCUMENT_PROCESSING', quality.message!, quality.detail);
   }
 
   return result;
+}
+
+/* =====================================================================
+   تقدير كفاية الاستخراج
+   =====================================================================
+   العتبة القديمة كانت عشرين محرفًا **مطلقة**. ومستندٌ من ستّ وأربعين
+   صفحة ممسوحة ضوئيًّا يحمل ترويسةً واحدة يتجاوزها، فيُفهرَس ويُعلَن
+   «جاهز» وفيه مقطع واحد.
+
+   ثم يسأل المستخدم عن معلومة يراها بعينه في الملف، فيقول المساعد «لم
+   أجد معلومات كافية» — وهو صادق: لم يُخزَّن من الملف شيء. لكنّ
+   المستخدم يقرؤها عطلًا في الذكاء الاصطناعي، وهي عطلٌ في الاستخراج
+   وقع قبله بخطوتين وأُعلن نجاحًا.
+
+   وهذا أسوأ من الفشل الظاهر: الفشل يُرى فيُعاد الرفع، و«جاهز» الكاذبة
+   تُصدَّق فتُبنى عليها تجربة كاملة.
+
+   فالمقياس صار نسبيًّا: كم محرفًا لكل صفحة، وكم صفحة أعطت نصًّا أصلًا.
+   ===================================================================== */
+
+/** أدنى متوسط محارف للصفحة يُعدّ نصًّا حقيقيًّا لا قشورًا */
+const MIN_CHARS_PER_PAGE = 120;
+
+/** أدنى نسبة صفحات تحمل نصًّا */
+const MIN_PAGES_WITH_TEXT_RATIO = 0.5;
+
+/**
+ * عدد الصفحات الذي يصير القياس النسبيّ عنده ذا معنى.
+ *
+ * مذكّرة من صفحة أو صفحتين قد تكون قصيرة بحقّ، فلا يُحكم عليها بمتوسط.
+ */
+const RELATIVE_CHECK_MIN_PAGES = 3;
+
+export interface ExtractionQuality {
+  verdict: 'OK' | 'EMPTY' | 'SPARSE';
+  charCount: number;
+  pageCount: number | null;
+  pagesWithText: number;
+  charsPerPage: number | null;
+  /** رسالة للمستخدم — موجودة حين لا يكون الحكم OK */
+  message?: string;
+  /** تفصيل للسجلّ لا للعرض */
+  detail?: string;
+}
+
+export function assessExtraction(result: ExtractionResult): ExtractionQuality {
+  const charCount = result.text.trim().length;
+  const pageCount = result.pageCount;
+  const pagesWithText = result.pages.filter((page) => page.text.trim().length > 0).length;
+  const charsPerPage =
+    pageCount && pageCount > 0 ? Math.round(charCount / pageCount) : null;
+
+  const base = { charCount, pageCount, pagesWithText, charsPerPage };
+
+  if (charCount < 20) {
+    return {
+      ...base,
+      verdict: 'EMPTY',
+      message:
+        'لم يُعثر على نص قابل للقراءة في الملف. إذا كان المستند صورة ممسوحة ضوئيًا فهو يحتاج معالجة OCR أولًا.',
+      detail: `charCount=${charCount}`,
+    };
+  }
+
+  // القياس النسبيّ للمستندات المصفَّحة وحدها
+  if (pageCount !== null && pageCount >= RELATIVE_CHECK_MIN_PAGES) {
+    const ratio = pagesWithText / pageCount;
+
+    if (charsPerPage !== null && charsPerPage < MIN_CHARS_PER_PAGE) {
+      return {
+        ...base,
+        verdict: 'SPARSE',
+        message:
+          `استُخرج نصّ ضئيل جدًّا: ${charCount} محرفًا من ${pageCount} صفحة ` +
+          `(${charsPerPage} للصفحة). الأرجح أن المستند صورة ممسوحة ضوئيًا — ` +
+          'حوّليه إلى نصّ ببرنامج OCR ثم أعيدي رفعه.',
+        detail: `charsPerPage=${charsPerPage} pagesWithText=${pagesWithText}/${pageCount}`,
+      };
+    }
+
+    if (ratio < MIN_PAGES_WITH_TEXT_RATIO) {
+      return {
+        ...base,
+        verdict: 'SPARSE',
+        message:
+          `${pagesWithText} صفحة فقط من ${pageCount} فيها نصّ قابل للقراءة. ` +
+          'الأرجح أن باقي الصفحات صور ممسوحة ضوئيًا — حوّلي الملف كاملًا ' +
+          'ببرنامج OCR ثم أعيدي رفعه.',
+        detail: `pagesWithText=${pagesWithText}/${pageCount} charsPerPage=${charsPerPage}`,
+      };
+    }
+  }
+
+  return { ...base, verdict: 'OK' };
 }
