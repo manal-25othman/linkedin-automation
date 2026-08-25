@@ -58,6 +58,7 @@ describe('اللوحة لم تتغيّر', () => {
 describe('الهيئة التسويقية قائمة ومطبَّقة', () => {
   it('الصنف معرَّف', () => {
     expect(CSS).toContain('.marketing-shell {');
+    expect(CSS).toContain('.dark .marketing-shell {');
   });
 
   it('تخطيط التسويق وحده يطبّقه', () => {
@@ -65,23 +66,69 @@ describe('الهيئة التسويقية قائمة ومطبَّقة', () => {
   });
 
   it('أرضها داكنة فعلًا — لا وراثة من الفاتح', () => {
-    const shell = blockOf('.marketing-shell');
+    const shell = blockOf('.dark .marketing-shell');
     const background = shell.match(/--background: \d+ \d+% (\d+)%;/);
     expect(background).not.toBeNull();
     expect(Number(background![1]), 'الأرض ليست داكنة').toBeLessThan(15);
   });
 
   it('تُعلن `color-scheme` — وإلا بقيت الحقول وأشرطة التمرير فاتحة', () => {
-    expect(blockOf('.marketing-shell')).toContain('color-scheme: dark');
+    expect(blockOf('.dark .marketing-shell')).toContain('color-scheme: dark');
   });
 
   it('كل رمز في الفاتح له نظير هنا — والناقص يرث لونًا لا يُرى', () => {
     const root = blockOf(':root');
-    const shell = blockOf('.marketing-shell');
+    const shell = blockOf('.dark .marketing-shell');
     const tokens = [...root.matchAll(/(--[a-z-]+):/g)].map((match) => match[1]);
     const missing = tokens.filter(
       (token) => token !== '--radius' && !shell.includes(`${token}:`),
     );
     expect(missing, 'رموز بلا نظير داكن').toEqual([]);
+  });
+});
+
+/**
+ * الوضعان معًا.
+ *
+ * طلبت صاحبة المنتج دعم الفاتح والداكن بعد أن كانت الصفحة داكنة قسرًا.
+ * والخطر في هذا التحويل واحد: **الومضة**. لو حُسمت السمة في React
+ * لرُسمت الصفحة بيضاء ثم انقلبت أمام الزائر — وهي أسوأ ما في الوضع
+ * الداكن، ويراها كل زائر في كل زيارة.
+ *
+ * فالحسم في نصٍّ داخل `<head>` قبل الرسم، وهذا الحارس يمنع نقله.
+ */
+describe('السمة تُحسم قبل الرسم', () => {
+  const ROOT_LAYOUT = readFileSync(join(process.cwd(), 'src/app/layout.tsx'), 'utf8');
+  const TOGGLE = readFileSync(
+    join(process.cwd(), 'src/components/marketing/theme-toggle.tsx'),
+    'utf8',
+  );
+
+  it('نصّ السمة في التخطيط الجذر لا في مكوّن عميل', () => {
+    expect(ROOT_LAYOUT).toContain("localStorage.getItem('theme')");
+    expect(ROOT_LAYOUT).toContain('prefers-color-scheme: dark');
+  });
+
+  it('الاختيار المحفوظ يسبق تفضيل الجهاز', () => {
+    // لو انعكس الترتيب لضاع قرار الزائر الصريح في كل زيارة
+    expect(ROOT_LAYOUT).toMatch(/var s=localStorage[\s\S]{0,120}s\?s==='dark':matchMedia/);
+  });
+
+  it('المبدّل يقرأ الحالة ولا يقرّرها', () => {
+    expect(TOGGLE).toContain("classList.contains('dark')");
+    expect(TOGGLE).not.toContain('prefers-color-scheme');
+  });
+
+  it('المبدّل لا يرسم أيقونة قبل أن يعرف — وإلا انقلبت أمام الزائر', () => {
+    expect(TOGGLE).toContain('dark === null');
+  });
+
+  it('التخزين الممنوع لا يكسر القلب', () => {
+    expect(TOGGLE).toMatch(/try \{[\s\S]{0,160}catch/);
+  });
+
+  it('`colorScheme` يُضبط مع الصنف — وإلا بقيت الحقول من السمة الأخرى', () => {
+    expect(ROOT_LAYOUT).toContain('colorScheme');
+    expect(TOGGLE).toContain('colorScheme');
   });
 });

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { Logo } from '@/components/shared/brand';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/marketing/theme-toggle';
 import { cn } from '@/lib/utils';
 
 interface NavLink {
@@ -63,6 +64,7 @@ export function SiteHeader({ extraLinks = [] }: { extraLinks?: NavLink[] }) {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <ThemeToggle />
           <Button variant="ghost" asChild>
             <Link href="/login">تسجيل الدخول</Link>
           </Button>
@@ -71,15 +73,20 @@ export function SiteHeader({ extraLinks = [] }: { extraLinks?: NavLink[] }) {
           </Button>
         </div>
 
-        <button
-          type="button"
-          className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-accent lg:hidden"
-          onClick={() => setIsOpen((open) => !open)}
-          aria-expanded={isOpen}
-          aria-label={isOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-        >
-          {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
+        {/* على الهاتف يجاور المبدّلُ زرَّ القائمة: هو تفضيل عرضٍ لا
+            وجهةَ تنقّل، فلا يُدفن داخل قائمة تُفتح. */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            className="inline-flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+            onClick={() => setIsOpen((open) => !open)}
+            aria-expanded={isOpen}
+            aria-label={isOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+          >
+            {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
+        </div>
       </div>
 
       {isOpen ? (
