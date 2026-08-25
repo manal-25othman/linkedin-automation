@@ -66,7 +66,7 @@ export function SiteHeader({ extraLinks = [] }: { extraLinks?: NavLink[] }) {
           <Button variant="ghost" asChild>
             <Link href="/login">تسجيل الدخول</Link>
           </Button>
-          <Button asChild>
+          <Button asChild variant="outline" className="rounded-full border-border/80 bg-card/60">
             <Link href="/register">ابدأ التجربة</Link>
           </Button>
         </div>

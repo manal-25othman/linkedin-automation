@@ -58,7 +58,16 @@ export function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className={cn('py-16 sm:py-24', muted && 'bg-muted/30', className)}>
+    <section
+      id={id}
+      className={cn(
+        'py-16 sm:py-24',
+        // على الأرض الداكنة يذوب الفرق بالشفافية وحدها، فيُضاف حدٌّ
+        // أعلى وأسفل: القسم يُعرف أنه قسم قبل أن تُقرأ كلمة منه.
+        muted && 'border-y border-border/60 bg-muted/70',
+        className,
+      )}
+    >
       <div className="container">{children}</div>
     </section>
   );
@@ -83,7 +92,7 @@ export function SectionHeading({
       {eyebrow ? (
         <p
           className={cn(
-            'mb-3 flex items-center gap-2 text-sm font-bold text-primary',
+            'mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground',
             align === 'center' ? 'justify-center' : 'justify-start',
           )}
         >

@@ -59,12 +59,18 @@ export default async function HomePage() {
   return (
     <>
       {/* ------------------------------------------------------------ Hero */}
-      <section className="relative overflow-hidden border-b bg-gradient-to-b from-accent/50 via-background to-background">
-        <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
+      <section className="relative overflow-hidden border-b bg-background">
+        <div className="hero-halo pointer-events-none absolute inset-0" aria-hidden />
+        <div className="tech-dots pointer-events-none absolute inset-0" aria-hidden />
 
         <div className="container relative py-20 sm:py-28">
           <div className="reveal-now mx-auto max-w-3xl text-center">
-            <Badge variant="outline" className="mb-6 gap-2 bg-background px-3 py-1">
+            {/* حبّة الإعلان: حدٌّ خافت وزجاجٌ خفيف بدل خلفية مصمتة —
+                تجلس على الهالة ولا تقطعها. */}
+            <Badge
+              variant="outline"
+              className="mb-6 gap-2 rounded-full border-border/70 bg-card/60 px-4 py-1.5 text-xs font-medium backdrop-blur"
+            >
               <Pulse />
               {t('home.badge')}
             </Badge>
@@ -85,8 +91,14 @@ export default async function HomePage() {
               {t('home.hero.subtitle')}
             </p>
 
+            {/* الزرّان حبّتان مستديرتان: الأول متوهّج والثاني محدّد فقط.
+                والفرق بينهما بصريّ لا لفظيّ — يُعرف الأهمّ قبل قراءته. */}
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg" asChild className="group">
+              <Button
+                size="lg"
+                asChild
+                className="glow-primary group h-12 rounded-full px-7 text-base font-semibold"
+              >
                 <Link href="/register">
                   {t('home.cta.primary')}
                   <ArrowLeft
@@ -95,7 +107,12 @@ export default async function HomePage() {
                   />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="h-12 rounded-full border-border/80 bg-card/50 px-7 text-base backdrop-blur"
+              >
                 <Link href="/contact">{t('home.cta.secondary')}</Link>
               </Button>
             </div>
@@ -103,7 +120,15 @@ export default async function HomePage() {
             <p className="mt-5 text-sm text-muted-foreground">{t('home.cta.note')}</p>
           </div>
 
-          <div className="reveal-now mt-16" style={{ animationDelay: '120ms' }}>
+          {/* إطارٌ حول لوحة العرض: حلقةٌ خافتة ووهجٌ تحتها يرفعانها عن
+              الأرض، فتُقرأ نافذةَ منتجٍ لا صندوقًا في الصفحة. */}
+          <div
+            className="reveal-now mx-auto mt-16 max-w-4xl rounded-2xl bg-card/40 p-1.5 ring-1 ring-border/70 backdrop-blur"
+            style={{
+              animationDelay: '120ms',
+              boxShadow: '0 34px 96px -46px hsl(var(--primary) / 0.22)',
+            }}
+          >
             <DemoConsole />
           </div>
         </div>
