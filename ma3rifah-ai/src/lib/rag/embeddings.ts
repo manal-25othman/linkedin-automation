@@ -307,7 +307,7 @@ export function getEmbeddingProvider(): EmbeddingProvider {
       cachedProvider = new VoyageProvider(key, serverEnv.voyageModel, dimensions);
       return cachedProvider;
     }
-    logger.warn('VOYAGE_API_KEY مفقود — التحوّل إلى المزوّد المحلي.');
+    refuseSilentFallback('voyage', 'VOYAGE_API_KEY');
   }
 
   if (configured === 'openai') {
@@ -321,11 +321,43 @@ export function getEmbeddingProvider(): EmbeddingProvider {
       );
       return cachedProvider;
     }
-    logger.warn('OPENAI_API_KEY مفقود — التحوّل إلى المزوّد المحلي.');
+    refuseSilentFallback('openai', 'OPENAI_API_KEY');
   }
 
   cachedProvider = new LocalProvider(dimensions);
   return cachedProvider;
+}
+
+/**
+ * التحوّل الصامت إلى المزوّد المحلّي — وهو أخطر ما كان في هذا الملف.
+ *
+ * كان غياب المفتاح يُسجَّل تحذيرًا ثم يمضي إلى `LocalProvider`، وهو
+ * دالّة تجزئة لا نموذج. والنتيجة أسوأ من التعطّل:
+ *
+ *   • مستندٌ فُهرس بلا مفتاح تُخزَّن متجهاته في فضاءٍ لا صلة له بفضاء
+ *     Voyage. فإن أُضيف المفتاح بعده، صار السؤال يُضمَّن في فضاء
+ *     والمخزون في آخر — والتشابه بينهما ضجيج محض.
+ *
+ *   • ولا يظهر خطأ: الرفع ينجح، والحالة «جاهز»، والسؤال يُجاب «لم أجد
+ *     معلومات كافية». فيُتَّهم الذكاء الاصطناعي، والعلّة في مفتاحٍ
+ *     ناقص وقعت قبل ذلك بأيام.
+ *
+ * والفهرس المختلط لا يُصلَح بإضافة المفتاح: يلزم إعادة فهرسة كل ما
+ * دخل في تلك الفترة. ولذلك يُرفض التحوّل من أصله بدل أن يُنبَّه عليه.
+ *
+ * ويبقى المحلّي متاحًا لمن يطلبه صراحةً (`EMBEDDINGS_PROVIDER=local`)
+ * — للاختبار والتطوير بلا مفتاح.
+ */
+function refuseSilentFallback(provider: string, envVar: string): never {
+  const message =
+    `مزوّد التضمين المضبوط «${provider}» بلا مفتاح: ${envVar} مفقود. ` +
+    'ولن يُستبدل به المزوّد المحلّي تلقائيًّا — لأن المتجهات الناتجة عنه ' +
+    'في فضاءٍ آخر، فتُخزَّن مستندات لا يجدها البحث أبدًا، بلا خطأ ظاهر. ' +
+    `أضيفي ${envVar}، أو اضبطي EMBEDDINGS_PROVIDER=local صراحةً إن كنت ` +
+    'تقصدين المزوّد المحلّي.';
+
+  logger.error('مفتاح مزوّد التضمين مفقود', { provider, envVar });
+  throw new AppError('EMBEDDINGS_UNAVAILABLE', message);
 }
 
 /** لأغراض الاختبار فقط */
