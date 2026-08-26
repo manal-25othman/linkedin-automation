@@ -22,6 +22,7 @@ import { Pulse } from '@/components/marketing/pulse';
 import { DemoConsole } from '@/components/marketing/demo-console';
 import { FeatureShowcase } from '@/components/marketing/feature-showcase';
 import { Comparison } from '@/components/marketing/comparison';
+import { SecurityFlow } from '@/components/marketing/security-flow';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { getSiteText } from '@/lib/content/site-text';
@@ -278,7 +279,17 @@ export default async function HomePage() {
             </div>
           </Reveal>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <SecurityFlow
+              stages={t.list('home.security.flow').map((item) => ({
+                stage: item.stage,
+                detail: item.detail,
+              }))}
+            />
+          </div>
+        </div>
+
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {t.list('home.security.cards').map((item, index) => {
               const Icon = pickIcon(SECURITY_ICONS, index);
               return (
@@ -293,7 +304,6 @@ export default async function HomePage() {
                 </Reveal>
               );
             })}
-          </div>
         </div>
       </Section>
 

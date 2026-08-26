@@ -58,7 +58,9 @@ export async function SiteFooter() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                      // ارتفاع اللمس على الهاتف: الرابط النصّي ستّة عشر
+                      // بكسلًا، والإصبع يخطئه إلى جاره فوقه أو تحته
+                      className="inline-flex min-h-9 items-center text-sm text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
                     >
                       {link.label}
                     </Link>
