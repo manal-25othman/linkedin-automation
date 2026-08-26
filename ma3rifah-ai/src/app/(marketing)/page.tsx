@@ -27,6 +27,7 @@ import { FaqList } from '@/components/marketing/faq-list';
 import { getSiteText } from '@/lib/content/site-text';
 import { homeFaq } from '@/lib/content/faq';
 import { pickIcon } from '@/components/marketing/icon-cycle';
+import { cn } from '@/lib/utils';
 
 /**
  * الصفحة الرئيسية.
@@ -56,6 +57,8 @@ const PLATFORM_ICONS = [
 
 export default async function HomePage() {
   const t = await getSiteText();
+  const heroLine1 = t('home.hero.line1');
+  const heroLine2 = t('home.hero.line2');
 
   return (
     <>
@@ -77,16 +80,39 @@ export default async function HomePage() {
             </Badge>
 
             {/*
-             * مقاس الصدر: كان 3xl/5xl فبلغ ثمانية وأربعين بكسلًا على
-             * الحاسب — يملأ الشاشة ويدفع البرهان تحت الطيّة. والعنوان
-             * العربي أعرض من الإنجليزي بالمقاس نفسه، فيلتفّ سطرًا
-             * ثالثًا. فخُفّض درجةً وضُيّق التتبّع.
+             * ثلاث درجات لا درجتان.
+             *
+             * كان السطران بالمقاس نفسه، على افتراض أنهما عبارتان
+             * قصيرتان. فلمّا كُتبا جملتين كاملتين ملآ شاشة الهاتف
+             * سبعة أسطر، ولم يبقَ للبرهان ولا للزرّ موضع.
+             *
+             * فصار الأول عنوانًا والثاني سطرًا مساندًا أصغر منه
+             * وملوّنًا، والثالث شرحًا رماديًّا. والعين تقرأ الترتيب
+             * قبل أن تقرأ الكلمات.
              */}
-            <h1 className="text-balance text-[1.6rem] font-semibold leading-[1.35] tracking-tight sm:text-4xl sm:leading-[1.25]">
-              {t('home.hero.line1')}
-              <br />
-              <span className="text-shimmer">{t('home.hero.line2')}</span>
+            <h1
+              className={cn(
+                'text-balance font-semibold tracking-tight',
+                // المقاس يتبع الطول: عنوانٌ طويل بمقاس القصير يبتلع
+                // الشاشة، وقصيرٌ بمقاس الطويل يبدو باهتًا
+                heroLine1.length > 55
+                  ? 'text-[1.35rem] leading-[1.45] sm:text-3xl sm:leading-[1.3]'
+                  : 'text-[1.6rem] leading-[1.35] sm:text-4xl sm:leading-[1.25]',
+              )}
+            >
+              {heroLine1}
             </h1>
+
+            {heroLine2 ? (
+              <p
+                className={cn(
+                  'mx-auto mt-4 max-w-2xl text-balance font-medium leading-relaxed text-primary',
+                  heroLine2.length > 55 ? 'text-base sm:text-lg' : 'text-lg sm:text-xl',
+                )}
+              >
+                {heroLine2}
+              </p>
+            ) : null}
 
             <p className="mx-auto mt-5 max-w-2xl text-pretty text-[0.95rem] leading-loose text-muted-foreground sm:text-base">
               {t('home.hero.subtitle')}
