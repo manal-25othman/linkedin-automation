@@ -64,10 +64,9 @@ export async function askAction(input: {
 export async function feedbackAction(
   messageId: string,
   feedback: 'UP' | 'DOWN' | null,
-  note?: string | null,
 ): Promise<{ ok: boolean; message?: string }> {
   try {
-    await submitFeedback(messageId, feedback, note);
+    await submitFeedback(messageId, feedback);
     return { ok: true };
   } catch (error) {
     return { ok: false, message: toAppError(error).displayMessage };

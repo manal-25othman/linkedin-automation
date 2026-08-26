@@ -322,9 +322,6 @@ function UserBubble({ content }: { content: string }) {
 function AssistantBubble({ message }: { message: ChatMessage }) {
   const [feedback, setFeedback] = useOptimistic(message.feedback);
   const [copied, setCopied] = useState(false);
-  const [askingWhy, setAskingWhy] = useState(false);
-  const [note, setNote] = useState('');
-  const [noteSent, setNoteSent] = useState(false);
   const [, startFeedbackTransition] = useTransition();
 
   const copy = async () => {
@@ -337,35 +334,12 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
     }
   };
 
-  /*
-   * «لم تعجبني» وحدها تفتح حقل السبب.
-   *
-   * والتقييم يُحفظ فورًا لا بعد كتابة السبب: من ضغط ثم انصرف يبقى
-   * رأيه محسوبًا. والسبب زيادةٌ اختيارية تُرسَل بعده.
-   */
   const rate = (value: 'UP' | 'DOWN') => {
     const next = feedback === value ? null : value;
     startFeedbackTransition(async () => {
       setFeedback(next);
-      setAskingWhy(next === 'DOWN');
-      if (next !== 'DOWN') setNote('');
       const result = await feedbackAction(message.id, next);
       if (!result.ok) toast.error(result.message ?? 'تعذّر حفظ التقييم.');
-    });
-  };
-
-  const sendNote = () => {
-    const text = note.trim();
-    if (text === '') return;
-    startFeedbackTransition(async () => {
-      const result = await feedbackAction(message.id, 'DOWN', text);
-      if (result.ok) {
-        setAskingWhy(false);
-        setNoteSent(true);
-        toast.success('وصلنا سببك. شكرًا.');
-      } else {
-        toast.error(result.message ?? 'تعذّر إرسال السبب.');
-      }
     });
   };
 
@@ -485,61 +459,6 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
             />
           </Button>
         </div>
-
-        {/*
-          حقل السبب.
-          يُفصح صراحةً إلى أين يذهب: نصٌّ يكتبه موظفٌ عن مستند شركته
-          ويصل إلى فريق المنصة — وجمعُه بلا إخبارٍ إخلالٌ بالثقة، مهما
-          حسُنت النية.
-        */}
-        {askingWhy ? (
-          <div className="mt-3 rounded-lg border bg-muted/40 p-3">
-            <label
-              htmlFor={`why-${message.id}`}
-              className="block text-xs font-medium"
-            >
-              ما سبب عدم الرضا؟ (اختياري)
-            </label>
-            <Textarea
-              id={`why-${message.id}`}
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              rows={2}
-              maxLength={500}
-              placeholder="مثال: الإجابة ناقصة · المصدر غير صحيح · لم يفهم السؤال"
-              className="mt-2 text-sm"
-            />
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[0.7rem] leading-relaxed text-muted-foreground">
-                يصل إلى فريق المنصة لتحسين جودة الإجابات.
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setAskingWhy(false)}
-                >
-                  تخطٍّ
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={sendNote}
-                  disabled={note.trim() === ''}
-                >
-                  إرسال
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {noteSent ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            شكرًا — وصلنا سببك.
-          </p>
-        ) : null}
       </div>
     </div>
   );

@@ -472,32 +472,16 @@ async function recordUsageAndAnalytics(params: {
 }
 
 /** تقييم إجابة (👍 / 👎) */
-/** أطول سببٍ يُقبل — الحقل للتوضيح لا للمراسلة */
-const MAX_FEEDBACK_NOTE = 500;
-
 export async function submitFeedback(
   messageId: string,
   feedback: 'UP' | 'DOWN' | null,
-  note?: string | null,
 ): Promise<void> {
   await requireCompanySession();
   const supabase = await createClient();
 
-  /*
-   * السبب يُحفظ مع «لم تعجبني» وحدها، ويُمحى مع غيرها.
-   *
-   * فمن ضغط «لم تعجبني» وكتب سببًا ثم بدا له فرفع الإبهام، لا يبقى
-   * سببُ استياءٍ معلّقًا على إجابةٍ رضي عنها.
-   */
-  const trimmed = (note ?? '').trim().slice(0, MAX_FEEDBACK_NOTE);
-  const payload =
-    feedback === 'DOWN'
-      ? { feedback, feedback_note: trimmed || null }
-      : { feedback, feedback_note: null };
-
   const { error } = await supabase
     .from('messages')
-    .update(payload)
+    .update({ feedback })
     .eq('id', messageId)
     .eq('role', 'ASSISTANT');
 
