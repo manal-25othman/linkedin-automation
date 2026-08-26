@@ -21,6 +21,7 @@ import { Reveal } from '@/components/marketing/reveal';
 import { Pulse } from '@/components/marketing/pulse';
 import { DemoConsole } from '@/components/marketing/demo-console';
 import { FeatureShowcase } from '@/components/marketing/feature-showcase';
+import { Comparison } from '@/components/marketing/comparison';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
 import { getSiteText } from '@/lib/content/site-text';
@@ -184,6 +185,27 @@ export default async function HomePage() {
               }))}
             />
           </div>
+        </Reveal>
+      </Section>
+
+      {/* -------------------------------------------------------- المقارنة */}
+      <Section>
+        <Reveal>
+          <SectionHeading
+            eyebrow={t('home.compare.eyebrow')}
+            title={t('home.compare.title')}
+            description={t('home.compare.description')}
+          />
+        </Reveal>
+
+        <Reveal>
+          <Comparison
+            rows={t.list('home.compare.rows').map((row) => ({
+              aspect: row.aspect,
+              generic: row.generic,
+              ours: row.ours,
+            }))}
+          />
         </Reveal>
       </Section>
 
