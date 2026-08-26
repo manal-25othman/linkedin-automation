@@ -555,6 +555,20 @@ export interface Database {
           similarity: number;
         }[];
       };
+      platform_satisfaction: {
+        Args: { p_days?: number };
+        Returns: {
+          total_rated: number;
+          up_count: number;
+          down_count: number;
+          satisfaction: number | null;
+          notes_count: number;
+        }[];
+      };
+      platform_feedback_notes: {
+        Args: { p_limit?: number };
+        Returns: { note: string; company_name: string; created_at: string }[];
+      };
       match_document_chunks_hybrid: {
         Args: {
           p_query_embedding: string;

@@ -53,6 +53,8 @@ export default async function AdminOverviewPage() {
     marginReport,
     visitorStats,
     visitorUnanswered,
+    satisfactionResult,
+    feedbackNotes,
   ] = await Promise.all([
     admin.from('companies').select('id, name, status, is_demo, created_at').order('created_at', {
       ascending: false,
@@ -74,12 +76,16 @@ export default async function AdminOverviewPage() {
     sessionClient.rpc('platform_margin_report'),
     sessionClient.rpc('platform_visitor_stats', { p_days: 30 }),
     sessionClient.rpc('platform_visitor_unanswered', { p_limit: 10 }),
+    sessionClient.rpc('platform_satisfaction', { p_days: 30 }),
+    sessionClient.rpc('platform_feedback_notes', { p_limit: 12 }),
   ]);
 
   const companyRows = companies.data ?? [];
   const margins = marginReport.data;
   const visitors = visitorStats.data?.[0];
   const visitorGaps = visitorUnanswered.data ?? [];
+  const satisfaction = satisfactionResult.data?.[0];
+  const notes = feedbackNotes.data ?? [];
 
   // مؤشر معطّل يجب أن يقول إنه معطّل. الصفر ادّعاء بأن القياس تمّ ولم
   // يجد شيئًا، والفرق بينه وبين تعذّر القياس هو الفرق بين «لا زوّار»
@@ -269,6 +275,58 @@ export default async function AdminOverviewPage() {
                   </li>
                 ))}
               </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        {/*
+          الرضا.
+          النسبة وحدها تقول «كم غير راضٍ» ولا تقول لماذا — وهو أنفع ما
+          فيها. فالأسباب تحتها مباشرةً لا في صفحة أخرى.
+
+          ولا يُعرض السؤال ولا الإجابة ولا اسم الكاتب: السبب وحده مع
+          اسم الشركة والتاريخ. وحدُّ العزل يُتجاوز هنا عمدًا وبأقلّ قدر.
+        */}
+        <Card>
+          <CardHeader>
+            <CardTitle>رضا المستخدمين — آخر ٣٠ يومًا</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {satisfaction && Number(satisfaction.total_rated) > 0 ? (
+              <>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <span className="text-3xl font-bold tabular-nums text-primary">
+                    {satisfaction.satisfaction ?? '—'}٪
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    راضٍ · {satisfaction.up_count} إعجاب مقابل{' '}
+                    {satisfaction.down_count} عدم إعجاب، من{' '}
+                    {satisfaction.total_rated} تقييمًا
+                  </span>
+                </div>
+
+                {notes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    لا أسباب مكتوبة بعد.
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
+                    {notes.map((item, index) => (
+                      <li key={`${item.created_at}-${index}`} className="border-t pt-3">
+                        <p className="text-sm leading-relaxed">{item.note}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {item.company_name} ·{' '}
+                          {new Date(item.created_at).toLocaleDateString('ar-SA')}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                لا تقييمات بعد. يظهر المقياس بعد أن يقيّم المستخدمون إجاباتهم.
+              </p>
             )}
           </CardContent>
         </Card>
