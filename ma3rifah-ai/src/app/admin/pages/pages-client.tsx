@@ -144,7 +144,7 @@ export function PagesClient({ pages }: { pages: SitePage[] }) {
       <Card>
         {pages.length === 0 ? (
           <p className="p-10 text-center text-sm text-muted-foreground">
-            لا صفحات بعد. أنشئي صفحة واكتبي محتواها، ثم انشريها حين تكتمل.
+            لا صفحات بعد. أنشئ صفحة واكتب محتواها، ثم انشريها حين تكتمل.
           </p>
         ) : (
           <Table>

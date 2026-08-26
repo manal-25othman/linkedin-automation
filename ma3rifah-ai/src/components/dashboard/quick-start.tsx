@@ -22,7 +22,7 @@ export function QuickStart({ role }: { role: UserRole | null | undefined }) {
     <section className="space-y-3" aria-labelledby="quick-start-heading">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="quick-start-heading" className="text-sm font-semibold">
-          ابدئي من هنا
+          ابدأ من هنا
         </h2>
         {role ? (
           <p className="text-xs text-muted-foreground">

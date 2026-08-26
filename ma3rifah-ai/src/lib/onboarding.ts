@@ -52,7 +52,7 @@ export function computeOnboarding(
   const all: OnboardingStep[] = [
     {
       id: 'account',
-      title: 'أنشأتِ حسابك وشركتك',
+      title: 'أنشأت حسابك وشركتك',
       description: 'تمّ — مساحة العمل جاهزة لاستقبال مستنداتك.',
       done: true,
       href: '/settings',
@@ -61,8 +61,8 @@ export function computeOnboarding(
     },
     {
       id: 'upload',
-      title: 'ارفعي أول مستند',
-      description: 'سياسة أو دليل إجراءات تعرفينه جيدًا — ليسهل تقييم الإجابات.',
+      title: 'ارفع أول مستند',
+      description: 'سياسة أو دليل إجراءات تعرفه جيدًا — ليسهل تقييم الإجابات.',
       done: state.documentsCount > 0,
       href: '/documents',
       cta: 'رفع مستند',
@@ -79,16 +79,16 @@ export function computeOnboarding(
     },
     {
       id: 'ask',
-      title: 'اسألي أول سؤال',
-      description: 'اسألي عمّا تعرفين جوابه، وتحقّقي من المصدر والصفحة تحت الإجابة.',
+      title: 'اسأل أول سؤال',
+      description: 'اسأل عمّا تعرف جوابه، وتحقّق من المصدر والصفحة تحت الإجابة.',
       done: state.questionsCount > 0,
       href: '/assistant',
-      cta: 'اسألي المساعد',
+      cta: 'اسأل المساعد',
       requiresManage: false,
     },
     {
       id: 'invite',
-      title: 'ادعي زميلًا',
+      title: 'ادعُ زميلًا',
       description: 'تصل الدعوة إلى بريده، ويضبط كلمة مروره بنفسه.',
       done: state.usersCount > 1,
       href: '/users',

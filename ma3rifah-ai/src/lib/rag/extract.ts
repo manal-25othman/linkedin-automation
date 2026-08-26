@@ -466,7 +466,7 @@ export function assessExtraction(result: ExtractionResult): ExtractionQuality {
         message:
           `استُخرج نصّ ضئيل جدًّا: ${charCount} محرفًا من ${pageCount} صفحة ` +
           `(${charsPerPage} للصفحة). الأرجح أن المستند صورة ممسوحة ضوئيًا — ` +
-          'حوّليه إلى نصّ ببرنامج OCR ثم أعيدي رفعه.',
+          'حوّليه إلى نصّ ببرنامج OCR ثم أعِد رفعه.',
         detail: `charsPerPage=${charsPerPage} pagesWithText=${pagesWithText}/${pageCount}`,
       };
     }
@@ -478,7 +478,7 @@ export function assessExtraction(result: ExtractionResult): ExtractionQuality {
         message:
           `${pagesWithText} صفحة فقط من ${pageCount} فيها نصّ قابل للقراءة. ` +
           'الأرجح أن باقي الصفحات صور ممسوحة ضوئيًا — حوّلي الملف كاملًا ' +
-          'ببرنامج OCR ثم أعيدي رفعه.',
+          'ببرنامج OCR ثم أعِد رفعه.',
         detail: `pagesWithText=${pagesWithText}/${pageCount} charsPerPage=${charsPerPage}`,
       };
     }

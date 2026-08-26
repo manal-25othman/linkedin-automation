@@ -57,7 +57,7 @@ export default async function HelpArticlePage({ params }: Params) {
           <Button variant="outline" asChild>
             <Link href="/support">
               <LifeBuoy className="size-4" aria-hidden />
-              افتحي تذكرة دعم
+              افتح تذكرة دعم
             </Link>
           </Button>
         </CardContent>

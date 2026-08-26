@@ -37,7 +37,7 @@ export default async function AdminInvitesPage() {
           <div className="text-sm leading-relaxed">
             <strong>التسجيل مفتوح للجميع الآن.</strong> الرموز أدناه لا أثر لها ما دام{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs">REGISTRATION_MODE=open</code>.
-            احذفي المتغيّر أو اجعليه{' '}
+            احذف المتغيّر أو اجعليه{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs">invite</code> ليُغلق الباب.
           </div>
         </div>

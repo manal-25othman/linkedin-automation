@@ -61,11 +61,13 @@ export function Topbar({
               صفحة، لا وهو يبحث في قائمة جانبية */}
           <Link
             href="/help"
-            className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            aria-label="دليل الاستخدام"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             title="دليل الاستخدام"
           >
             <CircleHelp className="size-5" aria-hidden />
+            {/* الاسم مكتوب على الشاشات الواسعة: أيقونة «؟» وحدها لا
+                يُعرف منها أن خلفها دليلًا، فلا تُفتح */}
+            <span className="hidden md:inline">الدليل</span>
           </Link>
 
           <Badge variant="muted" className="hidden sm:inline-flex">

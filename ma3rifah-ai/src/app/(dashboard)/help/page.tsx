@@ -17,7 +17,7 @@ export default async function HelpPage() {
     <div className="space-y-6">
       <PageHeader
         title="دليل الاستخدام"
-        description="كل ما تحتاجين معرفته لتشغيل قاعدة معرفة شركتك."
+        description="كل ما تحتاج معرفته لتشغيل قاعدة معرفة شركتك."
         actions={
           <Button variant="outline" asChild>
             <Link href="/support">

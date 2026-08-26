@@ -67,7 +67,7 @@ export function InvitesClient({ invites }: { invites: Invite[] }) {
       setCopied(code);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      setMessage({ ok: false, text: 'تعذّر النسخ. انسخي الرمز يدويًا.' });
+      setMessage({ ok: false, text: 'تعذّر النسخ. انسخ الرمز يدويًا.' });
     }
   };
 
@@ -133,7 +133,7 @@ export function InvitesClient({ invites }: { invites: Invite[] }) {
           <EmptyState
             icon={Plus}
             title="لا دعوات بعد"
-            description="أصدري رمزًا لكل شركة مجرِّبة، فتعرفين من أين جاء كل حساب."
+            description="أصدري رمزًا لكل شركة مجرِّبة، فتعرف من أين جاء كل حساب."
           />
         ) : (
           <div className="overflow-x-auto">

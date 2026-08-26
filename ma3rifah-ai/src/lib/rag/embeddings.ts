@@ -353,8 +353,8 @@ function refuseSilentFallback(provider: string, envVar: string): never {
     `مزوّد التضمين المضبوط «${provider}» بلا مفتاح: ${envVar} مفقود. ` +
     'ولن يُستبدل به المزوّد المحلّي تلقائيًّا — لأن المتجهات الناتجة عنه ' +
     'في فضاءٍ آخر، فتُخزَّن مستندات لا يجدها البحث أبدًا، بلا خطأ ظاهر. ' +
-    `أضيفي ${envVar}، أو اضبطي EMBEDDINGS_PROVIDER=local صراحةً إن كنت ` +
-    'تقصدين المزوّد المحلّي.';
+    `أضِف ${envVar}، أو اضبط EMBEDDINGS_PROVIDER=local صراحةً إن كنت ` +
+    'تقصد المزوّد المحلّي.';
 
   logger.error('مفتاح مزوّد التضمين مفقود', { provider, envVar });
   throw new AppError('EMBEDDINGS_UNAVAILABLE', message);

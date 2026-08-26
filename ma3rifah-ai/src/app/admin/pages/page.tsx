@@ -30,7 +30,7 @@ export default async function AdminPagesPage() {
     <div className="space-y-6">
       <PageHeader
         title="صفحات الموقع"
-        description="صفحات تصنعينها بنفسك وتظهر على العنوان ‎/p/‎ — والمسوّدة لا يراها أحد حتى تُنشر."
+        description="صفحات تصنعها بنفسك وتظهر على العنوان ‎/p/‎ — والمسوّدة لا يراها أحد حتى تُنشر."
       />
       <PagesClient pages={pages} />
     </div>

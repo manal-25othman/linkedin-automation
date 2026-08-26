@@ -36,7 +36,7 @@ export function HelpClient() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="ابحثي في الدليل — مثال: رفع مستند، صلاحيات، فجوة"
+          placeholder="ابحث في الدليل — مثال: رفع مستند، صلاحيات، فجوة"
           className="ps-10"
           aria-label="بحث في دليل الاستخدام"
         />
@@ -52,7 +52,7 @@ export function HelpClient() {
               <Button variant="outline" asChild>
                 <Link href="/support">
                   <LifeBuoy className="size-4" aria-hidden />
-                  اسألي الدعم مباشرة
+                  اسأل الدعم مباشرة
                 </Link>
               </Button>
             </CardContent>

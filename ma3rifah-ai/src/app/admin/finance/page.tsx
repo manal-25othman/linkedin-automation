@@ -158,7 +158,7 @@ export default async function AdminFinancePage() {
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
           <div className="text-sm leading-relaxed">
             <strong>تعذّر قراءة التقرير المالي.</strong> والأرجح أن قاعدة البيانات لم
-            تُحدَّث بعد: شغّلي{' '}
+            تُحدَّث بعد: شغّل{' '}
             <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
               supabase/ALL_MIGRATIONS.sql
             </code>{' '}
@@ -173,7 +173,7 @@ export default async function AdminFinancePage() {
           <TriangleAlert className="mt-0.5 size-4 shrink-0 text-[hsl(var(--warning))]" aria-hidden />
           <p className="text-sm leading-relaxed">
             <strong>لم تُدخَل أي مصاريف ثابتة.</strong> الاستضافة والقاعدة والأدوات
-            لا تظهر في أي جدول، فلا تُطرح — والربح أعلاه أكبر مما هو فعلًا. أضيفيها
+            لا تظهر في أي جدول، فلا تُطرح — والربح أعلاه أكبر مما هو فعلًا. أضِفها
             أدناه لتصير الأرقام صادقة.
           </p>
         </div>

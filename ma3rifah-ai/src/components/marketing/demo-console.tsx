@@ -262,7 +262,7 @@ export function DemoConsole() {
 
       <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
         عرض تجريبي — مستندات وأرقام من نسج المثال، لا بيانات أي شركة.
-        {' '}اضغطي على المصدر لترَي المقطع الذي بُنيت عليه الإجابة.
+        {' '}اضغط على المصدر لترَي المقطع الذي بُنيت عليه الإجابة.
       </p>
     </div>
   );

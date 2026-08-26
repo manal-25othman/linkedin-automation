@@ -27,9 +27,9 @@ export function OnboardingCard({ progress }: { progress: OnboardingProgress }) {
       <CardContent className="space-y-5 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold">أكملي تجهيز مساحتك</h2>
+            <h2 className="text-base font-semibold">أكمِل تجهيز مساحتك</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              أنجزتِ {progress.doneCount} من {progress.totalCount} خطوات.
+              أنجزت {progress.doneCount} من {progress.totalCount} خطوات.
             </p>
           </div>
           <span className="text-2xl font-bold tabular-nums text-primary">

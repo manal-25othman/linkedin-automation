@@ -83,14 +83,14 @@ export function describeSubscription(
     return {
       status: 'EXPIRED',
       label: 'لا اشتراك',
-      detail: 'لم يُربط حساب شركتك بأي خطة بعد. تواصلي مع الدعم لإكمال التجهيز.',
+      detail: 'لم يُربط حساب شركتك بأي خطة بعد. تواصل مع الدعم لإكمال التجهيز.',
       tone: 'danger',
       daysLeft: null,
       deadline: null,
       isTrial: false,
       isBlocked: true,
       showBanner: true,
-      cta: { label: 'تواصلي مع الدعم', href: '/support' },
+      cta: { label: 'تواصل مع الدعم', href: '/support' },
     };
   }
 
@@ -109,7 +109,7 @@ export function describeSubscription(
         status: 'EXPIRED',
         label: 'انتهت التجربة',
         detail:
-          'انتهت تجربتك المجانية. بياناتك ومستنداتك محفوظة كما هي — اختاري خطة للمتابعة.',
+          'انتهت تجربتك المجانية. بياناتك ومستنداتك محفوظة كما هي — اختر خطة للمتابعة.',
         tone: 'danger',
         daysLeft: 0,
         deadline,
@@ -150,8 +150,8 @@ export function describeSubscription(
         label: 'مُلغى — يعمل حتى نهاية الدورة',
         detail:
           daysLeft === null
-            ? 'ألغيتِ التجديد. يبقى الاشتراك عاملًا حتى نهاية الدورة الحالية.'
-            : `ألغيتِ التجديد. يبقى الاشتراك عاملًا ${formatDaysAr(daysLeft)} حتى نهاية الدورة.`,
+            ? 'ألغيت التجديد. يبقى الاشتراك عاملًا حتى نهاية الدورة الحالية.'
+            : `ألغيت التجديد. يبقى الاشتراك عاملًا ${formatDaysAr(daysLeft)} حتى نهاية الدورة.`,
         tone: 'warning',
         daysLeft,
         deadline: subscription.currentPeriodEnd,
@@ -201,7 +201,7 @@ export function describeSubscription(
     return {
       status,
       label: 'مُلغى',
-      detail: 'أُلغي اشتراكك. بياناتك محفوظة — اختاري خطة لاستئناف الخدمة.',
+      detail: 'أُلغي اشتراكك. بياناتك محفوظة — اختر خطة لاستئناف الخدمة.',
       tone: 'danger',
       daysLeft: null,
       deadline: null,
@@ -215,7 +215,7 @@ export function describeSubscription(
   return {
     status: 'EXPIRED',
     label: 'منتهٍ',
-    detail: 'انتهى اشتراكك. بياناتك ومستنداتك محفوظة — اختاري خطة للمتابعة.',
+    detail: 'انتهى اشتراكك. بياناتك ومستنداتك محفوظة — اختر خطة للمتابعة.',
     tone: 'danger',
     daysLeft: null,
     deadline: null,

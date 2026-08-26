@@ -51,7 +51,7 @@ const DEFAULT_MESSAGE: Record<AppErrorCode, string> = {
   UNSUPPORTED_FILE: 'نوع الملف غير مدعوم.',
   FILE_TOO_LARGE: 'حجم الملف يتجاوز الحد المسموح.',
   SCHEMA_OUTDATED:
-    'قاعدة البيانات لم تُحدَّث بعد. شغّلي ملف supabase/ALL_MIGRATIONS.sql في محرّر SQL على Supabase ثم أعيدي المحاولة.',
+    'قاعدة البيانات لم تُحدَّث بعد. شغّل ملف supabase/ALL_MIGRATIONS.sql في محرّر SQL على Supabase ثم أعِد المحاولة.',
   INTERNAL: 'حدث خطأ غير متوقع. تم تسجيل المشكلة وسنعمل على معالجتها.',
 };
 
@@ -176,7 +176,7 @@ export function toAppError(error: unknown): AppError {
     });
     return new AppError(
       'SCHEMA_OUTDATED',
-      'قاعدة البيانات لم تُحدَّث بعد. شغّلي ملف supabase/ALL_MIGRATIONS.sql في محرّر SQL على Supabase ثم أعيدي المحاولة.',
+      'قاعدة البيانات لم تُحدَّث بعد. شغّل ملف supabase/ALL_MIGRATIONS.sql في محرّر SQL على Supabase ثم أعِد المحاولة.',
     );
   }
 

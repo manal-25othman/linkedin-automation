@@ -40,7 +40,7 @@ describe('لا تحوّل صامت', () => {
 
   it('الرسالة تقول ما يُفعَل لا ما وقع فقط', () => {
     expect(SOURCE).toContain('EMBEDDINGS_PROVIDER=local');
-    expect(SOURCE).toMatch(/أضيفي \$\{envVar\}/);
+    expect(SOURCE).toMatch(/أضِف \$\{envVar\}/);
   });
 
   it('المحلّي يبقى متاحًا لمن يطلبه صراحةً', () => {
