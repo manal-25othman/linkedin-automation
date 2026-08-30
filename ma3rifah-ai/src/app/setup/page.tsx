@@ -104,8 +104,8 @@ export default async function SetupPage() {
           : `ناقص: ${configuration.missing.join('، ')}`,
       fix: (
         <>
-          افتحي <Ext href="https://vercel.com/dashboard">Vercel</Ext> ← مشروعك ← Settings ←
-          Environment Variables، وأضيفي المتغيّرات الناقصة المذكورة أعلاه على البيئات الثلاث، ثم
+          افتح <Ext href="https://vercel.com/dashboard">Vercel</Ext> ← مشروعك ← Settings ←
+          Environment Variables، وأضِف المتغيّرات الناقصة المذكورة أعلاه على البيئات الثلاث، ثم
           Deployments ← ⋯ ← Redeploy.
         </>
       ),
@@ -119,12 +119,12 @@ export default async function SetupPage() {
           الشكل الصحيح <code className="rounded bg-white px-1">https://xxxx.supabase.co</code> بلا
           أي شيء بعده.
           <br />
-          انسخي <b>Project URL</b> من{' '}
+          انسخ <b>Project URL</b> من{' '}
           <Ext href="https://supabase.com/dashboard/project/_/settings/api">
             إعدادات API في Supabase
           </Ext>
-          ، وضعيها في متغيّر <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_URL</code>{' '}
-          في Vercel، ثم أعيدي النشر.
+          ، وضعها في متغيّر <code className="rounded bg-white px-1">NEXT_PUBLIC_SUPABASE_URL</code>{' '}
+          في Vercel، ثم أعِد النشر.
         </>
       ),
     },
@@ -147,9 +147,9 @@ export default async function SetupPage() {
           أصلحي أولًا بند «رابط مشروع Supabase» أعلاه — فأغلب حالات هذا الخطأ سببها الرابط لا
           قاعدة البيانات.
           <br />
-          فإن كان الرابط سليمًا، فالهجرات لم تُطبَّق على هذا المشروع: افتحي{' '}
-          <Ext href="https://supabase.com/dashboard/project/_/sql/new">محرّر SQL</Ext> والصقي محتوى
-          الملف <code className="rounded bg-white px-1">supabase/ALL_MIGRATIONS.sql</code> ثم شغّليه.
+          فإن كان الرابط سليمًا، فالهجرات لم تُطبَّق على هذا المشروع: افتح{' '}
+          <Ext href="https://supabase.com/dashboard/project/_/sql/new">محرّر SQL</Ext> والصق محتوى
+          الملف <code className="rounded bg-white px-1">supabase/ALL_MIGRATIONS.sql</code> ثم شغّله.
         </>
       ),
     },
@@ -167,7 +167,7 @@ export default async function SetupPage() {
       fix: (
         <>
           خدمة تسجيل الدخول موجودة في كل مشروع Supabase بلا استثناء. فشلها هنا يعني أن الرابط أو
-          المفتاح يخصّ مشروعًا آخر. راجعي بند «رابط مشروع Supabase» أعلاه.
+          المفتاح يخصّ مشروعًا آخر. راجع بند «رابط مشروع Supabase» أعلاه.
         </>
       ),
     },
@@ -182,11 +182,11 @@ export default async function SetupPage() {
             : 'ممنوع حاليًا، فلن ينجح أي تسجيل.',
       fix: (
         <>
-          افتحي{' '}
+          افتح{' '}
           <Ext href="https://supabase.com/dashboard/project/_/auth/providers">
             إعدادات المصادقة
           </Ext>{' '}
-          وفعّلي <b>Allow new users to sign up</b> ثم احفظي.
+          وفعّل <b>Allow new users to sign up</b> ثم احفظي.
         </>
       ),
     },
@@ -201,10 +201,10 @@ export default async function SetupPage() {
           كل رابط يُرسَل بالبريد (استعادة كلمة المرور، دعوة موظف) يُبنى من هذا المتغيّر. إن كان
           خاطئًا فالرسالة تصل ورابطها لا يعمل — وهو عطل يبدو كأن البريد لم يصل.
           <br />
-          أضيفي في Vercel:{' '}
+          أضِف في Vercel:{' '}
           <code className="rounded bg-white px-1">NEXT_PUBLIC_APP_URL</code> بقيمة عنوان منصتك
           كاملًا (مثل <code className="rounded bg-white px-1">https://ma3rifah-ai.vercel.app</code>)
-          بلا شرطة في آخره، ثم أعيدي النشر.
+          بلا شرطة في آخره، ثم أعِد النشر.
         </>
       ),
     },
@@ -218,12 +218,12 @@ export default async function SetupPage() {
         'الحسابات تُنشأ بكلمة مرور مؤقتة كحلّ مؤقت.',
       fix: (
         <>
-          أنشئي حسابًا في <Ext href="https://resend.com">Resend</Ext> (٣٠٠٠ رسالة شهريًا
-          مجانًا)، ثم افتحي{' '}
+          أنشئ حسابًا في <Ext href="https://resend.com">Resend</Ext> (٣٠٠٠ رسالة شهريًا
+          مجانًا)، ثم افتح{' '}
           <Ext href="https://supabase.com/dashboard/project/_/settings/auth">
             إعدادات المصادقة في Supabase
           </Ext>{' '}
-          ← <b>SMTP Settings</b> ← فعّلي <b>Custom SMTP</b> وأدخلي بيانات المزوّد.
+          ← <b>SMTP Settings</b> ← فعّل <b>Custom SMTP</b> وأدخلي بيانات المزوّد.
           <br />
           هذه الخطوة تُصلح الدعوات واستعادة كلمة المرور معًا، ولا تحتاج أي تعديل في الكود.
         </>
@@ -235,7 +235,7 @@ export default async function SetupPage() {
       detail: isAiConfigured() ? 'مضبوط.' : 'غير مضبوط — المساعد الذكي معطّل.',
       fix: (
         <>
-          أضيفي <code className="rounded bg-white px-1">ANTHROPIC_API_KEY</code> في Vercel ثم أعيدي
+          أضِف <code className="rounded bg-white px-1">ANTHROPIC_API_KEY</code> في Vercel ثم أعِد
           النشر.
         </>
       ),
@@ -246,9 +246,9 @@ export default async function SetupPage() {
       detail: embeddings,
       fix: (
         <>
-          أضيفي <code className="rounded bg-white px-1">VOYAGE_API_KEY</code> واضبطي{' '}
+          أضِف <code className="rounded bg-white px-1">VOYAGE_API_KEY</code> واضبطي{' '}
           <code className="rounded bg-white px-1">EMBEDDINGS_PROVIDER=voyage</code> في Vercel ثم
-          أعيدي النشر.
+          أعِد النشر.
         </>
       ),
     },
@@ -271,8 +271,8 @@ export default async function SetupPage() {
           <>
             <p className="text-lg font-bold">النظام جاهز ✅</p>
             <p className="mt-1 text-sm leading-7">
-              كل الفحوص سليمة. ابدئي بإنشاء حساب شركتك، ثم ارفعي مستندًا وانتظري حتى تتحوّل حالته
-              إلى <b>READY</b>، ثم اسأليه سؤالًا إجابته داخل الملف.
+              كل الفحوص سليمة. ابدأ بإنشاء حساب شركتك، ثم ارفع مستندًا وانتظر حتى تتحوّل حالته
+              إلى <b>READY</b>، ثم اسأله سؤالًا إجابته داخل الملف.
             </p>
             <Link
               href="/register"
@@ -287,7 +287,7 @@ export default async function SetupPage() {
               يتبقّى {failing.length === 1 ? 'بند واحد' : `${failing.length} بنود`}
             </p>
             <p className="mt-1 text-sm leading-7">
-              ابدئي بأول بند أحمر في القائمة — غالبًا يُصلح إصلاحُه ما تحته، لأن الأعطال هنا
+              ابدأ بأول بند أحمر في القائمة — غالبًا يُصلح إصلاحُه ما تحته، لأن الأعطال هنا
               متسلسلة.
             </p>
           </>
@@ -305,7 +305,7 @@ export default async function SetupPage() {
         <p className="mt-1">
           لا يُطبَّق التغيير إلا بنشر جديد: Deployments ← ⋯ ← Redeploy. ثم حدّثي هذه الصفحة.
         </p>
-        <p className="mt-4 font-semibold text-foreground">أين تجدين سبب أي خطأ آخر</p>
+        <p className="mt-4 font-semibold text-foreground">أين تجد سبب أي خطأ آخر</p>
         <ul className="mt-1 list-inside list-disc">
           <li>
             <Ext href="https://vercel.com/dashboard">سجلات Vercel</Ext> — أخطاء الخادم

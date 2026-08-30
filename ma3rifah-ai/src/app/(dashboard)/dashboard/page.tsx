@@ -16,6 +16,8 @@ import { createClient } from '@/lib/supabase/server';
 import { can } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/shared/page-header';
 import { OnboardingCard } from '@/components/dashboard/onboarding-card';
+import { WelcomeDialog } from '@/components/dashboard/welcome-dialog';
+import { quickStartFor } from '@/content/help';
 import { computeOnboarding } from '@/lib/onboarding';
 import { SubscriptionBanner } from '@/components/dashboard/subscription-banner';
 import {
@@ -129,6 +131,12 @@ export default async function DashboardPage() {
       ) : null}
 
       {/* رحلة التجهيز — تحلّ محلّ بطاقة «ارفع أول مستند» وتشمل ما بعدها */}
+      {/*
+        نافذة الترحيب تظهر مرّة، ومع التجهيز الناقص وحده: من أتمّ خطواته
+        لا يحتاج ترحيبًا ويحتاج شاشته.
+      */}
+      {onboarding.complete ? null : <WelcomeDialog steps={quickStartFor(profile.role)} />}
+
       <OnboardingCard progress={onboarding} />
 
       {/* بطاقات الإحصاءات */}

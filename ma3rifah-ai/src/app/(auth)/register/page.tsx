@@ -36,7 +36,7 @@ export default async function RegisterPage({
       <h1 className="text-2xl font-semibold tracking-tight">أنشئ حساب شركتك</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {needsInvite
-          ? 'التسجيل بدعوة في هذه المرحلة. ستصبحين مديرة الشركة، ويمكنك دعوة فريقك بعدها.'
+          ? 'التسجيل بدعوة في هذه المرحلة. ستصبح مديرة الشركة، ويمكنك دعوة فريقك بعدها.'
           : 'ستصبح مدير الشركة، ويمكنك دعوة فريقك بعد ذلك مباشرة.'}
       </p>
 

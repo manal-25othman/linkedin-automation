@@ -254,7 +254,7 @@ export async function saveSiteTextAction(formData: FormData): Promise<ActionResu
       message:
         toUpsert.length === 0
           ? 'أُعيدت كل النصوص إلى صيغتها الأصلية.'
-          : `حُفظ ${toUpsert.length} نصًّا. افتحي الموقع لترَي التغيير.`,
+          : `حُفظ ${toUpsert.length} نصًّا. افتح الموقع لترَي التغيير.`,
     };
   } catch (error) {
     return { ok: false, message: toAppError(error).displayMessage };
@@ -301,11 +301,11 @@ function readPageForm(formData: FormData) {
   if (SLUG_FORBIDDEN.test(slug)) {
     throw new AppError(
       'VALIDATION',
-      'اسم الرابط لا يقبل مسافة ولا الرموز . / ? # % & — استعملي شَرطة بدلها.',
+      'اسم الرابط لا يقبل مسافة ولا الرموز . / ? # % & — استعمل شَرطة بدلها.',
     );
   }
   if (RESERVED_SLUGS.has(slug)) {
-    throw new AppError('VALIDATION', `الاسم «${slug}» محجوز — اختاري غيره.`);
+    throw new AppError('VALIDATION', `الاسم «${slug}» محجوز — اختر غيره.`);
   }
   if (description.length > 500) {
     throw new AppError('VALIDATION', 'الوصف أطول من الحد المسموح.');
@@ -332,7 +332,7 @@ function readPageForm(formData: FormData) {
 function toReadableSaveError(error: unknown): never {
   const code = (error as { code?: string } | null)?.code;
   if (code === '23505') {
-    throw new AppError('VALIDATION', 'يوجد صفحة بهذا الاسم — اختاري اسمًا آخر.');
+    throw new AppError('VALIDATION', 'يوجد صفحة بهذا الاسم — اختر اسمًا آخر.');
   }
   throw error;
 }

@@ -29,7 +29,7 @@ export default async function AdminContentPage() {
     <div className="space-y-6">
       <PageHeader
         title="محتوى الموقع"
-        description="نصوص الموقع التعريفي. ما تحفظينه هنا يظهر للزوّار مباشرةً."
+        description="نصوص الموقع التعريفي. ما تحفظه هنا يظهر للزوّار مباشرةً."
       />
       <ContentClient texts={texts} />
     </div>

@@ -194,6 +194,94 @@
    ===================================================================== */
 
 @layer utilities {
+  /* ------------------------------------------------------------------
+     هيئة صفحات التسويق — داكنة بذاتها لا بتفضيل الجهاز.
+     ------------------------------------------------------------------
+     الرموز مُعادة هنا لا في `.dark`، فتبقى سمةُ اللوحة كما هي. وهذا
+     مقصود: اللوحة أداةُ عملٍ تُفتح ساعات فيريحها الفاتح، والصفحةُ
+     التسويقية تُرى دقيقة فيخدمها العمق.
+
+     والكحليّ يُرفع هنا إلى أزرقٍ فولاذيّ هادئ: هو نفسه لا لونٌ آخر،
+     لكنّ درجته على أرضٍ داكنة لا تُرى فتُفتَح. وجُرِّب الذهبيّ في هذا
+     الموضع فكان صارخًا — واللون الحادّ على أرضٍ سوداء يُتعب العين قبل
+     أن يُقرأ السطر. فرجع لمسةً كما وُصف في الهوية، لا أساسًا.
+     ------------------------------------------------------------------ */
+  /* الأساس: تلتزم الصفحة بألوان السمة الجارية صراحةً، فلا ترث أرضًا
+     من أبٍ في الوضع الفاتح. والرموز نفسها تأتي من `:root`. */
+  .marketing-shell {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .dark .marketing-shell {
+    --background: 222 44% 5%;
+    --foreground: 210 30% 96%;
+
+    --card: 220 26% 11%;
+    --card-foreground: 210 30% 96%;
+
+    --popover: 220 26% 12%;
+    --popover-foreground: 210 30% 96%;
+
+    --primary: 213 62% 63%;
+    --primary-foreground: 222 44% 6%;
+
+    --gold: 42 45% 58%;
+    --gold-foreground: 222 44% 6%;
+    --gold-soft: 42 22% 15%;
+
+    --secondary: 220 26% 14%;
+    --secondary-foreground: 210 30% 96%;
+
+    --muted: 220 26% 12%;
+    --muted-foreground: 215 16% 64%;
+
+    --accent: 220 30% 14%;
+    --accent-foreground: 210 30% 96%;
+
+    --destructive: 0 66% 56%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 50% 46%;
+    --success-foreground: 222 44% 6%;
+
+    --warning: 25 82% 58%;
+    --warning-foreground: 222 44% 6%;
+
+    --border: 220 18% 21%;
+    --input: 220 18% 21%;
+    --ring: 213 62% 63%;
+
+    /* يُخبر المتصفّح فيلوّن أشرطة التمرير وحقول النماذج تبعًا */
+    color-scheme: dark;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* شبكة نقاط لا خطوط: النقطة أهدأ على الأرض الداكنة، والخطّ عليها
+     يقرأ جدولًا. والقناع يُذيبها عند الأطراف فلا تنتهي بحافّة حادّة. */
+  .tech-dots {
+    background-image: radial-gradient(hsl(var(--foreground) / 0.13) 1px, transparent 1px);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 85% 70% at 50% 28%, #000 30%, transparent 82%);
+    mask-image: radial-gradient(ellipse 85% 70% at 50% 28%, #000 30%, transparent 82%);
+  }
+
+  /* الوهج تحت الزرّ الأول — يرفعه عن الأرض بدل أن يجلس عليها.
+     ومقصور على الزرّ الواحد: الوهج على كل شيء يُلغي نفسه. */
+  .glow-primary {
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.4),
+      0 10px 34px -8px hsl(var(--primary) / 0.55);
+  }
+
+  /* هالة خافتة خلف الصدر، تعطي عمقًا بلا صورة تُحمَّل */
+  .hero-halo {
+    background:
+      radial-gradient(ellipse 38% 34% at 50% 6%, hsl(var(--primary) / 0.13), transparent 68%),
+      radial-gradient(ellipse 70% 55% at 50% -4%, hsl(218 70% 42% / 0.34), transparent 70%);
+  }
+
   /* شبكة خفيفة خلف الأقسام البطلة.
      الطابع التقني في المنتجات الجادّة نسيج لا زخرفة: خطوط بالغة الخفوت
      تُحسّ ولا تُقرأ، فتوحي بالدقة بلا أن تزاحم النص. وتتلاشى عند الأطراف
@@ -254,6 +342,18 @@
     0%, 45% { opacity: 1; }
     50%, 95% { opacity: 0; }
     100% { opacity: 1; }
+  }
+
+  /* شريط تقدّم عرض المميزات — يمتدّ بعرض اللسان بمقدار ما بقي من
+     المهلة. ومدّته تأتي من الشيفرة لا من هنا، فلو تغيّرت المهلة في
+     مكان واحد تبعها الشريط ولم يكذب. */
+  @keyframes showcase-progress {
+    from { inline-size: 0%; }
+    to   { inline-size: 100%; }
+  }
+
+  .showcase-progress {
+    animation: showcase-progress linear forwards;
   }
 
   /* اللمعان يبدأ بلا قصّ وينتهي بلا قصّ: لو بقي التدرّج مطبّقًا بعد
@@ -365,6 +465,7 @@
   .animate-soft-float,
   .animate-aurora,
   .animate-caret,
+  .showcase-progress,
   .text-shimmer {
     animation: none !important;
   }

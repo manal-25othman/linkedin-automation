@@ -102,7 +102,7 @@ export const knowledgeGapUpdateSchema = z.object({
 export const aiSettingsSchema = z.object({
   tone: z.enum(['professional', 'friendly', 'concise']),
   retrieval_top_k: z.number().int().min(3).max(20),
-  min_similarity: z.number().min(0.05).max(0.95),
+  min_similarity: z.number().min(0.01).max(0.95),
   max_context_chunks: z.number().int().min(2).max(12),
   history_window: z.number().int().min(0).max(20),
   allow_general_knowledge: z.boolean(),

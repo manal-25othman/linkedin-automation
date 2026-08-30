@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { checkConfiguration } from '@/lib/env';
+import { checkConfiguration, serverEnv } from '@/lib/env';
 import { getEmbeddingProvider } from '@/lib/rag/embeddings';
 import { isAiConfigured } from '@/lib/ai/claude';
 import { probeSupabase } from '@/lib/health/probe';
@@ -42,6 +42,39 @@ export async function GET() {
       emailAutoconfirm: supabase.emailAutoconfirm,
       claudeApi: isAiConfigured(),
       embeddings: { provider: embeddingsProvider, productionReady: embeddingsProduction },
+      /*
+       * الدفع اختياريّ فلا يمنع الجاهزية — لكن غيابه كان لا يظهر هنا
+       * إطلاقًا. فتُقرأ الصفحةُ خضراءَ كلّها ويُظنّ أن مسار الاشتراك
+       * يعمل، ثم يتوقّف عند أول ضغطة بلا سبب ظاهر.
+       *
+       * و`webhookSecret` مذكورٌ وحده لأن غيابه عطلٌ صامت من نوع آخر:
+       * الدفع ينجح لدى البوابة ولا يصل إشعاره، فيدفع العميل ولا
+       * يُفعَّل اشتراكه.
+       */
+      payments: {
+        configured: serverEnv.isPaymentsConfigured,
+        webhookSecret: serverEnv.moyasarWebhookSecret !== '',
+        mode: serverEnv.moyasarSecretKey.startsWith('sk_test')
+          ? 'test'
+          : serverEnv.isPaymentsConfigured
+            ? 'live'
+            : null,
+      },
+    },
+    /*
+     * أيّ نسخةٍ تعمل الآن.
+     *
+     * أُضيف بعد موقفٍ تكرّر: تُطبَّق ترحيلة في القاعدة ويبقى السؤال
+     * «هل نُشرت الشيفرة التي تناديها؟» بلا جواب. فيُعاد التشخيص من
+     * أوّله على فرضية خاطئة.
+     *
+     * والمعروض سبعة محارف من بصمة الالتزام لا أكثر: تكفي للمطابقة مع
+     * سجلّ المستودع، ولا تكشف شيئًا عن البنية.
+     */
+    version: {
+      commit: (process.env.VERCEL_GIT_COMMIT_SHA ?? 'local').slice(0, 7),
+      branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+      environment: process.env.VERCEL_ENV ?? 'development',
     },
     missingEnvVars: configuration.missing,
     // أسماء المتغيرات المقروءة فعلًا وقت التشغيل — بلا أي قيمة. يكشف

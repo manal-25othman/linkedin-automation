@@ -15,6 +15,12 @@ export interface RetrievedChunk {
   pageNumber: number | null;
   sectionTitle: string | null;
   similarity: number;
+  /** رتبة المطابقة اللفظية — صفرٌ إن لم يجده المسار اللفظيّ */
+  lexicalRank?: number;
+  /** درجة الدمج بالرتبة المتبادلة، وعليها يقع الترتيب */
+  fusedScore?: number;
+  /** أيّ مسارٍ وجد المقطع — يُسجَّل للتشخيص */
+  matchedBy?: 'dense' | 'sparse' | 'both';
 }
 
 export interface RetrievalResult {
@@ -73,15 +79,38 @@ export async function retrieveRelevantChunks(
 
   const queryEmbedding = await embedQuery(question);
 
-  const { data, error } = await supabase.rpc('match_document_chunks', {
+  /*
+   * البركة أوسع من المطلوب عمدًا.
+   *
+   * الاسترجاع يُخرج مرشّحين، والاختيار يقع بعده في `selectContextChunks`.
+   * فلو ضُيّقت البركة هنا لحُذف المقطع قبل أن يُرجَّح، ولا سبيل إلى
+   * استرجاعه بعد ذلك.
+   */
+  const poolSize = Math.max((aiSettings.retrieval_top_k ?? 8) * 2, 16);
+
+  /*
+   * الأرضية متساهلة جدًّا هنا — والفرز يقع بعدها لا فيها.
+   *
+   * كانت 0.30 تُطبَّق داخل SQL قبل أن يرى أحدٌ شيئًا، فإن لم يبلغها
+   * مقطعٌ رجعت الدالّة خاوية وقال المساعد «لم أجد معلومات كافية»
+   * والإجابة في المستند أمام السائل.
+   *
+   * وسؤالٌ عن مستندٍ كامل («ما ملخّص التعديلات») لا يقابله مقطعٌ واحد
+   * قريب: التشابه موزَّع لا مركَّز. فكانت الأرضية تقطع الحالة التي
+   * يحتاجها المستخدم أكثر من غيرها.
+   */
+  const floor = aiSettings.min_similarity ?? 0.05;
+
+  const { data, error } = await supabase.rpc('match_document_chunks_hybrid', {
     p_query_embedding: toPgVector(queryEmbedding),
-    p_match_count: aiSettings.retrieval_top_k ?? 8,
-    p_min_similarity: aiSettings.min_similarity ?? 0.3,
+    p_query_text: question,
+    p_match_count: poolSize,
+    p_min_similarity: floor,
     p_category_ids: options.categoryIds?.length ? options.categoryIds : null,
   });
 
   if (error) {
-    logger.error('فشل البحث الدلالي', { reason: error.message });
+    logger.error('فشل البحث الهجين', { reason: error.message });
     throw error;
   }
 
@@ -95,10 +124,40 @@ export async function retrieveRelevantChunks(
     pageNumber: row.page_number,
     sectionTitle: row.section_title,
     similarity: row.similarity,
+    lexicalRank: row.lexical_rank,
+    fusedScore: row.fused_score,
+    matchedBy: row.matched_by as RetrievedChunk['matchedBy'],
   }));
 
   const maxChunks = aiSettings.max_context_chunks ?? 6;
   const selected = selectContextChunks(candidates, maxChunks);
+
+  /*
+   * أثرٌ يكفي لتشخيص فشل استرجاع بعد وقوعه.
+   *
+   * حين يقول المساعد «لم أجد» ونحن نرى الإجابة في المستند، السؤال
+   * الأول هو: هل فشل الاسترجاع أم الاختيار أم التوليد؟ وبلا هذا
+   * السطر لا جواب إلا التخمين.
+   *
+   * ولا يُسجَّل نصّ المقاطع ولا السؤال — محتوى مستندات الشركات لا
+   * يدخل السجلّات.
+   */
+  logger.info('استرجاع', {
+    questionLength: question.length,
+    candidates: candidates.length,
+    selected: selected.length,
+    dense: candidates.filter((c) => c.matchedBy === 'dense').length,
+    sparse: candidates.filter((c) => c.matchedBy === 'sparse').length,
+    both: candidates.filter((c) => c.matchedBy === 'both').length,
+    topSimilarity: candidates[0]?.similarity ?? null,
+    selectedFrom: selected.map((c) => ({
+      documentId: c.documentId,
+      chunkId: c.chunkId,
+      page: c.pageNumber,
+      similarity: Number(c.similarity?.toFixed(3) ?? 0),
+      matchedBy: c.matchedBy,
+    })),
+  });
 
   return {
     chunks: selected,

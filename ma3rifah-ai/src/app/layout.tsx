@@ -109,6 +109,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: "document.documentElement.classList.add('js')",
           }}
         />
+        {/*
+          السمة تُحسم قبل الرسم لا بعده.
+          حسمُها في React يعني أن الصفحة تُرسم بسمةٍ ثم تُصحَّح، فيرى
+          الزائر ومضة بيضاء في وجهه — وهي أسوأ ما في الوضع الداكن.
+          والاختيار المحفوظ يسبق تفضيل الجهاز، لأنه قرارٌ صريح.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{' +
+              "var s=localStorage.getItem('theme');" +
+              "var d=s?s==='dark':matchMedia('(prefers-color-scheme: dark)').matches;" +
+              "document.documentElement.classList.toggle('dark',d);" +
+              "document.documentElement.style.colorScheme=d?'dark':'light';" +
+              '}catch(e){}})()',
+          }}
+        />
         {children}
         <Toaster
           position="top-center"

@@ -69,3 +69,40 @@ describe('لا تفاصيل تقنية في رسالة المستند الفاش
     expect(INGEST).toMatch(/sanitizeTechnicalDetail\(appError\.detail/);
   });
 });
+
+/**
+ * طبقة واحدة لا طبقتان.
+ *
+ * كانت `embedTexts` تلفّ نداء المزوّد بحلقة إعادة محاولة، ثم أُضيفت
+ * حلقة ثانية داخل `fetchWithRetry`. فتضاعفتا: تسعة طلبات وانتظارٌ
+ * مجموعه اثنتان وستون ثانية.
+ *
+ * وكلا الرقمين ضارّ: تسعة طلبات على حدٍّ ثلاثة في الدقيقة **تُعمّق
+ * التجاوز**، واثنتان وستون ثانية **تتجاوز سقف الدالّة** فيسقط الطلب
+ * قبل أن تصل المحاولة الأخيرة.
+ *
+ * وطبقتان متداخلتان خطأ يتكرّر لأن كلًّا منهما تبدو صحيحة وحدها.
+ */
+describe('لا تداخل بين طبقتَي إعادة المحاولة', () => {
+  it('embedTexts لا تحوي حلقة إعادة محاولة خاصّة بها', () => {
+    const body = SOURCE.slice(SOURCE.indexOf('export async function embedTexts'));
+    expect(body, 'حلقة محاولات ثانية تضاعف الطلبات').not.toMatch(/for \(let attempt/);
+  });
+
+  it('توجد حلقة واحدة فقط في الملف كلّه', () => {
+    const loops = SOURCE.match(/for \(let attempt = 0/g) ?? [];
+    expect(loops.length).toBe(1);
+  });
+
+  it('أسوأ انتظار يبقى دون سقف الدالّة', () => {
+    // 5 ثوانٍ ثم 15 = 20 ثانية لثلاث محاولات
+    const cap = Number(SOURCE.match(/MAX_BACKOFF_MS = ([\d_]+)/)![1].replace(/_/g, ''));
+    const attempts = Number(SOURCE.match(/MAX_ATTEMPTS = (\d+)/)![1]);
+    expect((attempts - 1) * cap).toBeLessThan(60_000);
+  });
+
+  it('انقطاع الشبكة يُعاد أيضًا — لا الردود وحدها', () => {
+    // الانقطاع يُرمى ولا يُرَدّ، فلولا معالجته هنا لسقط بلا محاولة
+    expect(SOURCE).toContain('networkError');
+  });
+});

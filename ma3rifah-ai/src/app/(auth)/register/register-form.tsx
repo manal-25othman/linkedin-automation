@@ -67,7 +67,7 @@ export function RegisterForm({
           <p className="text-xs leading-relaxed text-muted-foreground">
             التسجيل بدعوة في هذه المرحلة. إن لم يكن لديكِ رمز،{' '}
             <a href="/contact" className="font-medium text-primary underline underline-offset-4">
-              اطلبي دعوة
+              اطلب دعوة
             </a>
             .
           </p>

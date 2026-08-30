@@ -15,7 +15,7 @@ export default async function MarketingLayout({
   const navPages = await listNavPages();
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="marketing-shell flex min-h-screen flex-col">
       <SiteHeader
         extraLinks={navPages.map((page) => ({
           href: `/p/${encodeURIComponent(page.slug)}`,

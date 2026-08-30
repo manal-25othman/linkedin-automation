@@ -112,7 +112,7 @@ export function DemoConsole() {
     <div className="relative mx-auto max-w-2xl">
       <div
         aria-hidden
-        className="animate-aurora pointer-events-none absolute -inset-x-10 -top-10 -z-10 h-64 rounded-full bg-primary/20 blur-3xl"
+        className="animate-aurora pointer-events-none absolute inset-x-0 -top-10 -z-10 h-64 rounded-full bg-primary/20 blur-3xl"
       />
 
       {/* أزرار الأسئلة — التحكّم بيد الزائر */}
@@ -127,7 +127,9 @@ export function DemoConsole() {
             }}
             aria-pressed={position === index}
             className={cn(
-              'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+              // ارتفاع اللمس أربعون بكسلًا لا ثلاثون: الإصبع أعرض من
+              // المؤشّر، والحبّة الصغيرة تُخطأ فتُفتح شريحةٌ لم تُقصد
+              'inline-flex min-h-10 items-center rounded-full border px-4 text-xs font-medium transition-colors sm:min-h-0 sm:px-3 sm:py-1.5',
               position === index
                 ? 'border-primary bg-primary/10 text-primary'
                 : 'border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground',
@@ -262,7 +264,7 @@ export function DemoConsole() {
 
       <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
         عرض تجريبي — مستندات وأرقام من نسج المثال، لا بيانات أي شركة.
-        {' '}اضغطي على المصدر لترَي المقطع الذي بُنيت عليه الإجابة.
+        {' '}اضغط على المصدر لترَي المقطع الذي بُنيت عليه الإجابة.
       </p>
     </div>
   );

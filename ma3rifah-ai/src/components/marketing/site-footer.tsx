@@ -58,7 +58,9 @@ export async function SiteFooter() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                      // ارتفاع اللمس على الهاتف: الرابط النصّي ستّة عشر
+                      // بكسلًا، والإصبع يخطئه إلى جاره فوقه أو تحته
+                      className="inline-flex min-h-9 items-center text-sm text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
                     >
                       {link.label}
                     </Link>
@@ -69,9 +71,8 @@ export async function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 border-t pt-6 text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} معرفة AI. جميع الحقوق محفوظة.</p>
-          <p>صُنع للشركات في المملكة العربية السعودية.</p>
         </div>
       </div>
     </footer>
