@@ -1,5 +1,6 @@
 import "server-only";
 
+import { manualProvider } from "@/lib/payments/manual";
 import { mockProvider } from "@/lib/payments/mock";
 import { moyasarProvider } from "@/lib/payments/moyasar";
 import type { CheckoutInput, CheckoutSession } from "@/lib/payments/types";
@@ -20,6 +21,12 @@ export function isMockPaymentsAllowed(): boolean {
 function selectProvider() {
   const configured = process.env.PAYMENT_PROVIDER?.trim().toLowerCase();
   if (configured === "moyasar") return moyasarProvider;
+  if (configured === "manual") return manualProvider;
+  // المزوّد التجريبي مغلق في الإنتاج، فلا يصلح افتراضًا هناك: التحويل اليدوي
+  // هو السلوك الآمن حين لا يُضبط شيء على خادم حقيقي.
+  if (process.env.NODE_ENV === "production" && !isMockPaymentsAllowed()) {
+    return manualProvider;
+  }
   return mockProvider;
 }
 

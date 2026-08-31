@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { requireStaff } from "@/lib/auth/guard";
 import { prisma } from "@/lib/prisma";
-import { changeOrderStatus } from "@/app/actions/admin";
+import { changeOrderStatus, confirmManualPayment } from "@/app/actions/admin";
 import { canTransition } from "@/lib/orders";
 import { formatMoney } from "@/lib/money";
 import {
@@ -151,6 +151,29 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="space-y-6">
+          {order.status === "PENDING_PAYMENT" ? (
+            <div className="card border-accent-line bg-accent-soft p-6">
+              <p className="font-display text-lg font-bold">تأكيد استلام المبلغ</p>
+              <p className="mt-1 text-sm text-ink-soft">
+                استخدمه بعد التحقّق من وصول الحوالة. هذا وحده ما يُنشئ عمولة المسوّق —
+                لا تغيير الحالة يدويًّا.
+              </p>
+
+              <form action={confirmManualPayment} className="mt-4 space-y-3">
+                <input type="hidden" name="orderId" value={order.id} />
+                <input
+                  name="reference"
+                  className="input-field"
+                  placeholder="مرجع الحوالة (اختياري)"
+                  aria-label="مرجع الحوالة"
+                />
+                <Button type="submit" variant="accent" className="w-full">
+                  تأكيد استلام المبلغ
+                </Button>
+              </form>
+            </div>
+          ) : null}
+
           <div className="card p-6">
             <p className="font-display text-lg font-bold">تغيير الحالة</p>
             {nextStatuses.length === 0 ? (

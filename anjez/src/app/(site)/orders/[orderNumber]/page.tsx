@@ -7,6 +7,8 @@ import { ORDER_STATUS_LABELS, formatDateTime } from "@/lib/format";
 import { Badge, STATUS_TONES } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { retryPayment } from "@/app/actions/checkout";
+import { getSettings } from "@/lib/settings";
+import { activeProviderName } from "@/lib/payments";
 
 export const metadata: Metadata = {
   title: "تفاصيل الطلب",
@@ -46,6 +48,9 @@ export default async function OrderStatusPage({
   // الرابط وحده لا يكفي: لا بدّ من مفتاح المتابعة، وإلا لأمكن تصفّح طلبات
   // الآخرين بتجربة أرقام.
   if (!order || !query.k || order.trackingKey !== query.k) notFound();
+
+  const settings = await getSettings();
+  const isManualPayment = activeProviderName() === "manual" || query.payment === "manual";
 
   const currentIndex = TIMELINE.indexOf(order.status as (typeof TIMELINE)[number]);
   const isClosed = order.status === "CANCELLED" || order.status === "REFUNDED";
@@ -119,7 +124,51 @@ export default async function OrderStatusPage({
           </div>
         </dl>
 
-        {order.status === "PENDING_PAYMENT" ? (
+        {order.status === "PENDING_PAYMENT" && isManualPayment ? (
+          <div className="mt-6 rounded-2xl border border-accent-line bg-accent-soft p-5">
+            <p className="font-display text-lg font-bold">أكمل الدفع بالتحويل البنكي</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              حوّل مبلغ {formatMoney(order.total)} إلى الحساب أدناه، ثم أرسل صورة الإيصال
+              على واتساب مع رقم طلبك — نبدأ التنفيذ فور تأكيد الاستلام.
+            </p>
+
+            <dl className="mt-4 space-y-2 rounded-xl bg-surface p-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-ink-muted">اسم المستفيد</dt>
+                <dd className="font-bold">{settings.bankTransfer.beneficiary || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-ink-muted">الآيبان</dt>
+                <dd className="font-mono font-bold" dir="ltr">
+                  {settings.bankTransfer.iban || "—"}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-ink-muted">البنك</dt>
+                <dd className="font-bold">{settings.bankTransfer.bankName || "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-line pt-2">
+                <dt className="text-ink-muted">اكتب في التحويل</dt>
+                <dd className="font-mono font-bold">{order.orderNumber}</dd>
+              </div>
+            </dl>
+
+            {settings.contactWhatsapp ? (
+              <a
+                href={`https://wa.me/${settings.contactWhatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                  `مرحبًا، أرفقت إيصال التحويل لطلب رقم ${order.orderNumber}`,
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-brand px-6 py-3 font-bold text-white"
+              >
+                أرسل الإيصال على واتساب
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+
+        {order.status === "PENDING_PAYMENT" && !isManualPayment ? (
           <form action={retryPayment} className="mt-6">
             <input type="hidden" name="orderNumber" value={order.orderNumber} />
             <input type="hidden" name="trackingKey" value={order.trackingKey} />

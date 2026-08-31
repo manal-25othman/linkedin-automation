@@ -219,8 +219,13 @@ export async function markOrderPaid(
   return { ok: true };
 }
 
+/**
+ * «مدفوع» ليست انتقالًا يدويًّا: تسجيل الدفع يمرّ دائمًا عبر `markOrderPaid`
+ * لأنه وحده يُنشئ العمولة ويزيد عدّاد الكوبون. لو سُمح بها هنا لضاعت عمولة
+ * المسوّق في كل طلب يُؤكَّد يدويًّا.
+ */
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PENDING_PAYMENT: ["PAID", "CANCELLED"],
+  PENDING_PAYMENT: ["CANCELLED"],
   PAID: ["IN_PROGRESS", "CANCELLED", "REFUNDED"],
   IN_PROGRESS: ["DELIVERED", "CANCELLED", "REFUNDED"],
   DELIVERED: ["COMPLETED", "REFUNDED"],

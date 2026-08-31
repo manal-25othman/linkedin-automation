@@ -136,6 +136,37 @@ export default async function AdminSettingsPage() {
             </label>
 
             <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="label-field" htmlFor="bankBeneficiary">
+                  اسم المستفيد (للتحويل البنكي)
+                </label>
+                <input
+                  id="bankBeneficiary"
+                  name="bankBeneficiary"
+                  className="input-field"
+                  defaultValue={settings.bankTransfer.beneficiary}
+                />
+              </div>
+              <div>
+                <label className="label-field" htmlFor="bankIban">الآيبان</label>
+                <input
+                  id="bankIban"
+                  name="bankIban"
+                  className="input-field font-mono"
+                  dir="ltr"
+                  placeholder="SA0000000000000000000000"
+                  defaultValue={settings.bankTransfer.iban}
+                />
+              </div>
+              <div>
+                <label className="label-field" htmlFor="bankName">اسم البنك</label>
+                <input
+                  id="bankName"
+                  name="bankName"
+                  className="input-field"
+                  defaultValue={settings.bankTransfer.bankName}
+                />
+              </div>
               <div>
                 <label className="label-field" htmlFor="contactWhatsapp">واتساب التواصل</label>
                 <input
@@ -167,6 +198,8 @@ export default async function AdminSettingsPage() {
               المزوّد النشط: <span className="font-mono font-bold text-ink">{activeProviderName()}</span>
             </p>
             <p className="mt-2 text-sm text-ink-muted">
+              <span className="font-mono">manual</span> يعني التحويل البنكي اليدوي: العميل
+              يحوّل، وأنت تؤكّد الاستلام من صفحة الطلب فتُحتسب العمولة.
               يُضبط من متغيّرات البيئة لا من هنا: <span className="font-mono">PAYMENT_PROVIDER</span>{" "}
               و <span className="font-mono">MOYASAR_SECRET_KEY</span> و{" "}
               <span className="font-mono">MOYASAR_WEBHOOK_SECRET</span>. مفاتيح الدفع لا تُخزَّن في

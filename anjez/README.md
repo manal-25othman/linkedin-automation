@@ -92,10 +92,14 @@ npm run dev
 
 ## النشر
 
+دليل مفصّل خطوة بخطوة: [`DEPLOY.md`](DEPLOY.md). باختصار:
+
 1. **قاعدة البيانات**: Neon أو Supabase أو أي PostgreSQL. اضبط `DATABASE_URL` على الـ pooler
    و`DIRECT_URL` على الاتصال المباشر.
 2. **Vercel**: أمر البناء `npm run vercel-build` (يشغّل الهجرات ثم البناء).
-3. **ميسر**: فعّل `PAYMENT_PROVIDER=moyasar`، وأضف المفاتيح، واضبط Webhook على
+3. **الدفع**: `PAYMENT_PROVIDER=manual` للتحويل البنكي (العميل يحوّل، والإدارة تؤكّد
+   الاستلام من صفحة الطلب فتُحتسب العمولة) — مناسب للتشغيل قبل اعتماد بوّابة.
+   ولتفعيل الدفع الإلكتروني: `PAYMENT_PROVIDER=moyasar`، وأضف المفاتيح، واضبط Webhook على
    `https://<نطاقك>/api/payments/webhook` بنفس قيمة `MOYASAR_WEBHOOK_SECRET`.
 4. **مهمّة مجدولة** (اختيارية): استدعِ `GET /api/cron/commissions` يوميًا بترويسة
    `Authorization: Bearer $CRON_SECRET`. اللوحة تعتمد المستحقّ عند فتحها أيضًا،

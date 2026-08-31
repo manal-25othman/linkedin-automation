@@ -175,6 +175,52 @@ suite("دورة الطلب والعمولة", () => {
     expect(commission?.status).toBe("CANCELLED");
   });
 
+  it("التحويل البنكي اليدوي: لا حالة مدفوعة إلا بتأكيد، والعمولة تُنشأ عنده", async () => {
+    const created = await createOrder({
+      tierId,
+      customerName: "عميل تحويل بنكي",
+      customerPhone: "+966500000004",
+      customerEmail: "",
+      notes: "",
+      couponCode: "",
+      cookieAffiliateId: affiliateId,
+    });
+
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    createdOrderNumbers.push(created.orderNumber);
+
+    const order = await prisma.order.findUnique({
+      where: { orderNumber: created.orderNumber },
+      select: { id: true, status: true },
+    });
+
+    // إنشاء الطلب وحده لا يُنشئ عمولة: لا مال وصل بعد.
+    expect(order?.status).toBe("PENDING_PAYMENT");
+    expect(await prisma.commission.count({ where: { orderId: order!.id } })).toBe(0);
+
+    // تغيير الحالة يدويًّا إلى «مدفوع» ممنوع — وإلا ضاعت عمولة المسوّق.
+    const manualStatus = await updateOrderStatus(order!.id, "PAID", "admin@test");
+    expect(manualStatus.ok).toBe(false);
+    expect(await prisma.commission.count({ where: { orderId: order!.id } })).toBe(0);
+
+    // المسار الصحيح: تأكيد استلام الحوالة يمرّ بـ markOrderPaid.
+    const confirmed = await markOrderPaid(created.orderNumber, {
+      provider: "manual",
+      reference: "حوالة 12345",
+    });
+    expect(confirmed.ok).toBe(true);
+
+    const afterConfirm = await prisma.order.findUnique({
+      where: { id: order!.id },
+      select: { status: true, paymentProvider: true, commission: { select: { amount: true } } },
+    });
+
+    expect(afterConfirm?.status).toBe("PAID");
+    expect(afterConfirm?.paymentProvider).toBe("manual");
+    expect(afterConfirm?.commission?.amount).toBeGreaterThan(0);
+  });
+
   it("يرفض الانتقال إلى حالة غير مسموح بها", async () => {
     const created = await createOrder({
       tierId,

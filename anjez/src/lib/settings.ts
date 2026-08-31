@@ -25,6 +25,9 @@ export const SETTING_KEYS = {
   autoApprove: "commission.autoApprove",
   contactWhatsapp: "site.whatsapp",
   contactEmail: "site.email",
+  bankBeneficiary: "payment.bank.beneficiary",
+  bankIban: "payment.bank.iban",
+  bankName: "payment.bank.name",
 } as const;
 
 function toInt(value: string | undefined, fallback: number): number {
@@ -39,6 +42,8 @@ export type SiteSettings = {
   autoApprove: boolean;
   contactWhatsapp: string;
   contactEmail: string;
+  /** يُعرض للعميل حين يكون الدفع بالتحويل البنكي اليدوي. */
+  bankTransfer: { beneficiary: string; iban: string; bankName: string };
 };
 
 async function readAll(): Promise<Map<string, string>> {
@@ -73,6 +78,11 @@ export const getSettings = cache(async (): Promise<SiteSettings> => {
     autoApprove: (map.get(SETTING_KEYS.autoApprove) ?? "true") === "true",
     contactWhatsapp: map.get(SETTING_KEYS.contactWhatsapp) ?? "",
     contactEmail: map.get(SETTING_KEYS.contactEmail) ?? "",
+    bankTransfer: {
+      beneficiary: map.get(SETTING_KEYS.bankBeneficiary) ?? "",
+      iban: map.get(SETTING_KEYS.bankIban) ?? "",
+      bankName: map.get(SETTING_KEYS.bankName) ?? "",
+    },
   };
 });
 

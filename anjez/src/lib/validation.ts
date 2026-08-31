@@ -219,4 +219,14 @@ export const settingsSchema = z.object({
   autoApprove: z.preprocess((v) => v === "on" || v === true, z.boolean()),
   contactWhatsapp: z.string().trim().max(40).optional().default(""),
   contactEmail: z.string().trim().max(160).optional().default(""),
+  bankBeneficiary: z.string().trim().max(120).optional().default(""),
+  bankIban: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .transform((v) => v.replace(/\s/g, ""))
+    .refine((v) => v === "" || /^SA\d{22}$/.test(v), "أدخل آيبان سعودي صحيح (SA + ٢٢ رقمًا)")
+    .optional()
+    .default(""),
+  bankName: z.string().trim().max(120).optional().default(""),
 });

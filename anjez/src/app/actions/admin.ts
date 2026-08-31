@@ -15,7 +15,7 @@ import {
 } from "@/lib/validation";
 import { formError, formSuccess, type FormState } from "@/lib/form-state";
 import { SETTING_KEYS, saveSettings } from "@/lib/settings";
-import { updateOrderStatus } from "@/lib/orders";
+import { markOrderPaid, updateOrderStatus } from "@/lib/orders";
 import { normalizeCode } from "@/lib/affiliate/code-format";
 import { parseRiyalsInput } from "@/lib/money";
 
@@ -168,6 +168,35 @@ export async function changeOrderStatus(formData: FormData): Promise<void> {
   if (!orderId || !status) return;
 
   await updateOrderStatus(orderId, status, user.email, note);
+
+  revalidatePath("/admin/orders");
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath("/admin/commissions");
+}
+
+/**
+ * تأكيد استلام حوالة بنكية. يمرّ عبر `markOrderPaid` لا عبر تغيير الحالة،
+ * لأنه المسار الوحيد الذي يُنشئ عمولة المسوّق ويزيد عدّاد الكوبون — وهو
+ * نفسه المسار الذي يسلكه إشعار بوّابة الدفع، فلا يختلف طلبٌ يدويّ عن آخر آليّ.
+ */
+export async function confirmManualPayment(formData: FormData): Promise<void> {
+  const user = await requireStaff();
+
+  const orderId = formData.get("orderId")?.toString();
+  const reference = formData.get("reference")?.toString().trim() || "";
+  if (!orderId) return;
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { orderNumber: true, status: true },
+  });
+
+  if (!order || order.status !== "PENDING_PAYMENT") return;
+
+  await markOrderPaid(order.orderNumber, {
+    provider: "manual",
+    reference: reference || `أكّده ${user.email}`,
+  });
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
@@ -388,6 +417,9 @@ export async function saveCommissionSettings(
     autoApprove: formData.get("autoApprove"),
     contactWhatsapp: formData.get("contactWhatsapp") ?? "",
     contactEmail: formData.get("contactEmail") ?? "",
+    bankBeneficiary: formData.get("bankBeneficiary") ?? "",
+    bankIban: formData.get("bankIban") ?? "",
+    bankName: formData.get("bankName") ?? "",
   });
 
   if (!parsed.success) {
@@ -419,6 +451,9 @@ export async function saveCommissionSettings(
     [SETTING_KEYS.autoApprove]: data.autoApprove ? "true" : "false",
     [SETTING_KEYS.contactWhatsapp]: data.contactWhatsapp ?? "",
     [SETTING_KEYS.contactEmail]: data.contactEmail ?? "",
+    [SETTING_KEYS.bankBeneficiary]: data.bankBeneficiary ?? "",
+    [SETTING_KEYS.bankIban]: data.bankIban ?? "",
+    [SETTING_KEYS.bankName]: data.bankName ?? "",
   });
 
   revalidatePath("/admin/settings");
