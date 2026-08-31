@@ -8,6 +8,14 @@ import { recordAudit } from '@/lib/audit';
 import { upsertCuratedAnswer, removeCuratedAnswer } from '@/lib/rag/curated-answer';
 import { notifyUsers, clearEntityNotifications } from '@/lib/notifications';
 import { AppError, toAppError } from '@/lib/errors';
+import { retrieveRelevantChunks, summarizeSources } from '@/lib/rag/retrieval';
+import { generateAnswer, estimateCostUsd, rewriteSearchQuery } from '@/lib/ai/claude';
+import { buildSystemPrompt, buildUserMessage, isUnansweredResponse } from '@/lib/ai/prompts';
+import { verifyAnswer, stripCitationMarkers } from '@/lib/rag/verify';
+import { recordAiUsage } from '@/lib/ai/usage';
+import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { ROLE_LABELS } from '@/lib/auth/rbac';
+import type { CompanyAiSettings } from '@/types/database';
 
 export interface ActionResult {
   ok: boolean;
@@ -173,6 +181,132 @@ export async function updateKnowledgeGapAction(formData: FormData): Promise<Acti
       ok: true,
       message: `${STATUS_MESSAGES[input.status] ?? 'تم تحديث الفجوة.'}${notice}`,
     };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+export interface SuggestGapAnswerResult {
+  ok: boolean;
+  message?: string;
+  draft?: string;
+  sources?: Array<{ name: string; page: number | null }>;
+}
+
+/**
+ * وكيل الفجوات: يقترح مسوّدة الإجابة المعتمدة من المستندات.
+ *
+ * الفجوة تعني أن استرجاع السؤال فشل ساعة سُئل. لكن الفشل له سببان
+ * مختلفان: الجواب غير موجود أصلًا، أو موجودٌ ولم تُصبه صياغةُ السائل.
+ * وفي الحالة الثانية كان المدير يعيد كتابة جوابٍ مكتوبٍ في مستنداته.
+ *
+ * فيبحث الوكيل مرة أخرى — وبإعادة صياغةٍ إن لزم — ويكتب مسوّدةً
+ * **لا تُحفظ ولا يراها موظف**: تُعبَّأ في النموذج، والمدير يحرّرها
+ * ويعتمدها. القرار الأخير لإنسانٍ دائمًا — وكيلٌ يقترح ومديرٌ يوقّع،
+ * لا وكيلٌ ينشر في قاعدة معرفةٍ يقرؤها كل الموظفين.
+ *
+ * ولا يُستهلك من حصّة أسئلة الموظفين: هذا عملٌ إداري، وعدُّه على
+ * الحصّة يجعل سدَّ الفجوات ينافس الأسئلة التي كشفتها. التكلفة تُسجَّل
+ * في المحاسبة كأي استدعاء.
+ */
+export async function suggestGapAnswerAction(gapId: string): Promise<SuggestGapAnswerResult> {
+  try {
+    const { profile, company } = await requirePermission('knowledge_gaps.manage');
+
+    await enforceRateLimit(`gap-draft:${profile.id}`, RATE_LIMITS.chat);
+
+    const supabase = await createClient();
+    const { data: gap } = await supabase
+      .from('knowledge_gaps')
+      .select('id, question')
+      .eq('id', gapId)
+      .maybeSingle();
+
+    if (!gap) throw new AppError('NOT_FOUND', 'الفجوة غير موجودة.');
+
+    const aiSettings = company.ai_settings as CompanyAiSettings;
+
+    // البحث بمسار المساعد نفسه — بصلاحيات المدير وعزل قاعدة البيانات،
+    // ومع محاولة إنقاذٍ بإعادة الصياغة كما في المحادثة سواء بسواء
+    let retrieval = await retrieveRelevantChunks(supabase, gap.question, aiSettings);
+    if (retrieval.isEmpty) {
+      const rewritten = await rewriteSearchQuery(gap.question);
+      if (rewritten) {
+        const retried = await retrieveRelevantChunks(supabase, rewritten, aiSettings);
+        if (!retried.isEmpty) retrieval = retried;
+      }
+    }
+
+    if (retrieval.isEmpty) {
+      return {
+        ok: false,
+        message:
+          'لم أجد في المستندات ما يُبنى عليه جواب — وهذا يؤكد أنها فجوة توثيق حقيقية. اكتب الجواب من معرفتك وسيدخل قاعدة المعرفة.',
+      };
+    }
+
+    // موجّه المحادثة نفسه — بحدوده وحصانته من حقن التعليمات — فالمسوّدة
+    // تُكتب كما ستُقرأ: جوابًا مباشرًا لموظف
+    const completion = await generateAnswer({
+      systemPrompt: buildSystemPrompt({
+        companyName: company.name,
+        tone: aiSettings.tone ?? 'professional',
+        userName: profile.full_name || 'مدير',
+        userRole: ROLE_LABELS[profile.role],
+        departmentName: null,
+      }),
+      history: [],
+      userMessage: buildUserMessage(gap.question, retrieval.chunks),
+    });
+
+    await recordAiUsage({
+      companyId: company.id,
+      userId: profile.id,
+      operation: 'chat',
+      provider: 'anthropic',
+      model: completion.model,
+      inputTokens:
+        completion.inputTokens + completion.cacheReadTokens + completion.cacheWriteTokens,
+      outputTokens: completion.outputTokens,
+      costUsd: estimateCostUsd(
+        completion.model,
+        completion.inputTokens,
+        completion.outputTokens,
+        completion.cacheReadTokens,
+        completion.cacheWriteTokens,
+      ),
+      latencyMs: completion.latencyMs,
+      countsAsQuestion: false,
+    });
+
+    if (!completion.text.trim() || isUnansweredResponse(completion.text)) {
+      return {
+        ok: false,
+        message:
+          'المقاطع المسترجَعة لم تكفِ لجوابٍ يُعتمد عليه. اكتب الجواب من معرفتك وسيدخل قاعدة المعرفة.',
+      };
+    }
+
+    // المصادر التي استند إليها فعلًا — ليراجعها المدير قبل الاعتماد
+    const verification = verifyAnswer({ answer: completion.text, chunks: retrieval.chunks });
+    const cited = verification.citedIndexes
+      .map((index) => retrieval.chunks[index])
+      .filter((chunk): chunk is NonNullable<typeof chunk> => Boolean(chunk));
+    const sources = summarizeSources(cited.length > 0 ? cited : retrieval.chunks).map(
+      (chunk) => ({ name: chunk.documentName, page: chunk.pageNumber }),
+    );
+
+    await recordAudit({
+      companyId: company.id,
+      actorId: profile.id,
+      actorEmail: profile.email,
+      action: 'knowledge_gap.draft_suggested',
+      entityType: 'knowledge_gap',
+      entityId: gapId,
+      metadata: { sources: sources.length },
+    });
+
+    return { ok: true, draft: stripCitationMarkers(completion.text).trim(), sources };
   } catch (error) {
     return { ok: false, message: toAppError(error).displayMessage };
   }
