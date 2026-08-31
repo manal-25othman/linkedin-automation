@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Target } from 'lucide-react';
+import { useState, useTransition } from 'react';
+import { Sparkles, Target } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import {
 import { EmptyState } from '@/components/shared/states';
 import { CrudDialog } from '@/components/dashboard/crud-dialog';
 import { formatNumber, formatRelativeTime } from '@/lib/utils';
-import { updateKnowledgeGapAction } from './actions';
+import { suggestGapAnswerAction, updateKnowledgeGapAction } from './actions';
 import type { GapStatus } from '@/types/database';
 
 export interface GapRowData {
@@ -53,6 +53,40 @@ export function GapsClient({
   canManage: boolean;
 }) {
   const [editing, setEditing] = useState<GapRowData | null>(null);
+
+  /*
+   * مسوّدة الوكيل — لا تُحفظ من تلقاء نفسها.
+   *
+   * تُعبَّأ في حقل الإجابة المعتمدة ليحرّرها المدير ويعتمدها بنفسه.
+   * والحقل غير مُدار (defaultValue)، فتغيير قيمته يكون بإعادة تركيبه
+   * عبر `key` — لا بحالةٍ تتقاتل مع كتابة المدير فوق المسوّدة.
+   */
+  const [draft, setDraft] = useState<{
+    gapId: string;
+    text: string;
+    sources: Array<{ name: string; page: number | null }>;
+  } | null>(null);
+  const [suggestNote, setSuggestNote] = useState<string | null>(null);
+  const [suggesting, startSuggesting] = useTransition();
+
+  const openGap = (gap: GapRowData) => {
+    setDraft(null);
+    setSuggestNote(null);
+    setEditing(gap);
+  };
+
+  const suggest = () => {
+    if (!editing) return;
+    setSuggestNote(null);
+    startSuggesting(async () => {
+      const result = await suggestGapAnswerAction(editing.id);
+      if (result.ok && result.draft) {
+        setDraft({ gapId: editing.id, text: result.draft, sources: result.sources ?? [] });
+      } else {
+        setSuggestNote(result.message ?? 'تعذّر اقتراح جواب.');
+      }
+    });
+  };
 
   if (gaps.length === 0) {
     return (
@@ -112,7 +146,7 @@ export function GapsClient({
 
                 {canManage ? (
                   <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => setEditing(gap)}>
+                    <Button variant="outline" size="sm" onClick={() => openGap(gap)}>
                       معالجة
                     </Button>
                   </TableCell>
@@ -149,15 +183,53 @@ export function GapsClient({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="answerText">الإجابة المعتمدة</Label>
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="answerText">الإجابة المعتمدة</Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={suggest}
+              disabled={suggesting}
+            >
+              <Sparkles className="size-4" aria-hidden />
+              {suggesting ? 'يبحث في المستندات…' : 'اقترح جوابًا من المستندات'}
+            </Button>
+          </div>
           <Textarea
             id="answerText"
             name="answerText"
             rows={5}
             maxLength={8000}
-            defaultValue={editing?.answerText ?? ''}
+            key={draft && editing && draft.gapId === editing.id ? 'draft' : editing?.id ?? 'blank'}
+            defaultValue={
+              draft && editing && draft.gapId === editing.id
+                ? draft.text
+                : (editing?.answerText ?? '')
+            }
             placeholder="اكتب الجواب كما تريد أن يصل موظفيك. مثال: تُقدَّم طلبات العمل الإضافي عبر مدير القسم قبل يومين على الأقل، وتُحتسب بواقع 150% من الأجر."
           />
+          {suggestNote ? (
+            <p className="text-xs leading-relaxed text-warning">
+              {suggestNote}
+            </p>
+          ) : null}
+          {draft && editing && draft.gapId === editing.id ? (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              <b>مسوّدة من الوكيل — راجعها وعدّلها قبل الحفظ.</b>
+              {draft.sources.length > 0 ? (
+                <>
+                  {' '}
+                  بُنيت من: {draft.sources
+                    .map((source) =>
+                      source.page ? `${source.name} (صفحة ${source.page})` : source.name,
+                    )
+                    .join('، ')}
+                  .
+                </>
+              ) : null}
+            </p>
+          ) : null}
           <p className="text-xs leading-relaxed text-muted-foreground">
             هذه الإجابة <b>تدخل قاعدة المعرفة فورًا</b>، فيجدها المساعد حين يسأل أي موظف السؤال
             نفسه — ولن يسمع «لم أجد معلومات» بعد اليوم. تُعرض له باعتبارها إجابة معتمدة من

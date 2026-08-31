@@ -46,6 +46,7 @@ export type AuditAction =
   | 'document.permissions_changed'
   | 'knowledge_gap.status_changed'
   | 'knowledge_gap.resolved'
+  | 'knowledge_gap.draft_suggested'
   | 'assistant.question_asked'
   | 'assistant.answer_unanswered';
 
