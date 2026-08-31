@@ -257,6 +257,51 @@ export async function generateConversationTitle(question: string): Promise<strin
   }
 }
 
+/**
+ * إعادة صياغة سؤالٍ فشل استرجاعه — الخطوة الوكيلة الأولى.
+ *
+ * السؤال يُكتب بالعامية أو بالاختصار («ابي ادارة المشاريع»)، والوثيقة
+ * مكتوبة بلغة الأنظمة. حين لا يشترك اللفظان في معنًى قريب ولا في كلمة،
+ * يعود الاسترجاع خاويًا ويقول المساعد «لم أجد» — والجواب في المستند.
+ *
+ * فتُعاد الصياغة بلغة الوثائق ويُبحث بها ثانيةً. ولا تُستدعى إلا بعد
+ * فشل البحث الأول: النجاح لا يحتاجها، واستدعاؤها دائمًا يضيف زمنًا
+ * وتكلفةً على كل سؤال لعلاج حالةٍ نادرة.
+ *
+ * النموذج الصغير يكفي — المهمة تحويل صياغة لا استدلال — والفشل فيها
+ * ليس حرجًا: تعود null ويبقى جواب «لم أجد» كما كان.
+ */
+export async function rewriteSearchQuery(question: string): Promise<string | null> {
+  try {
+    const anthropic = getClient();
+    const response = await anthropic.messages.create({
+      model: 'claude-haiku-4-5',
+      max_tokens: 100,
+      system:
+        'أنت تعيد صياغة أسئلة البحث في وثائق الشركات السعودية (لوائح، سياسات، إجراءات). ' +
+        'أعد كتابة السؤال بالفصحى الرسمية بمفردات الأنظمة واللوائح، محافظًا على مقصده تمامًا. ' +
+        'لا تُجب عن السؤال. أخرج الصياغة الجديدة وحدها في سطر واحد بلا مقدمات ولا علامات اقتباس.',
+      messages: [{ role: 'user', content: question.slice(0, 500) }],
+    });
+
+    const rewritten = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join(' ')
+      .trim()
+      .replace(/^["'«»]|["'«»]$/g, '')
+      .split('\n')[0]
+      .trim();
+
+    // صياغة مطابقة للأصل لا تفيد بحثًا ثانيًا، والفارغة ليست صياغة
+    if (rewritten.length < 3 || rewritten === question.trim()) return null;
+    return rewritten.slice(0, 300);
+  } catch {
+    // إعادة الصياغة تحسينٌ لا ركن — فشلُها يُرجعنا إلى السلوك القديم فقط
+    return null;
+  }
+}
+
 export function isAiConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }

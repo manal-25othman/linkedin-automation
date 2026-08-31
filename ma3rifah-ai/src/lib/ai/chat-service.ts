@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireCompanySession } from '@/lib/auth/session';
 import { retrieveRelevantChunks, summarizeSources } from '@/lib/rag/retrieval';
-import { generateAnswer, generateConversationTitle, estimateCostUsd } from '@/lib/ai/claude';
+import { isConversationalFollowUp } from '@/lib/rag/gap-filter';
+import { generateAnswer, generateConversationTitle, estimateCostUsd, rewriteSearchQuery } from '@/lib/ai/claude';
 import { buildSystemPrompt, buildUserMessage, isUnansweredResponse } from '@/lib/ai/prompts';
 import { verifyAnswer, stripCitationMarkers } from '@/lib/rag/verify';
 import type { ConfidenceLevel } from '@/lib/rag/verify';
@@ -175,7 +176,37 @@ export async function askAssistant(input: {
   }
 
   // --- الاسترجاع ---
-  const retrieval = await retrieveRelevantChunks(supabase, question, aiSettings);
+  let retrieval = await retrieveRelevantChunks(supabase, question, aiSettings);
+
+  /*
+   * محاولة إنقاذ واحدة قبل «لم أجد».
+   *
+   * السؤال يُكتب بالعامية والوثيقة بلغة الأنظمة، وحين لا يشتركان في
+   * معنًى قريب ولا لفظٍ يعود الاسترجاع خاويًا والجوابُ في المستند.
+   * فيُعاد صوغ السؤال بلغة الوثائق ويُبحث به ثانيةً.
+   *
+   * ولا تقع المحاولة إلا عند بحثٍ أول خاوٍ: النجاح لا يحتاجها،
+   * وإجراؤها دائمًا يُحمّل كل سؤالٍ زمنَ وتكلفةَ علاجِ حالةٍ نادرة.
+   * وفشلُ الصياغة نفسها ليس حدثًا — نعود إلى «لم أجد» كما كنا.
+   */
+  if (retrieval.isEmpty) {
+    const rewritten = await rewriteSearchQuery(question);
+    if (rewritten) {
+      const retried = await retrieveRelevantChunks(supabase, rewritten, aiSettings);
+      if (!retried.isEmpty) {
+        logger.info('أنقذت إعادةُ الصياغة الاسترجاعَ', {
+          chunks: retried.chunks.length,
+          // لا يُسجَّل نصّ السؤال ولا صياغته — أطوالهما تكفي للتشخيص
+          questionLength: question.length,
+          rewrittenLength: rewritten.length,
+        });
+        retrieval = {
+          ...retried,
+          latencyMs: retrieval.latencyMs + retried.latencyMs,
+        };
+      }
+    }
+  }
 
   // --- التوليد ---
   const departmentName = await getDepartmentName(supabase, profile.department_id);
@@ -279,7 +310,9 @@ export async function askAssistant(input: {
   }
 
   // --- فجوة معرفة ---
-  if (unanswered) {
+  // المتابعات المحادثية («تاكد الان») تفشل استرجاعًا بالطبع، وليست
+  // فجواتِ توثيق — تسجيلُها يملأ قائمة المدير بما لا يُجاب فتُهمَل
+  if (unanswered && !isConversationalFollowUp(question)) {
     const { data: gapId, error: gapError } = await supabase.rpc('record_knowledge_gap', {
       p_question: question,
     });
