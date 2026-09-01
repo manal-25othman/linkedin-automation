@@ -206,7 +206,7 @@ export function repairCorruptedNumerals(text: string): string {
  * «الالتزام» و«الالتحاق» السليمتين اللتين لا تمسّهما المطابقة
  * الحرفية لهذه الجذوع.
  */
-const CURATED_LAM_ALEF: ReadonlyArray<readonly [string, string]> = [
+export const CURATED_LAM_ALEF: ReadonlyArray<readonly [string, string]> = [
   // جذوع تُطابَق حرفيًا أينما وقعت — «الالئح» تصيب «الالئحة»
   // و«بالالئحة» و«الالئحتين» معًا
   ['الالئح', 'اللائح'],

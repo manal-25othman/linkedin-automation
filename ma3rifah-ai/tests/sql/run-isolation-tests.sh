@@ -69,6 +69,9 @@ run_sql -f "$ROOT/tests/sql/05_invite_tests.sql" >/dev/null
 echo "▸ اختبارات الاسترجاع الهجين"
 run_sql -f "$ROOT/tests/sql/06_hybrid_retrieval_tests.sql" >/dev/null
 
+echo "▸ اختبارات جودة الفهرسة"
+run_sql -f "$ROOT/tests/sql/07_index_quality_tests.sql" >/dev/null
+
 echo
 "${PSQL_BASE[@]}" -d "$TEST_DB" -P pager=off -c "
   select id as \"#\",

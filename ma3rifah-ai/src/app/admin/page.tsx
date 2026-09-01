@@ -54,6 +54,7 @@ export default async function AdminOverviewPage() {
     visitorStats,
     visitorUnanswered,
     satisfactionResult,
+    indexQualityResult,
     feedbackNotes,
   ] = await Promise.all([
     admin.from('companies').select('id, name, status, is_demo, created_at').order('created_at', {
@@ -77,6 +78,7 @@ export default async function AdminOverviewPage() {
     sessionClient.rpc('platform_visitor_stats', { p_days: 30 }),
     sessionClient.rpc('platform_visitor_unanswered', { p_limit: 10 }),
     sessionClient.rpc('platform_satisfaction', { p_days: 30 }),
+    sessionClient.rpc('platform_index_quality'),
     sessionClient.rpc('platform_feedback_notes', { p_limit: 12 }),
   ]);
 
@@ -85,6 +87,8 @@ export default async function AdminOverviewPage() {
   const visitors = visitorStats.data?.[0];
   const visitorGaps = visitorUnanswered.data ?? [];
   const satisfaction = satisfactionResult.data?.[0];
+  const indexQuality = indexQualityResult.data ?? [];
+  const flaggedCompanies = indexQuality.filter((row) => Number(row.chunks_flagged) > 0);
   const notes = feedbackNotes.data ?? [];
 
   // مؤشر معطّل يجب أن يقول إنه معطّل. الصفر ادّعاء بأن القياس تمّ ولم
@@ -327,6 +331,45 @@ export default async function AdminOverviewPage() {
               <p className="text-sm text-muted-foreground">
                 لا تقييمات بعد. يظهر المقياس بعد أن يقيّم المستخدمون إجاباتهم.
               </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/*
+          جودة الفهرسة.
+          عطب النصّ العربي يفسد الفهرس بصمت: الحالة «جاهز» والمساعد
+          يقول «لم أجد». هذه البطاقة تراه قبل أن يشتكي عميل — أعدادٌ
+          فقط، بلا محتوى ولا أسماء مستندات.
+        */}
+        <Card>
+          <CardHeader>
+            <CardTitle>جودة الفهرسة — عطب النصّ العربي</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {indexQualityResult.error ? (
+              <p className="text-sm text-muted-foreground">
+                غير متاح — طبّق ترحيلة 0034 على قاعدة البيانات.
+              </p>
+            ) : flaggedCompanies.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                ✓ كل المقاطع المفهرسة في المنصة سليمة — لا عطب مكتشفًا.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {flaggedCompanies.map((row) => (
+                  <li key={row.company_name} className="flex items-baseline justify-between gap-3 text-sm">
+                    <span>{row.company_name}</span>
+                    <span className="tabular-nums text-warning">
+                      {row.chunks_flagged} مقطعًا معطوبًا في {row.documents_flagged}{' '}
+                      {Number(row.documents_flagged) === 1 ? 'مستند' : 'مستندات'}
+                    </span>
+                  </li>
+                ))}
+                <li className="border-t pt-2 text-xs leading-relaxed text-muted-foreground">
+                  العلاج: إعادة معالجة المستندات المتأثرة بعد تحديث قواعد الإصلاح. الأعداد
+                  تُحسب من نصّ الفهرس مباشرةً — لا يُعرض محتوى ولا أسماء مستندات.
+                </li>
+              </ul>
             )}
           </CardContent>
         </Card>

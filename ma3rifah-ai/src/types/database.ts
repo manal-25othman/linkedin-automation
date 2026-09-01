@@ -555,6 +555,15 @@ export interface Database {
           similarity: number;
         }[];
       };
+      platform_index_quality: {
+        Args: Record<string, never>;
+        Returns: {
+          company_name: string;
+          chunks_total: number;
+          chunks_flagged: number;
+          documents_flagged: number;
+        }[];
+      };
       platform_satisfaction: {
         Args: { p_days?: number };
         Returns: {
