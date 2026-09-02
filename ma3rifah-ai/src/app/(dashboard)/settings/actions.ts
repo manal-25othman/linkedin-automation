@@ -3,7 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { requireCompanySession, requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
-import { aiSettingsSchema, firstIssueMessage } from '@/lib/validation/schemas';
+import {
+  aiSettingsSchema,
+  firstIssueMessage,
+  parseStarterQuestions,
+} from '@/lib/validation/schemas';
 import { recordAudit } from '@/lib/audit';
 import { AppError, toAppError } from '@/lib/errors';
 
@@ -60,6 +64,7 @@ export async function updateAiSettingsAction(formData: FormData): Promise<Action
       max_context_chunks: Number(formData.get('max_context_chunks')),
       history_window: Number(formData.get('history_window')),
       allow_general_knowledge: formData.get('allow_general_knowledge') === 'on',
+      starter_questions: parseStarterQuestions(formData.get('starter_questions')),
     });
 
     if (!parsed.success) {

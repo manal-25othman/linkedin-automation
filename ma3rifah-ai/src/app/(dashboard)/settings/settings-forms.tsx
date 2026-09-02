@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input, Textarea } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/misc';
+import { STARTER_QUESTIONS_MAX } from '@/lib/validation/schemas';
 import type { CompanyAiSettings } from '@/types/database';
 import { updateAiSettingsAction, updateCompanyAction, updateProfileAction } from './actions';
 
@@ -137,6 +138,24 @@ export function AiSettingsForm({ settings }: { settings: CompanyAiSettings }) {
           <option value="friendly">ودود ومباشر</option>
           <option value="concise">مختصر جدًا</option>
         </select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="starter_questions">أسئلة البداية</Label>
+        <Textarea
+          id="starter_questions"
+          name="starter_questions"
+          rows={5}
+          maxLength={2000}
+          defaultValue={(settings.starter_questions ?? []).join('\n')}
+          placeholder={'سطر لكل سؤال. مثال:\nكم عدد أيام الإجازة السنوية؟\nكيف أطلب سلفة على الراتب؟\nما إجراء تسليم العهدة عند الاستقالة؟'}
+          dir="auto"
+        />
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          تظهر شرائحَ فوق صندوق المساعد حين يفتح الموظف محادثة جديدة، فيبدأ بنقرة بدل أن
+          يحتار ماذا يسأل. اكتب أسئلة تعرف أن جوابها في مستنداتك — {STARTER_QUESTIONS_MAX}{' '}
+          على الأكثر. اتركه فارغًا لتظهر أسئلة عامة افتراضية.
+        </p>
       </div>
 
       <div className="space-y-2">

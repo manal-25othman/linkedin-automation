@@ -73,6 +73,11 @@ export interface CompanyAiSettings {
   max_context_chunks: number;
   history_window: number;
   allow_general_knowledge: boolean;
+  /**
+   * أسئلة البداية التي تظهر شرائحَ فوق صندوق المساعد في المحادثة الفارغة.
+   * اختيارية: غيابها أو فراغها يعني الأسئلة الافتراضية العامة.
+   */
+  starter_questions?: string[];
 }
 
 type CompanyRow = {
