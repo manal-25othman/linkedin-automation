@@ -156,10 +156,21 @@ type DocumentRow = {
   page_count: number | null;
   char_count: number;
   chunk_count: number;
+  /** صفحات قُرئت ضوئيًا (OCR). صفر = مستند نصّي عادي */
+  ocr_pages: number;
   processed_at: string | null;
   uploaded_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+/** نصوص الصفحات المقروءة ضوئيًا — لخطّ المعالجة وحده، لا سياسة قراءة للمستخدمين */
+type DocumentOcrPageRow = {
+  document_id: string;
+  company_id: string;
+  page_number: number;
+  text: string;
+  created_at: string;
 };
 
 type DocumentChunkRow = {
@@ -346,6 +357,8 @@ type PlanRow = {
   max_documents: number | null;
   max_questions_monthly: number | null;
   max_storage_mb: number | null;
+  /** صفحات القراءة الضوئية شهريًا — null = بلا حد */
+  max_ocr_pages_monthly: number | null;
   features: string[];
   is_public: boolean;
   is_custom_priced: boolean;
@@ -380,6 +393,7 @@ type UsageRecordRow = {
   input_tokens: number;
   output_tokens: number;
   estimated_cost_usd: number;
+  ocr_pages: number;
   created_at: string;
   updated_at: string;
 };
@@ -515,6 +529,7 @@ export interface Database {
       knowledge_categories: Table<KnowledgeCategoryRow>;
       documents: Table<DocumentRow>;
       document_chunks: Table<DocumentChunkRow>;
+      document_ocr_pages: Table<DocumentOcrPageRow>;
       conversations: Table<ConversationRow>;
       messages: Table<MessageRow>;
       message_sources: Table<MessageSourceRow>;
@@ -672,8 +687,13 @@ export interface Database {
           p_input_tokens?: number;
           p_output_tokens?: number;
           p_cost_usd?: number;
+          p_ocr_pages?: number;
         };
         Returns: void;
+      };
+      check_ocr_quota: {
+        Args: { p_company: string; p_pages: number };
+        Returns: { allowed: boolean; used: number; quota: number }[];
       };
       normalize_question: {
         Args: { p_text: string };

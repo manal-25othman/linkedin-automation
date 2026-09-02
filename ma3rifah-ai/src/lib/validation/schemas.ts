@@ -181,6 +181,7 @@ export const planUpsertSchema = z
     maxDocuments: planLimit,
     maxQuestionsMonthly: planLimit,
     maxStorageMb: planLimit,
+    maxOcrPagesMonthly: planLimit,
     /** ميزة في كل سطر — أسهل ما يُحرَّر في حقل نصّي */
     features: z.string().max(2000, 'قائمة المزايا طويلة جدًا.').optional().default(''),
     isPublic: z.boolean(),

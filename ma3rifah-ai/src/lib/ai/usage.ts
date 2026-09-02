@@ -43,7 +43,7 @@ export function estimateEmbeddingCostUsd(
 export interface UsageEntry {
   companyId: string;
   userId?: string | null;
-  operation: 'chat' | 'embedding' | 'title' | 'site_chat';
+  operation: 'chat' | 'embedding' | 'title' | 'site_chat' | 'ocr';
   provider: string;
   model: string;
   inputTokens: number;
@@ -52,6 +52,8 @@ export interface UsageEntry {
   latencyMs?: number;
   /** يُحتسب ضمن حصة الأسئلة الشهرية */
   countsAsQuestion?: boolean;
+  /** صفحات قُرئت ضوئيًا — تُحتسب ضمن حصة القراءة الشهرية */
+  ocrPages?: number;
 }
 
 /**
@@ -82,6 +84,7 @@ export async function recordAiUsage(entry: UsageEntry): Promise<void> {
       p_input_tokens: entry.inputTokens,
       p_output_tokens: entry.outputTokens ?? 0,
       p_cost_usd: entry.costUsd,
+      p_ocr_pages: entry.ocrPages ?? 0,
     });
   } catch (error) {
     logger.warn('تعذّر تسجيل الاستهلاك', {

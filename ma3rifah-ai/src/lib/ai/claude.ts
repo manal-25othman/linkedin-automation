@@ -8,6 +8,10 @@ import { TITLE_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 
 let client: Anthropic | null = null;
 
+export function getAnthropicClient(): Anthropic {
+  return getClient();
+}
+
 function getClient(): Anthropic {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new AppError(

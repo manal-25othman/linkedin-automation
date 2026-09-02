@@ -29,6 +29,7 @@ export const FALLBACK_PLANS: Plan[] = [
     max_documents: 50,
     max_questions_monthly: 600,
     max_storage_mb: 5120,
+    max_ocr_pages_monthly: 150,
     features: [
       'المساعد الذكي على مستنداتكم',
       'المصدر والصفحة مع كل إجابة',
@@ -54,6 +55,7 @@ export const FALLBACK_PLANS: Plan[] = [
     max_documents: 200,
     max_questions_monthly: 2000,
     max_storage_mb: 25600,
+    max_ocr_pages_monthly: 600,
     features: [
       'كل مزايا Starter',
       'تحليلات متقدمة',
@@ -79,6 +81,7 @@ export const FALLBACK_PLANS: Plan[] = [
     max_documents: 600,
     max_questions_monthly: 6000,
     max_storage_mb: 102400,
+    max_ocr_pages_monthly: 2000,
     features: [
       'كل مزايا Growth',
       'الدخول الموحّد (SSO)',
@@ -104,6 +107,7 @@ export const FALLBACK_PLANS: Plan[] = [
     max_documents: null,
     max_questions_monthly: null,
     max_storage_mb: null,
+    max_ocr_pages_monthly: null,
     features: [
       'كل مزايا Business',
       'عدد مستخدمين غير محدود',

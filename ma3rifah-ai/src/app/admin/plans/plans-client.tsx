@@ -30,6 +30,7 @@ export interface PlanRowData {
   maxDocuments: number | null;
   maxQuestionsMonthly: number | null;
   maxStorageMb: number | null;
+  maxOcrPagesMonthly: number | null;
   features: string[];
   isPublic: boolean;
   isCustomPriced: boolean;
@@ -291,6 +292,22 @@ export function PlansClient({ plans }: { plans: PlanRowData[] }) {
                   className="text-start"
                   defaultValue={limitValue(dialogPlan?.maxStorageMb ?? null)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="maxOcrPagesMonthly">صفحات القراءة الضوئية شهريًا</Label>
+                <Input
+                  id="maxOcrPagesMonthly"
+                  name="maxOcrPagesMonthly"
+                  type="number"
+                  min={1}
+                  dir="ltr"
+                  className="text-start"
+                  defaultValue={limitValue(dialogPlan?.maxOcrPagesMonthly ?? null)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  للمستندات الممسوحة ضوئيًا والصور. فارغ = بلا حد.
+                </p>
               </div>
             </div>
           </fieldset>

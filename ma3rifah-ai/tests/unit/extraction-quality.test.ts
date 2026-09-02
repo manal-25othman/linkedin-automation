@@ -50,7 +50,7 @@ describe('يُرَدّ ما هو معطوب', () => {
   it('الفارغ تمامًا', () => {
     const result = assessExtraction(make('', 12, []));
     expect(result.verdict).toBe('EMPTY');
-    expect(result.message).toContain('OCR');
+    expect(result.message).toContain('ضوئي');
   });
 
   it('ستّ وأربعون صفحة بترويسة واحدة — الحالة التي كانت تمرّ', () => {
@@ -61,7 +61,7 @@ describe('يُرَدّ ما هو معطوب', () => {
     expect(result.charsPerPage).toBeLessThan(5);
     // الرسالة تحمل الأرقام كي يعرف صاحبها لماذا رُدّ
     expect(result.message).toContain('46');
-    expect(result.message).toContain('OCR');
+    expect(result.message).toContain('ضوئي');
   });
 
   it('نصفُ الصفحات بلا نصّ — مسحٌ جزئيّ', () => {

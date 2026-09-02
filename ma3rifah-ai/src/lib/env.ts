@@ -132,6 +132,15 @@ export const serverEnv = {
     // مفتوحة على سؤال واحد.
     return optionalInt('ANTHROPIC_MAX_OUTPUT_TOKENS', 3000);
   },
+  /**
+   * سقف صفحات القراءة الضوئية للمستند الواحد.
+   *
+   * حدّ الخطة الشهري يحمي الفاتورة، وهذا يحمي الطلب: مستند من ٣٠٠ صفحة
+   * ممسوحة يحتاج ١٥٠ نداءً، والأولى تقسيمه. وستون صفحة تكفي أطول تعميم.
+   */
+  get ocrMaxPagesPerDocument() {
+    return optionalInt('OCR_MAX_PAGES_PER_DOCUMENT', 60);
+  },
   get embeddingsProvider() {
     const value = optional('EMBEDDINGS_PROVIDER', 'local');
     return (['voyage', 'openai', 'local'].includes(value) ? value : 'local') as

@@ -72,6 +72,7 @@ export async function upsertPlanAction(formData: FormData): Promise<ActionResult
       maxDocuments: formData.get('maxDocuments') ?? '',
       maxQuestionsMonthly: formData.get('maxQuestionsMonthly') ?? '',
       maxStorageMb: formData.get('maxStorageMb') ?? '',
+      maxOcrPagesMonthly: formData.get('maxOcrPagesMonthly') ?? '',
       features: formData.get('features') ?? '',
       isPublic: formData.get('isPublic') === 'on',
       isCustomPriced: formData.get('isCustomPriced') === 'on',
@@ -96,6 +97,7 @@ export async function upsertPlanAction(formData: FormData): Promise<ActionResult
       max_documents: input.maxDocuments,
       max_questions_monthly: input.maxQuestionsMonthly,
       max_storage_mb: input.maxStorageMb,
+      max_ocr_pages_monthly: input.maxOcrPagesMonthly,
       features: input.features
         .split('\n')
         .map((line) => line.trim())

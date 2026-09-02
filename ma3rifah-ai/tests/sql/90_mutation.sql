@@ -76,3 +76,9 @@ begin
   limit p_match_count;
 end;
 $$;
+
+-- (٦) فتح جدول الصفحات المقروءة ضوئيًا للمستخدمين — يجب أن يسقط اختبار
+--     «مدير الشركة لا يقرأ جدول الصفحات المقروءة مباشرة».
+grant select on public.document_ocr_pages to authenticated;
+create policy mutation_open_ocr_pages on public.document_ocr_pages
+  for select to authenticated using (true);
