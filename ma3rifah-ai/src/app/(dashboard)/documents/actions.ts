@@ -24,6 +24,13 @@ import type { DocumentVisibility, UserRole } from '@/types/database';
 export interface ActionResult {
   ok: boolean;
   message?: string;
+  /** معرّف المستند الذي أُنشئ أو عولج — لمتابعة معالجته من المتصفح */
+  documentId?: string;
+  /**
+   * القراءة الضوئية لم تكتمل: قُرئ `done` من `total` صفحة. على المتصفح
+   * أن ينادي continueProcessingAction ليُكمل — كل نداء يقرأ دفعة أخرى.
+   */
+  ocrPending?: { done: number; total: number } | null;
 }
 
 
@@ -274,7 +281,7 @@ export async function finalizeUploadAction(formData: FormData): Promise<ActionRe
 
     // تُنتظر المعالجة هنا عمدًا: إطلاقها في الخلفية يُقتل عند تجميد
     // الدالة بعد الرد، فيبقى المستند «جاري التحليل» أبدًا بلا خطأ.
-    const failure = await ingestDocumentNow(document.id);
+    const { failure, ocrPending } = await ingestDocumentNow(document.id);
 
     // مستند فاشل يبقى فاشلًا بصمت لو لم يعد الرافع إلى الصفحة، فتظنّ
     // الشركة معرفتها مكتملة وهي ناقصة.
@@ -295,9 +302,13 @@ export async function finalizeUploadAction(formData: FormData): Promise<ActionRe
 
     return {
       ok: true,
+      documentId: document.id,
+      ocrPending,
       message: failure
         ? `تم رفع الملف لكن تعذّرت معالجته: ${failure}`
-        : 'تم رفع المستند وإضافته إلى قاعدة المعرفة.',
+        : ocrPending
+          ? `الملف ممسوح ضوئيًا — جارٍ قراءته: ${ocrPending.done} من ${ocrPending.total} صفحة.`
+          : 'تم رفع المستند وإضافته إلى قاعدة المعرفة.',
     };
   } catch (error) {
 
@@ -346,14 +357,67 @@ export async function reprocessDocumentAction(documentId: string): Promise<Actio
       .update({ status: 'PROCESSING', error_message: null })
       .eq('id', documentId);
 
-    const failure = await ingestDocumentNow(documentId);
+    const { failure, ocrPending } = await ingestDocumentNow(documentId);
     revalidatePath('/documents');
     revalidatePath('/dashboard');
 
     logger.info('إعادة معالجة مستند', { documentId, actorId: profile.id });
     return {
       ok: true,
-      message: failure ? `تعذّرت إعادة المعالجة: ${failure}` : 'اكتملت إعادة المعالجة.',
+      documentId,
+      ocrPending,
+      message: failure
+        ? `تعذّرت إعادة المعالجة: ${failure}`
+        : ocrPending
+          ? `جارٍ القراءة الضوئية: ${ocrPending.done} من ${ocrPending.total} صفحة.`
+          : 'اكتملت إعادة المعالجة.',
+    };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+/**
+ * متابعة معالجة مستند قراءتُه الضوئية لم تكتمل.
+ *
+ * يناديه المتصفح مرة بعد مرة حتى يعود بلا `ocrPending`. كل نداء يقرأ
+ * دفعة صفحات ويخزّنها، فإن انقطع المتصفح في منتصفها بقي ما قُرئ، وأكمل
+ * «إعادة المحاولة» من قائمة المستند ما تبقّى.
+ *
+ * لا يُقبل إلا لمستند شركة المستدعي وهو في حالة PROCESSING: مستند
+ * جاهز أو فاشل لا «يُتابَع» بل يُعاد.
+ */
+export async function continueProcessingAction(documentId: string): Promise<ActionResult> {
+  try {
+    const { company } = await requirePermission('documents.manage');
+    const admin = createAdminClient();
+
+    const { data: document } = await admin
+      .from('documents')
+      .select('id, company_id, status')
+      .eq('id', documentId)
+      .maybeSingle();
+
+    if (!document || document.company_id !== company.id) {
+      throw new AppError('NOT_FOUND');
+    }
+    if (document.status !== 'PROCESSING') {
+      return { ok: true, documentId, ocrPending: null, message: 'المستند لم يعد قيد المعالجة.' };
+    }
+
+    const { failure, ocrPending } = await ingestDocumentNow(documentId);
+    revalidatePath('/documents');
+    revalidatePath('/dashboard');
+
+    return {
+      ok: true,
+      documentId,
+      ocrPending,
+      message: failure
+        ? `تعذّرت المعالجة: ${failure}`
+        : ocrPending
+          ? `جارٍ القراءة الضوئية: ${ocrPending.done} من ${ocrPending.total} صفحة.`
+          : 'اكتملت المعالجة وأُضيف المستند إلى قاعدة المعرفة.',
     };
   } catch (error) {
     return { ok: false, message: toAppError(error).displayMessage };

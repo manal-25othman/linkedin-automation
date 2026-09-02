@@ -91,6 +91,12 @@ export async function PricingTable() {
                   {formatLimit(plan.max_questions_monthly, 'سؤال')}
                 </dd>
               </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">صفحات ممسوحة ضوئيًا شهريًا</dt>
+                <dd className="font-medium">
+                  {formatLimit(plan.max_ocr_pages_monthly, 'صفحة')}
+                </dd>
+              </div>
             </dl>
 
             <ul className="mt-6 flex-1 space-y-3">

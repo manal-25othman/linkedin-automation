@@ -24,9 +24,31 @@ export const SUPPORTED_MIME_TYPES: Record<string, string> = {
   'text/plain': 'txt',
   'text/markdown': 'txt',
   'text/csv': 'csv',
+  // الصور تُقرأ ضوئيًا (OCR) — صفحة واحدة لكل صورة
+  'image/png': 'image',
+  'image/jpeg': 'image',
+  'image/webp': 'image',
 };
 
-export const SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'xlsx', 'xls', 'txt', 'md', 'csv'];
+export const SUPPORTED_EXTENSIONS = [
+  'pdf', 'docx', 'xlsx', 'xls', 'txt', 'md', 'csv', 'png', 'jpg', 'jpeg', 'webp',
+];
+
+/** نوع الصورة من امتدادها — للرفع الذي لا يحمل نوعًا صحيحًا */
+export function imageMimeFromName(fileName: string): 'image/png' | 'image/jpeg' | 'image/webp' | null {
+  const extension = fileName.split('.').pop()?.toLowerCase();
+  switch (extension) {
+    case 'png':
+      return 'image/png';
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'webp':
+      return 'image/webp';
+    default:
+      return null;
+  }
+}
 
 export const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 ميجابايت
 
@@ -50,6 +72,11 @@ export function detectFileKind(fileName: string, mimeType?: string): string | nu
     case 'txt':
     case 'md':
       return 'txt';
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'webp':
+      return 'image';
     default:
       return null;
   }
@@ -416,11 +443,22 @@ async function extractPlainText(buffer: Buffer): Promise<ExtractionResult> {
  * استخراج النص من ملف مستند.
  * يرمي AppError برسالة عربية عند فشل الاستخراج أو عدم دعم النوع.
  */
-export async function extractDocumentText(
+/**
+ * ناتج الاستخراج: نصٌّ جاهز، أو ملفٌ يحتاج قراءة ضوئية.
+ *
+ * كان الملف الممسوح ضوئيًا يُرفض هنا. الآن يُميَّز فقط، والقراءة الضوئية
+ * قرارُ خطّ المعالجة (له الحصة والمهلة)، لا قرارُ المستخرِج.
+ */
+export type ExtractionOutcome =
+  | { kind: 'text'; extraction: ExtractionResult }
+  | { kind: 'scanned'; pageCount: number | null; quality: ExtractionQuality }
+  | { kind: 'image'; mediaType: 'image/png' | 'image/jpeg' | 'image/webp' };
+
+export async function extractOrDetectScan(
   buffer: Buffer,
   fileName: string,
   mimeType?: string,
-): Promise<ExtractionResult> {
+): Promise<ExtractionOutcome> {
   const kind = detectFileKind(fileName, mimeType);
 
   if (!kind) {
@@ -428,6 +466,17 @@ export async function extractDocumentText(
       'UNSUPPORTED_FILE',
       `نوع الملف غير مدعوم. الأنواع المدعومة: ${SUPPORTED_EXTENSIONS.join('، ')}`,
     );
+  }
+
+  if (kind === 'image') {
+    const mediaType =
+      mimeType && (SUPPORTED_MIME_TYPES[mimeType] === 'image')
+        ? (mimeType as 'image/png' | 'image/jpeg' | 'image/webp')
+        : imageMimeFromName(fileName);
+    if (!mediaType) {
+      throw new AppError('UNSUPPORTED_FILE', 'صيغة الصورة غير مدعومة. المقبول: PNG وJPEG وWebP.');
+    }
+    return { kind: 'image', mediaType };
   }
 
   let result: ExtractionResult;
@@ -458,10 +507,32 @@ export async function extractDocumentText(
 
   const quality = assessExtraction(result);
   if (quality.verdict !== 'OK') {
+    // PDF بلا نصّ كافٍ هو الممسوح ضوئيًا بعينه؛ غيره (نصّ فارغ، جدول
+    // خالٍ) لا تنفعه قراءة ضوئية فيبقى خطأً صريحًا.
+    if (kind === 'pdf') {
+      return { kind: 'scanned', pageCount: result.pageCount, quality };
+    }
     throw new AppError('DOCUMENT_PROCESSING', quality.message!, quality.detail);
   }
 
-  return result;
+  return { kind: 'text', extraction: result };
+}
+
+/**
+ * استخراج نصّي صِرف — يرفض الممسوح ضوئيًا والصور برسالة واضحة.
+ * لمن لا يملك مسار القراءة الضوئية (السكربتات والاختبارات).
+ */
+export async function extractDocumentText(
+  buffer: Buffer,
+  fileName: string,
+  mimeType?: string,
+): Promise<ExtractionResult> {
+  const outcome = await extractOrDetectScan(buffer, fileName, mimeType);
+  if (outcome.kind === 'text') return outcome.extraction;
+  if (outcome.kind === 'scanned') {
+    throw new AppError('DOCUMENT_PROCESSING', outcome.quality.message!, outcome.quality.detail);
+  }
+  throw new AppError('DOCUMENT_PROCESSING', 'الصور تُقرأ بالقراءة الضوئية من خطّ المعالجة فقط.');
 }
 
 /* =====================================================================
@@ -521,7 +592,7 @@ export function assessExtraction(result: ExtractionResult): ExtractionQuality {
       ...base,
       verdict: 'EMPTY',
       message:
-        'لم يُعثر على نص قابل للقراءة في الملف. إذا كان المستند صورة ممسوحة ضوئيًا فهو يحتاج معالجة OCR أولًا.',
+        'لم يُعثر على نص قابل للقراءة في الملف. إذا كان المستند صورة ممسوحة ضوئيًا فسيُقرأ ضوئيًا تلقائيًا.',
       detail: `charCount=${charCount}`,
     };
   }
@@ -537,7 +608,7 @@ export function assessExtraction(result: ExtractionResult): ExtractionQuality {
         message:
           `استُخرج نصّ ضئيل جدًّا: ${charCount} محرفًا من ${pageCount} صفحة ` +
           `(${charsPerPage} للصفحة). الأرجح أن المستند صورة ممسوحة ضوئيًا — ` +
-          'حوّليه إلى نصّ ببرنامج OCR ثم أعِد رفعه.',
+          'ستُقرأ صفحاته ضوئيًا تلقائيًا.',
         detail: `charsPerPage=${charsPerPage} pagesWithText=${pagesWithText}/${pageCount}`,
       };
     }
@@ -548,8 +619,7 @@ export function assessExtraction(result: ExtractionResult): ExtractionQuality {
         verdict: 'SPARSE',
         message:
           `${pagesWithText} صفحة فقط من ${pageCount} فيها نصّ قابل للقراءة. ` +
-          'الأرجح أن باقي الصفحات صور ممسوحة ضوئيًا — حوّلي الملف كاملًا ' +
-          'ببرنامج OCR ثم أعِد رفعه.',
+          'الأرجح أن باقي الصفحات صور ممسوحة ضوئيًا — ستُقرأ ضوئيًا تلقائيًا.',
         detail: `pagesWithText=${pagesWithText}/${pageCount} charsPerPage=${charsPerPage}`,
       };
     }

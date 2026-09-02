@@ -38,6 +38,7 @@ export default async function AdminPlansPage() {
     maxDocuments: plan.max_documents,
     maxQuestionsMonthly: plan.max_questions_monthly,
     maxStorageMb: plan.max_storage_mb,
+    maxOcrPagesMonthly: plan.max_ocr_pages_monthly,
     features: toFeatureList(plan.features),
     isPublic: plan.is_public,
     isCustomPriced: plan.is_custom_priced,

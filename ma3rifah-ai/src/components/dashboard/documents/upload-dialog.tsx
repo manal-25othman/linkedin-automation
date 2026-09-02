@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, FileUp, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { driveProcessing } from './processing-loop';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -147,7 +148,10 @@ export function UploadDialog({
       // الملف نفسه لا يُرسل إلى الخادم — رُفع من هنا مباشرةً
       formData.delete('file');
 
-      const result = await finalizeUploadAction(formData);
+      const finalized = await finalizeUploadAction(formData);
+      const result = await driveProcessing(finalized, (done, total) =>
+        setStage(`الملف ممسوح ضوئيًا — جارٍ قراءته: ${done} من ${total} صفحة…`),
+      );
       setStage(null);
 
       if (!result.ok) {

@@ -18,6 +18,7 @@ import {
   reprocessDocumentAction,
 } from '@/app/(dashboard)/documents/actions';
 import type { DocumentStatus } from '@/types/database';
+import { driveProcessing } from './processing-loop';
 
 export function DocumentRowActions({
   documentId,
@@ -46,7 +47,15 @@ export function DocumentRowActions({
 
   const reprocess = () => {
     startTransition(async () => {
-      const result = await reprocessDocumentAction(documentId);
+      const first = await reprocessDocumentAction(documentId);
+      let progressToast: string | number | undefined;
+      const result = await driveProcessing(first, (done, total) => {
+        progressToast = toast.loading(`جارٍ القراءة الضوئية: ${done} من ${total} صفحة…`, {
+          id: progressToast,
+        });
+        router.refresh();
+      });
+      if (progressToast !== undefined) toast.dismiss(progressToast);
       toast[result.ok ? 'success' : 'error'](
         result.message ?? (result.ok ? 'بدأت المعالجة.' : 'تعذّر تنفيذ العملية.'),
       );
@@ -93,10 +102,14 @@ export function DocumentRowActions({
 
         {canManage ? (
           <>
-            {status === 'FAILED' || status === 'READY' ? (
+            {status === 'FAILED' || status === 'READY' || status === 'PROCESSING' ? (
               <DropdownMenuItem onSelect={reprocess}>
                 <RefreshCw aria-hidden />
-                {status === 'FAILED' ? 'إعادة المحاولة' : 'إعادة الفهرسة'}
+                {status === 'FAILED'
+                  ? 'إعادة المحاولة'
+                  : status === 'PROCESSING'
+                    ? 'متابعة المعالجة'
+                    : 'إعادة الفهرسة'}
               </DropdownMenuItem>
             ) : null}
 

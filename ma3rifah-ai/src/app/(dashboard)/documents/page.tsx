@@ -41,7 +41,7 @@ export default async function DocumentsPage() {
     supabase
       .from('documents')
       .select(
-        'id, name, status, error_message, file_type, file_size_bytes, chunk_count, page_count, visibility, allowed_department_ids, category_id, created_at',
+        'id, name, status, error_message, file_type, file_size_bytes, chunk_count, page_count, ocr_pages, visibility, allowed_department_ids, category_id, created_at',
       )
       .order('created_at', { ascending: false })
       .limit(200),
@@ -132,6 +132,16 @@ export default async function DocumentsPage() {
 
                   <TableCell>
                     <DocumentStatusBadge status={document.status} />
+                    {document.status === 'PROCESSING' && document.ocr_pages > 0 && document.page_count ? (
+                      <p className="mt-1 whitespace-nowrap text-xs text-muted-foreground">
+                        قراءة ضوئية: {formatNumber(document.ocr_pages)} من {formatNumber(document.page_count)} صفحة
+                      </p>
+                    ) : null}
+                    {document.status === 'READY' && document.ocr_pages > 0 ? (
+                      <p className="mt-1 whitespace-nowrap text-xs text-muted-foreground">
+                        قُرئ ضوئيًا ({formatNumber(document.ocr_pages)} صفحة)
+                      </p>
+                    ) : null}
                   </TableCell>
 
                   <TableCell className="text-sm text-muted-foreground">
