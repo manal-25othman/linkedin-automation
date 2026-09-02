@@ -55,6 +55,21 @@ describe('التمييز: ما يُقرأ ضوئيًا وما لا', () => {
   });
 });
 
+describe('منتقي الملفات في المتصفح', () => {
+  const DIALOG = read('src/components/dashboard/documents/upload-dialog.tsx');
+
+  it('قائمة accept مشتقّة من المصدر الواحد لا مكتوبة باليد', () => {
+    // الخطأ الذي وقع: أُضيفت الصور في الخادم وبقي المتصفح يحجبها
+    expect(DIALOG).toContain('const ACCEPTED = ACCEPT_ATTRIBUTE;');
+    expect(DIALOG).not.toMatch(/const ACCEPTED = '\./);
+  });
+
+  it('accept يشمل الصور', async () => {
+    const { ACCEPT_ATTRIBUTE } = await import('@/lib/rag/file-types');
+    for (const ext of ['.png', '.jpg', '.jpeg', '.webp', '.pdf']) expect(ACCEPT_ATTRIBUTE).toContain(ext);
+  });
+});
+
 describe('الحصة قبل التكلفة', () => {
   it('check_ocr_quota يُستدعى قبل أي نداء قراءة', () => {
     const quotaAt = INGEST.indexOf("rpc('check_ocr_quota'");
