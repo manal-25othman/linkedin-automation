@@ -308,6 +308,23 @@ type WhatsAppLinkRow = {
 export type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
 export type TicketPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
 
+export type FeedbackFoundAnswers = 'MOSTLY' | 'SOMETIMES' | 'RARELY';
+
+type FeedbackSurveyRow = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  role: UserRole;
+  overall_rating: number;
+  found_answers: FeedbackFoundAnswers;
+  recommend_rating: number;
+  most_useful: string | null;
+  missing: string | null;
+  allow_contact: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 type SupportTicketRow = {
   id: string;
   company_id: string;
@@ -537,6 +554,7 @@ export interface Database {
       knowledge_gap_askers: Table<KnowledgeGapAskerRow>;
       notifications: Table<NotificationRow>;
       whatsapp_links: Table<WhatsAppLinkRow>;
+      feedback_surveys: Table<FeedbackSurveyRow>;
       support_tickets: Table<SupportTicketRow>;
       support_messages: Table<SupportMessageRow>;
       analytics_events: Table<AnalyticsEventRow>;

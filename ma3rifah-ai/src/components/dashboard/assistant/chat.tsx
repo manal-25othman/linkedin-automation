@@ -21,10 +21,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn, formatNumber } from '@/lib/utils';
 import { askAction, feedbackAction } from '@/app/(dashboard)/assistant/actions';
 import type { AnswerSource } from '@/lib/ai/chat-service';
+import Link from 'next/link';
 import {
   FEEDBACK_SURVEY_DISMISSED_KEY,
   FEEDBACK_SURVEY_MIN_ANSWERS,
-  FEEDBACK_SURVEY_URL,
+  FEEDBACK_SURVEY_PATH,
 } from '@/lib/config/feedback';
 
 /**
@@ -85,6 +86,7 @@ export function Chat({
   hasDocuments,
   starterQuestions = [],
   answeredCount = 0,
+  surveyDone = false,
 }: {
   conversationId: string | null;
   initialMessages: ChatMessage[];
@@ -94,6 +96,8 @@ export function Chat({
   starterQuestions?: string[];
   /** إجابات المساعد الفعلية للمستخدم الحالي — عدّاد دعوة الاستبيان */
   answeredCount?: number;
+  /** أرسل المستخدم الاستبيان من قبل — فلا دعوة */
+  surveyDone?: boolean;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -220,7 +224,7 @@ export function Chat({
       {/* حقل الإدخال */}
       <div className="border-t bg-background pt-4">
         <div className="mx-auto max-w-3xl">
-          <SurveyNudge answeredCount={answeredCount} />
+          <SurveyNudge answeredCount={answeredCount} surveyDone={surveyDone} />
 
           {error ? (
             <div
@@ -290,25 +294,25 @@ export function Chat({
 /**
  * دعوة الاستبيان — تظهر بعد FEEDBACK_SURVEY_MIN_ANSWERS إجابة فعلية.
  *
- * ثلاثة شروط كلها لازمة: رابط مضبوط في البيئة، وعدد إجابات كافٍ،
- * وألّا يكون المستخدم أغلقها من قبل. والإغلاق يُحفظ في المتصفح فلا
- * تعود — ما يظهر في كل زيارة يُدرَّب المستخدم على إغلاقه قبل قراءته.
+ * ثلاثة شروط كلها لازمة: عدد إجابات كافٍ، ولم يرسل الاستبيان من قبل،
+ * ولم يغلق الدعوة من قبل. والإغلاق يُحفظ في المتصفح فلا تعود — ما يظهر
+ * في كل زيارة يُدرَّب المستخدم على إغلاقه قبل قراءته.
  *
  * تبدأ مخفيّة وتُقرَّر في useEffect لا أثناء التصيير: الخادم لا يعرف
  * localStorage، ولو صُيّرت ظاهرةً ثم اختفت لقفزت الصفحة.
  */
-function SurveyNudge({ answeredCount }: { answeredCount: number }) {
+function SurveyNudge({ answeredCount, surveyDone }: { answeredCount: number; surveyDone: boolean }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!FEEDBACK_SURVEY_URL || answeredCount < FEEDBACK_SURVEY_MIN_ANSWERS) return;
+    if (surveyDone || answeredCount < FEEDBACK_SURVEY_MIN_ANSWERS) return;
     try {
       if (localStorage.getItem(FEEDBACK_SURVEY_DISMISSED_KEY)) return;
     } catch {
       return;
     }
     setVisible(true);
-  }, [answeredCount]);
+  }, [answeredCount, surveyDone]);
 
   const dismiss = () => {
     setVisible(false);
@@ -332,15 +336,13 @@ function SurveyNudge({ answeredCount }: { answeredCount: number }) {
         <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
           جرّبت المساعد عدة مرات الآن. رأيك يحدّد ما نطوّره بعد ذلك.
         </p>
-        <a
-          href={FEEDBACK_SURVEY_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href={FEEDBACK_SURVEY_PATH}
           onClick={dismiss}
           className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4"
         >
           افتح الاستبيان
-        </a>
+        </Link>
       </div>
       <button
         type="button"

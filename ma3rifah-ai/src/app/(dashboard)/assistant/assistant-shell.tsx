@@ -27,7 +27,7 @@ export async function AssistantShell({
    * تحصره في محادثاته هو داخل شركته — لا في أسئلة زملائه ولا شركة أخرى.
    * ولا يُعدّ إلا ما أُجيب (ANSWERED): من لم يرَ جوابًا لم يجرّب بعد.
    */
-  const [conversationsResult, readyDocumentsResult, answeredResult] = await Promise.all([
+  const [conversationsResult, readyDocumentsResult, answeredResult, surveyResult] = await Promise.all([
     supabase
       .from('conversations')
       .select('id, title, last_message_at')
@@ -43,6 +43,8 @@ export async function AssistantShell({
       .select('id', { count: 'exact', head: true })
       .eq('role', 'ASSISTANT')
       .eq('answer_status', 'ANSWERED'),
+    // إجابة الاستبيان — سياسة القراءة تحصرها في المستخدم نفسه
+    supabase.from('feedback_surveys').select('id', { count: 'exact', head: true }),
   ]);
 
   const starterQuestions = ((company.ai_settings as CompanyAiSettings | null)?.starter_questions ?? [])
@@ -117,6 +119,7 @@ export async function AssistantShell({
           hasDocuments={(readyDocumentsResult.count ?? 0) > 0}
           starterQuestions={starterQuestions}
           answeredCount={answeredResult.count ?? 0}
+          surveyDone={(surveyResult.count ?? 0) > 0}
         />
       </div>
     </div>

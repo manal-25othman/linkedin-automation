@@ -82,3 +82,9 @@ $$;
 grant select on public.document_ocr_pages to authenticated;
 create policy mutation_open_ocr_pages on public.document_ocr_pages
   for select to authenticated using (true);
+
+-- (٧) فتح قراءة الاستبيان للجميع — يجب أن تسقط اختبارات «لا يقرأ إجابة
+--     مديره» و«مدير الشركة ب لا يقرأ إجابات الشركة أ».
+drop policy if exists feedback_surveys_select on public.feedback_surveys;
+create policy feedback_surveys_select on public.feedback_surveys
+  for select to authenticated using (true);

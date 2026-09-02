@@ -10,6 +10,7 @@ import {
   LifeBuoy,
   LogOut,
   Receipt,
+  MessageSquareHeart,
 } from 'lucide-react';
 import { getSessionContext } from '@/lib/auth/session';
 import { Logo } from '@/components/shared/brand';
@@ -87,6 +88,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               <Receipt className="me-2 inline size-4" aria-hidden />
               الخطط
+            </Link>
+            <Link
+              href="/admin/feedback"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <MessageSquareHeart className="me-2 inline size-4" aria-hidden />
+              الاستبيان
             </Link>
 
             <form action={logoutAction}>

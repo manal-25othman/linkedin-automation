@@ -17,6 +17,7 @@ const PROTECTED_PREFIXES = [
   '/departments',
   '/settings',
   '/support',
+  '/feedback',
   '/admin',
 ];
 
