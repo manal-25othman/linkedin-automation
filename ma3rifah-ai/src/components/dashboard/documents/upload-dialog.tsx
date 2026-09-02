@@ -31,10 +31,11 @@ import {
 } from '@/app/(dashboard)/documents/actions';
 import { createClient } from '@/lib/supabase/client';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
+import { ACCEPT_ATTRIBUTE, MAX_FILE_SIZE_BYTES } from '@/lib/rag/file-types';
 import type { DocumentVisibility, UserRole } from '@/types/database';
 
-const ACCEPTED = '.pdf,.docx,.xlsx,.xls,.csv,.txt,.md';
-const MAX_BYTES = 25 * 1024 * 1024;
+const ACCEPTED = ACCEPT_ATTRIBUTE;
+const MAX_BYTES = MAX_FILE_SIZE_BYTES;
 const ASSIGNABLE_ROLES: UserRole[] = ['COMPANY_ADMIN', 'MANAGER', 'EMPLOYEE'];
 
 export function UploadDialog({
@@ -228,7 +229,7 @@ export function UploadDialog({
                 <FileUp className="size-6 text-muted-foreground" aria-hidden />
                 <span className="mt-2 text-sm font-medium">اختر ملفًا أو اسحبه هنا</span>
                 <span className="mt-1 text-xs text-muted-foreground">
-                  PDF · DOCX · XLSX · CSV · TXT — حتى {formatBytes(MAX_BYTES)}
+                  PDF · DOCX · XLSX · CSV · TXT · صور (PNG/JPG) — حتى {formatBytes(MAX_BYTES)}
                 </span>
               </label>
             )}

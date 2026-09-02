@@ -16,23 +16,8 @@ export interface ExtractionResult {
   pageCount: number | null;
 }
 
-export const SUPPORTED_MIME_TYPES: Record<string, string> = {
-  'application/pdf': 'pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
-  'application/vnd.ms-excel': 'xlsx',
-  'text/plain': 'txt',
-  'text/markdown': 'txt',
-  'text/csv': 'csv',
-  // الصور تُقرأ ضوئيًا (OCR) — صفحة واحدة لكل صورة
-  'image/png': 'image',
-  'image/jpeg': 'image',
-  'image/webp': 'image',
-};
-
-export const SUPPORTED_EXTENSIONS = [
-  'pdf', 'docx', 'xlsx', 'xls', 'txt', 'md', 'csv', 'png', 'jpg', 'jpeg', 'webp',
-];
+export { SUPPORTED_MIME_TYPES, SUPPORTED_EXTENSIONS, MAX_FILE_SIZE_BYTES } from '@/lib/rag/file-types';
+import { SUPPORTED_MIME_TYPES, SUPPORTED_EXTENSIONS } from '@/lib/rag/file-types';
 
 /** نوع الصورة من امتدادها — للرفع الذي لا يحمل نوعًا صحيحًا */
 export function imageMimeFromName(fileName: string): 'image/png' | 'image/jpeg' | 'image/webp' | null {
@@ -50,7 +35,6 @@ export function imageMimeFromName(fileName: string): 'image/png' | 'image/jpeg' 
   }
 }
 
-export const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 ميجابايت
 
 export function detectFileKind(fileName: string, mimeType?: string): string | null {
   if (mimeType && SUPPORTED_MIME_TYPES[mimeType]) return SUPPORTED_MIME_TYPES[mimeType];
