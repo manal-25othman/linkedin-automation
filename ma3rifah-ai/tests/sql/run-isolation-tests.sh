@@ -78,6 +78,9 @@ run_sql -f "$ROOT/tests/sql/08_owner_isolation_tests.sql" >/dev/null
 echo "▸ اختبارات القراءة الضوئية"
 run_sql -f "$ROOT/tests/sql/09_ocr_tests.sql" >/dev/null
 
+echo "▸ اختبارات الاستبيان"
+run_sql -f "$ROOT/tests/sql/10_feedback_survey_tests.sql" >/dev/null
+
 echo
 "${PSQL_BASE[@]}" -d "$TEST_DB" -P pager=off -c "
   select id as \"#\",

@@ -5,9 +5,10 @@ import { join } from 'node:path';
 /**
  * دعوة الاستبيان داخل المساعد.
  *
- * تظهر بعد خمس إجابات فعلية للمستخدم نفسه، وتُغلق فلا تعود. والخطر
- * فيها اثنان: أن تصير إزعاجًا يُغلق قبل أن يُقرأ، أو أن يُعدّ لها ما ليس
- * للمستخدم — فتظهر لموظف لم يجرّب شيئًا لأن زميله جرّب.
+ * تظهر بعد خمس إجابات فعلية للمستخدم نفسه، وتُغلق فلا تعود، ولا تظهر
+ * لمن أرسل الاستبيان. والخطر فيها: أن تصير إزعاجًا يُغلق قبل أن يُقرأ،
+ * أو أن يُعدّ لها ما ليس للمستخدم — فتظهر لموظف لم يجرّب شيئًا لأن
+ * زميله جرّب.
  */
 
 const CHAT = readFileSync(
@@ -20,6 +21,11 @@ const SHELL = readFileSync(
 );
 const CONFIG = readFileSync(join(process.cwd(), 'src/lib/config/feedback.ts'), 'utf8');
 const ENV_EXAMPLE = readFileSync(join(process.cwd(), '.env.example'), 'utf8');
+const MIGRATION = readFileSync(
+  join(process.cwd(), 'supabase/migrations/0037_feedback_survey.sql'),
+  'utf8',
+);
+const ACTION = readFileSync(join(process.cwd(), 'src/app/(dashboard)/feedback/actions.ts'), 'utf8');
 
 describe('العدّاد للمستخدم الحالي وحده', () => {
   it('يُعدّ عبر جلسة المستخدم (createClient) لا عميل الإدارة', () => {
@@ -45,9 +51,14 @@ describe('تظهر مرّة وتُغلق فلا تعود', () => {
     expect(CHAT).toContain('localStorage.getItem(FEEDBACK_SURVEY_DISMISSED_KEY)');
   });
 
+  it('من أرسل الاستبيان لا يُدعى إليه ثانية', () => {
+    expect(SHELL).toContain("from('feedback_surveys')");
+    expect(CHAT).toContain('if (surveyDone || answeredCount < FEEDBACK_SURVEY_MIN_ANSWERS) return;');
+  });
+
   it('فتح الاستبيان يُعدّ رفضًا أيضًا — من فتحه لا يُسأل ثانية', () => {
-    const link = CHAT.slice(CHAT.indexOf('href={FEEDBACK_SURVEY_URL}'));
-    expect(link.slice(0, 300)).toContain('onClick={dismiss}');
+    const link = CHAT.slice(CHAT.indexOf('href={FEEDBACK_SURVEY_PATH}'));
+    expect(link.slice(0, 200)).toContain('onClick={dismiss}');
   });
 
   it('تبدأ مخفيّة وتُقرَّر بعد التركيب — لا قفزة في الصفحة', () => {
@@ -55,22 +66,27 @@ describe('تظهر مرّة وتُغلق فلا تعود', () => {
     expect(nudge).toContain('useState(false)');
     expect(nudge).toContain('useEffect(');
   });
-
-  it('الرابط يُفتح في تبويب جديد بلا تسريب المُحيل', () => {
-    expect(CHAT).toContain('rel="noopener noreferrer"');
-  });
 });
 
-describe('الرابط من البيئة', () => {
-  it('بلا رابط لا دعوة — والشرط في الشيفرة صريح', () => {
-    expect(CHAT).toContain('if (!FEEDBACK_SURVEY_URL ||');
+describe('الاستبيان داخل المنصة لا رابطًا خارجيًا', () => {
+  it('الدعوة تفتح صفحة داخلية', () => {
+    expect(CONFIG).toContain("FEEDBACK_SURVEY_PATH = '/feedback'");
+    expect(CHAT).not.toContain('target="_blank"');
+    expect(ENV_EXAMPLE).not.toContain('FEEDBACK_SURVEY_URL');
   });
 
-  it('https فقط', () => {
-    expect(CONFIG).toMatch(/\^https:\\\/\\\//);
+  it('لا يُطلب اسم ولا بريد — الهوية من الجلسة، والسياسة تتحقق منها', () => {
+    expect(ACTION).not.toMatch(/formData\.get\('(email|fullName|name|company)'\)/);
+    expect(ACTION).toContain('user_id: profile.id');
+    expect(MIGRATION).toContain('with check (user_id = auth.uid() and company_id = public.current_company_id())');
   });
 
-  it('المتغير موثّق في .env.example', () => {
-    expect(ENV_EXAMPLE).toMatch(/^NEXT_PUBLIC_FEEDBACK_SURVEY_URL=/m);
+  it('إجابة واحدة لكل مستخدم تُعدَّل لا تُكرَّر', () => {
+    expect(MIGRATION).toContain('unique (user_id)');
+    expect(ACTION).toContain("{ onConflict: 'user_id' }");
+  });
+
+  it('يقرأ المستخدم إجابته هو، ومالك المنصة الكل، ولا أحد غيرهما', () => {
+    expect(MIGRATION).toContain('using (user_id = auth.uid() or public.is_super_admin())');
   });
 });
