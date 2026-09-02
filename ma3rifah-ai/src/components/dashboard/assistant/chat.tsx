@@ -9,8 +9,10 @@ import {
   CornerDownLeft,
   FileText,
   Sparkles,
+  MessageSquareHeart,
   ThumbsDown,
   ThumbsUp,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -19,6 +21,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn, formatNumber } from '@/lib/utils';
 import { askAction, feedbackAction } from '@/app/(dashboard)/assistant/actions';
 import type { AnswerSource } from '@/lib/ai/chat-service';
+import {
+  FEEDBACK_SURVEY_DISMISSED_KEY,
+  FEEDBACK_SURVEY_MIN_ANSWERS,
+  FEEDBACK_SURVEY_URL,
+} from '@/lib/config/feedback';
 
 /**
  * شارة درجة الثقة.
@@ -58,7 +65,11 @@ export interface ChatMessage {
   pending?: boolean;
 }
 
-const SUGGESTIONS = [
+/**
+ * أسئلة البداية الافتراضية — تظهر فقط إن لم يكتب مدير الشركة أسئلته
+ * في الإعدادات. عامّة عمدًا: لا تدّعي معرفة ما في مستندات شركة بعينها.
+ */
+export const DEFAULT_STARTER_QUESTIONS = [
   'كم عدد أيام الإجازة السنوية؟',
   'كيف أطلب إجازة؟',
   'هل يُسمح بالعمل عن بعد؟',
@@ -72,11 +83,17 @@ export function Chat({
   initialMessages,
   isAiConfigured,
   hasDocuments,
+  starterQuestions = [],
+  answeredCount = 0,
 }: {
   conversationId: string | null;
   initialMessages: ChatMessage[];
   isAiConfigured: boolean;
   hasDocuments: boolean;
+  /** أسئلة البداية من إعدادات الشركة؛ الفراغ يعني الافتراضية */
+  starterQuestions?: string[];
+  /** إجابات المساعد الفعلية للمستخدم الحالي — عدّاد دعوة الاستبيان */
+  answeredCount?: number;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -180,6 +197,7 @@ export function Chat({
         {isEmpty ? (
           <WelcomePanel
             hasDocuments={hasDocuments}
+            suggestions={starterQuestions.length > 0 ? starterQuestions : DEFAULT_STARTER_QUESTIONS}
             onPick={(suggestion) => {
               setQuestion(suggestion);
               textareaRef.current?.focus();
@@ -202,6 +220,8 @@ export function Chat({
       {/* حقل الإدخال */}
       <div className="border-t bg-background pt-4">
         <div className="mx-auto max-w-3xl">
+          <SurveyNudge answeredCount={answeredCount} />
+
           {error ? (
             <div
               role="alert"
@@ -267,11 +287,80 @@ export function Chat({
 
 /* ------------------------------------------------------------- المكوّنات */
 
+/**
+ * دعوة الاستبيان — تظهر بعد FEEDBACK_SURVEY_MIN_ANSWERS إجابة فعلية.
+ *
+ * ثلاثة شروط كلها لازمة: رابط مضبوط في البيئة، وعدد إجابات كافٍ،
+ * وألّا يكون المستخدم أغلقها من قبل. والإغلاق يُحفظ في المتصفح فلا
+ * تعود — ما يظهر في كل زيارة يُدرَّب المستخدم على إغلاقه قبل قراءته.
+ *
+ * تبدأ مخفيّة وتُقرَّر في useEffect لا أثناء التصيير: الخادم لا يعرف
+ * localStorage، ولو صُيّرت ظاهرةً ثم اختفت لقفزت الصفحة.
+ */
+function SurveyNudge({ answeredCount }: { answeredCount: number }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!FEEDBACK_SURVEY_URL || answeredCount < FEEDBACK_SURVEY_MIN_ANSWERS) return;
+    try {
+      if (localStorage.getItem(FEEDBACK_SURVEY_DISMISSED_KEY)) return;
+    } catch {
+      return;
+    }
+    setVisible(true);
+  }, [answeredCount]);
+
+  const dismiss = () => {
+    setVisible(false);
+    try {
+      localStorage.setItem(FEEDBACK_SURVEY_DISMISSED_KEY, '1');
+    } catch {
+      // متصفح يمنع التخزين: تختفي لهذه الزيارة فقط، ولا بأس
+    }
+  };
+
+  if (!visible) return null;
+
+  return (
+    <div
+      role="status"
+      className="mb-3 flex items-start gap-3 rounded-lg border border-primary/25 bg-primary/5 p-3.5"
+    >
+      <MessageSquareHeart className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">شاركنا رأيك — دقيقتان</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+          جرّبت المساعد عدة مرات الآن. رأيك يحدّد ما نطوّره بعد ذلك.
+        </p>
+        <a
+          href={FEEDBACK_SURVEY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={dismiss}
+          className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4"
+        >
+          افتح الاستبيان
+        </a>
+      </div>
+      <button
+        type="button"
+        onClick={dismiss}
+        className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        aria-label="إغلاق الدعوة"
+      >
+        <X className="size-4" aria-hidden />
+      </button>
+    </div>
+  );
+}
+
 function WelcomePanel({
   hasDocuments,
+  suggestions,
   onPick,
 }: {
   hasDocuments: boolean;
+  suggestions: string[];
   onPick: (suggestion: string) => void;
 }) {
   return (
@@ -293,7 +382,7 @@ function WelcomePanel({
         </div>
       ) : (
         <div className="mt-8 grid w-full gap-2 sm:grid-cols-2">
-          {SUGGESTIONS.map((suggestion) => (
+          {suggestions.map((suggestion) => (
             <button
               key={suggestion}
               type="button"

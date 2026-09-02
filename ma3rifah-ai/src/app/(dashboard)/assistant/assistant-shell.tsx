@@ -5,6 +5,7 @@ import { Chat, type ChatMessage } from '@/components/dashboard/assistant/chat';
 import { ConversationList, type ConversationSummary } from './conversation-list';
 import type { AnswerSource } from '@/lib/ai/chat-service';
 import { CONFIDENCE_THRESHOLDS } from '@/lib/rag/verify';
+import type { CompanyAiSettings } from '@/types/database';
 
 /**
  * الهيكل المشترك بين /assistant و /assistant/[conversationId].
@@ -16,10 +17,17 @@ export async function AssistantShell({
 }: {
   conversationId: string | null;
 }) {
-  await requireCompanySession();
+  const { company } = await requireCompanySession();
   const supabase = await createClient();
 
-  const [conversationsResult, readyDocumentsResult] = await Promise.all([
+  /*
+   * عدّاد دعوة الاستبيان: إجابات المساعد الفعلية للمستخدم الحالي.
+   *
+   * يُعدّ عبر جلسة المستخدم لا عميل الإدارة، فسياسة messages_select
+   * تحصره في محادثاته هو داخل شركته — لا في أسئلة زملائه ولا شركة أخرى.
+   * ولا يُعدّ إلا ما أُجيب (ANSWERED): من لم يرَ جوابًا لم يجرّب بعد.
+   */
+  const [conversationsResult, readyDocumentsResult, answeredResult] = await Promise.all([
     supabase
       .from('conversations')
       .select('id, title, last_message_at')
@@ -30,7 +38,16 @@ export async function AssistantShell({
       .from('documents')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'READY'),
+    supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'ASSISTANT')
+      .eq('answer_status', 'ANSWERED'),
   ]);
+
+  const starterQuestions = ((company.ai_settings as CompanyAiSettings | null)?.starter_questions ?? [])
+    .map((question) => question.trim())
+    .filter((question) => question.length > 0);
 
   const conversations: ConversationSummary[] = (conversationsResult.data ?? []).map((row) => ({
     id: row.id,
@@ -98,6 +115,8 @@ export async function AssistantShell({
           initialMessages={messages}
           isAiConfigured={isAiConfigured()}
           hasDocuments={(readyDocumentsResult.count ?? 0) > 0}
+          starterQuestions={starterQuestions}
+          answeredCount={answeredResult.count ?? 0}
         />
       </div>
     </div>

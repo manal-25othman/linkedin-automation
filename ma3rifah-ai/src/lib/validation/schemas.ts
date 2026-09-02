@@ -106,7 +106,39 @@ export const aiSettingsSchema = z.object({
   max_context_chunks: z.number().int().min(2).max(12),
   history_window: z.number().int().min(0).max(20),
   allow_general_knowledge: z.boolean(),
+  /**
+   * أسئلة البداية — سطر لكل سؤال. ثمانية على الأكثر: الشرائح للتوجيه
+   * السريع لا لفهرسة كل ما في المستندات، والكثرة تُغرق لا تُرشد.
+   */
+  starter_questions: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(3, 'كل سؤال بداية يجب ألا يقل عن 3 أحرف.')
+        .max(160, 'كل سؤال بداية يجب ألا يتجاوز 160 حرفًا.'),
+    )
+    .max(8, 'أسئلة البداية ثمانية على الأكثر.')
+    .default([]),
 });
+
+export const STARTER_QUESTIONS_MAX = 8;
+
+/**
+ * يحوّل نص المربّع (سطر لكل سؤال) إلى قائمة نظيفة: يُسقط الفراغ والتكرار
+ * ويحافظ على الترتيب الذي كتبه المدير.
+ */
+export function parseStarterQuestions(raw: unknown): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const line of String(raw ?? '').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+}
 
 export const askSchema = z.object({
   question: z
