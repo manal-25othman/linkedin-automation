@@ -3,9 +3,10 @@ import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { can } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/shared/page-header';
+import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/shared/stat-card';
 import { GapsClient, type GapRowData } from './gaps-client';
-import { CircleHelp, CheckCircle2, Clock } from 'lucide-react';
+import { CircleHelp, CheckCircle2, Clock, FileSpreadsheet } from 'lucide-react';
 
 export const metadata: Metadata = { title: 'فجوات المعرفة' };
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,17 @@ export default async function KnowledgeGapsPage() {
       <PageHeader
         title="فجوات المعرفة"
         description="أسئلة طرحها موظفوك ولم تجد قاعدة المعرفة إجابة لها. الأسئلة المتشابهة مجمّعة معًا مع عدّاد تكرار — هذه قائمة التوثيق مرتّبة حسب الحاجة الفعلية."
+        actions={
+          gaps.length > 0 ? (
+            <Button variant="outline" asChild>
+              {/* رابط لا زر جافاسكربت: التنزيل من route يمر بفحص الصلاحية على الخادم */}
+              <a href="/knowledge-gaps/export" download>
+                <FileSpreadsheet className="size-4" aria-hidden />
+                تنزيل Excel
+              </a>
+            </Button>
+          ) : undefined
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { AlertCircle, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,34 @@ export function RegisterForm({
 }) {
   const [state, formAction] = useActionState(registerAction, AUTH_INITIAL_STATE);
 
+  /*
+   * فحص كلمة المرور قبل الإرسال.
+   *
+   * أكثر خطأ يقع هو كلمة مرور لا تستوفي الشروط — وكان يذهب للخادم
+   * ويعود فيُعاد تركيب النموذج. الفحص هنا يوقفه قبل المغادرة أصلًا،
+   * والخادم يبقى الحكم الأخير لكل ما عداه.
+   */
+  const [passwordError, setPasswordError] = useState('');
+
+  const checkPasswordBeforeSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const password = String(new FormData(event.currentTarget).get('password') ?? '');
+    let problem = '';
+    if (password.length < 8) problem = 'كلمة المرور يجب ألا تقل عن 8 أحرف.';
+    else if (!/[a-zA-Z\u0600-\u06FF]/.test(password))
+      problem = 'كلمة المرور يجب أن تحتوي على حرف واحد على الأقل.';
+    else if (!/[0-9]/.test(password))
+      problem = 'كلمة المرور يجب أن تحتوي على رقم واحد على الأقل.';
+
+    if (problem) {
+      event.preventDefault();
+      setPasswordError(problem);
+    } else {
+      setPasswordError('');
+    }
+  };
+
+  const errorMessage = passwordError || (state.status === 'error' ? state.message : '');
+
   if (state.status === 'pending_confirmation') {
     return (
       <div className="rounded-xl border border-primary/25 bg-primary/5 p-6 text-center">
@@ -38,14 +66,14 @@ export function RegisterForm({
   }
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
-      {state.status === 'error' ? (
+    <form action={formAction} onSubmit={checkPasswordBeforeSubmit} className="space-y-5" noValidate>
+      {errorMessage ? (
         <div
           role="alert"
           className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3.5"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-          <p className="text-sm text-destructive">{state.message}</p>
+          <p className="text-sm text-destructive">{errorMessage}</p>
         </div>
       ) : null}
 
@@ -56,7 +84,7 @@ export function RegisterForm({
             id="inviteCode"
             name="inviteCode"
             required
-            defaultValue={presetCode}
+            defaultValue={state.values?.inviteCode || presetCode}
             maxLength={64}
             autoComplete="off"
             spellCheck={false}
@@ -76,7 +104,7 @@ export function RegisterForm({
 
       <div className="space-y-2">
         <Label htmlFor="fullName">الاسم الكامل</Label>
-        <Input id="fullName" name="fullName" required autoComplete="name" maxLength={120} />
+        <Input id="fullName" name="fullName" required autoComplete="name" maxLength={120} defaultValue={state.values?.fullName} />
       </div>
 
       <div className="space-y-2">
@@ -85,6 +113,7 @@ export function RegisterForm({
           id="companyName"
           name="companyName"
           required
+          defaultValue={state.values?.companyName}
           autoComplete="organization"
           maxLength={150}
         />
@@ -92,7 +121,7 @@ export function RegisterForm({
 
       <div className="space-y-2">
         <Label htmlFor="jobTitle">المسمّى الوظيفي (اختياري)</Label>
-        <Input id="jobTitle" name="jobTitle" autoComplete="organization-title" maxLength={120} />
+        <Input id="jobTitle" name="jobTitle" autoComplete="organization-title" maxLength={120} defaultValue={state.values?.jobTitle} />
       </div>
 
       <div className="space-y-2">
@@ -102,6 +131,7 @@ export function RegisterForm({
           name="email"
           type="email"
           required
+          defaultValue={state.values?.email}
           autoComplete="email"
           dir="ltr"
           className="text-start"

@@ -151,6 +151,16 @@ export async function registerAction(
   _previousState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  // يُحفظ المكتوب قبل أي تحقق — فيعود مع أي خطأ ولا يُمسح النموذج.
+  // كلمة المرور وحدها لا تُحفظ ولا تُعاد.
+  const keep = {
+    fullName: String(formData.get('fullName') ?? ''),
+    companyName: String(formData.get('companyName') ?? ''),
+    jobTitle: String(formData.get('jobTitle') ?? ''),
+    email: String(formData.get('email') ?? ''),
+    inviteCode: String(formData.get('inviteCode') ?? ''),
+  };
+
   const parsed = registerSchema.safeParse({
     fullName: formData.get('fullName'),
     email: formData.get('email'),
@@ -161,14 +171,14 @@ export async function registerAction(
   });
 
   if (!parsed.success) {
-    return { status: 'error', message: firstIssueMessage(parsed.error) };
+    return { status: 'error', message: firstIssueMessage(parsed.error), values: keep };
   }
 
   const { fullName, email, password, companyName, jobTitle, inviteCode } = parsed.data;
 
   if (await authRateLimited(email)) {
     logger.warn('تجاوز حدّ محاولات التسجيل');
-    return { status: 'error', message: RATE_LIMIT_MESSAGE };
+    return { status: 'error', message: RATE_LIMIT_MESSAGE, values: keep };
   }
 
   // الدعوة تُفحص **قبل** إنشاء الحساب: التحقّق بعده يترك حسابًا يتيمًا
@@ -181,7 +191,7 @@ export async function registerAction(
     const invite = await checkInviteCode(inviteCode ?? '');
     if (!invite.valid) {
       logger.warn('محاولة تسجيل برمز دعوة غير صالح');
-      return { status: 'error', message: INVITE_REJECTED_MESSAGE };
+      return { status: 'error', message: INVITE_REJECTED_MESSAGE, values: keep };
     }
   }
 
@@ -195,11 +205,11 @@ export async function registerAction(
 
   if (error) {
     logger.warn('محاولة تسجيل فاشلة', { reason: error.message });
-    return { status: 'error', message: translateAuthError(error.message) };
+    return { status: 'error', message: translateAuthError(error.message), values: keep };
   }
 
   if (!data.user) {
-    return { status: 'error', message: 'تعذّر إنشاء الحساب. حاول مرة أخرى.' };
+    return { status: 'error', message: 'تعذّر إنشاء الحساب. حاول مرة أخرى.', values: keep };
   }
 
   // تجهيز الشركة والأقسام والتصنيفات والاشتراك التجريبي
@@ -220,6 +230,7 @@ export async function registerAction(
     return {
       status: 'error',
       message: 'تم إنشاء الحساب لكن تعذّر تجهيز الشركة. تواصل مع الدعم.',
+      values: keep,
     };
   }
 
