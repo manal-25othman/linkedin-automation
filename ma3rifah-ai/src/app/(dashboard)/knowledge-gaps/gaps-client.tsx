@@ -88,6 +88,8 @@ export function GapsClient({
     });
   };
 
+  const openGaps = gaps.filter((gap) => gap.status === 'OPEN' || gap.status === 'IN_REVIEW');
+
   if (gaps.length === 0) {
     return (
       <EmptyState
@@ -156,6 +158,16 @@ export function GapsClient({
           </TableBody>
         </Table>
       </Card>
+
+      {canManage && openGaps.length > 0 ? (
+        <p className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-sm text-muted-foreground">
+          <Sparkles className="size-4 shrink-0 text-primary" aria-hidden />
+          <span>
+            داخل كل فجوة زر <b className="text-foreground">«اقترح جوابًا من المستندات»</b> —
+            يبحث عن الجواب في ملفاتك ويكتب لك مسودة تعتمدها.
+          </span>
+        </p>
+      ) : null}
 
       <CrudDialog
         open={editing !== null}
