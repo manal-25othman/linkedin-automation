@@ -2,6 +2,7 @@ import { SiteHeader } from '@/components/marketing/site-header';
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { FloatingDock } from '@/components/shared/floating-dock';
 import { SiteChatWidget } from '@/components/marketing/site-chat-widget';
+import { ScrollProgress } from '@/components/marketing/motion';
 import { listNavPages } from '@/lib/content/pages';
 
 export default async function MarketingLayout({
@@ -16,6 +17,7 @@ export default async function MarketingLayout({
 
   return (
     <div className="marketing-shell flex min-h-screen flex-col">
+      <ScrollProgress />
       <SiteHeader
         extraLinks={navPages.map((page) => ({
           href: `/p/${encodeURIComponent(page.slug)}`,

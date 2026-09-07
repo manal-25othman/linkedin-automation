@@ -454,6 +454,242 @@
     animation: mk-float 9s ease-in-out infinite;
   }
 
+  /* ------------------------------------------------------------------
+     طبقة الإبهار — حركةٌ في مواضع محسوبة، وتتوقّف كلها مع «تقليل الحركة».
+     ------------------------------------------------------------------ */
+
+  /* كتل ضوء تنجرف ببطء خلف الصدر */
+  .mk-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(70px);
+    pointer-events: none;
+    will-change: transform;
+  }
+  .mk-blob-a {
+    width: 46vw; height: 46vw; max-width: 640px; max-height: 640px;
+    inset-inline-end: -10vw; top: -18vw;
+    background: hsl(var(--primary) / calc(var(--mesh-a) * 1.6));
+    animation: mk-drift-a 22s ease-in-out infinite;
+  }
+  .mk-blob-b {
+    width: 36vw; height: 36vw; max-width: 520px; max-height: 520px;
+    inset-inline-start: -8vw; top: 6vw;
+    background: hsl(var(--glow-b) / calc(var(--mesh-b) * 1.5));
+    animation: mk-drift-b 26s ease-in-out infinite;
+  }
+  .mk-blob-c {
+    width: 28vw; height: 28vw; max-width: 380px; max-height: 380px;
+    inset-inline-start: 40%; bottom: -14vw;
+    background: hsl(var(--gold) / calc(var(--mesh-c) * 1.6));
+    animation: mk-drift-c 30s ease-in-out infinite;
+  }
+  @keyframes mk-drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-6%, 10%, 0) scale(1.12); }
+  }
+  @keyframes mk-drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(8%, -8%, 0) scale(1.08); }
+  }
+  @keyframes mk-drift-c {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-10%, -12%, 0) scale(1.15); }
+  }
+
+  /* التدرّج النصّي حيّ: يتنفّس ببطء لا يومض */
+  .mk-gradient-text {
+    background-size: 200% 100%;
+    animation: mk-gradient-shift 7s ease-in-out infinite alternate;
+  }
+  @keyframes mk-gradient-shift {
+    from { background-position: 0% 50%; }
+    to { background-position: 100% 50%; }
+  }
+
+  /* كلمات العنوان تصعد واحدةً بعد الأخرى */
+  .mk-word {
+    animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* الميل ثلاثيّ الأبعاد واللمعة التي تتبع المؤشّر */
+  .mk-tilt {
+    position: relative;
+    transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transform-style: preserve-3d;
+    transition: transform 0.18s ease-out;
+    will-change: transform;
+  }
+  .mk-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      circle at var(--gx, 50%) var(--gy, 50%),
+      hsl(var(--primary) / 0.16),
+      transparent 45%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    z-index: 2;
+  }
+  .mk-tilt:hover .mk-glare {
+    opacity: 1;
+  }
+
+  /* حلقة متدرّجة تدور — للعنصر الواحد المرفوع في كل شاشة */
+  @property --mk-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+  }
+  .mk-ring-live::before {
+    background: conic-gradient(
+      from var(--mk-angle),
+      hsl(var(--primary) / 0.95),
+      hsl(var(--glow-b) / 0.25) 30%,
+      hsl(var(--gold) / 0.7) 55%,
+      hsl(var(--primary) / 0.2) 80%,
+      hsl(var(--primary) / 0.95)
+    );
+    animation: mk-spin 9s linear infinite;
+  }
+  @keyframes mk-spin {
+    to { --mk-angle: 360deg; }
+  }
+
+  /* ضوء المؤشّر داخل البطاقة */
+  .mk-card {
+    position: relative;
+    transition:
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.28s ease;
+  }
+  .mk-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      340px circle at var(--mx, -200px) var(--my, -200px),
+      hsl(var(--primary) / 0.13),
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .mk-spot .mk-card:hover::after {
+    opacity: 1;
+  }
+  .mk-card .mk-icon {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+  }
+  .mk-card:hover .mk-icon {
+    transform: translateY(-3px) rotate(-5deg);
+    box-shadow: 0 14px 30px -10px hsl(var(--primary) / 0.8);
+  }
+
+  /* لمعة تعبر الزرّ الأول عند التحويم */
+  .mk-cta {
+    position: relative;
+    overflow: hidden;
+  }
+  .mk-cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 35%,
+      hsl(0 0% 100% / 0.35) 50%,
+      transparent 65%
+    );
+    transform: translateX(160%);
+    transition: transform 0.7s ease;
+  }
+  .mk-cta:hover::after {
+    transform: translateX(-160%);
+  }
+
+  /* شريط الأسئلة: يلتفّ بلا قفزة ويقف عند التحويم */
+  .mk-marquee {
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  }
+  .mk-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: mk-marquee 42s linear infinite;
+  }
+  .mk-marquee:hover .mk-marquee-track {
+    animation-play-state: paused;
+  }
+  @keyframes mk-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(50%); }
+  }
+
+  /* خطّ يُرسم بين الخطوات حين يظهر القسم */
+  .js .mk-draw {
+    transform: scaleX(0);
+    transform-origin: 100% 50%;
+  }
+  .reveal-in .mk-draw,
+  .reveal-now .mk-draw {
+    animation: mk-draw 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+  }
+  @keyframes mk-draw {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  /* نقطة ضوء تنزل بين مراحل الأمان */
+  .mk-beam {
+    position: absolute;
+    inset-inline-start: 50%;
+    top: 0;
+    width: 6px;
+    height: 6px;
+    margin-inline-start: -3px;
+    border-radius: 9999px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 12px 2px hsl(var(--primary) / 0.7);
+    animation: mk-beam 2.2s ease-in-out infinite;
+  }
+  @keyframes mk-beam {
+    0% { transform: translateY(-4px); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(26px); opacity: 0; }
+  }
+
+  /* شريط تقدّم القراءة */
+  .mk-progress {
+    position: fixed;
+    top: 0;
+    inset-inline: 0;
+    height: 3px;
+    z-index: 60;
+    transform-origin: 100% 50%;
+    transform: scaleX(0);
+    background-image: linear-gradient(90deg, hsl(var(--glow-b)), hsl(var(--primary)));
+    pointer-events: none;
+  }
+
+  /* نبض خافت للخطة الموصى بها */
+  .mk-pulse-glow {
+    animation: mk-pulse-glow 4s ease-in-out infinite;
+  }
+  @keyframes mk-pulse-glow {
+    0%, 100% { box-shadow: 0 24px 60px -24px hsl(var(--primary) / 0.35); }
+    50% { box-shadow: 0 30px 80px -20px hsl(var(--primary) / 0.6); }
+  }
+
   /* شبكة نقاط لا خطوط: النقطة أهدأ على الأرض الداكنة، والخطّ عليها
      يقرأ جدولًا. والقناع يُذيبها عند الأطراف فلا تنتهي بحافّة حادّة. */
   .tech-dots {
@@ -660,6 +896,14 @@
 
   .animate-soft-float,
   .mk-float,
+  .mk-blob,
+  .mk-gradient-text,
+  .mk-word,
+  .mk-ring-live::before,
+  .mk-marquee-track,
+  .mk-draw,
+  .mk-beam,
+  .mk-pulse-glow,
   .animate-aurora,
   .animate-caret,
   .showcase-progress,
@@ -674,6 +918,16 @@
 
   .lift:hover {
     transform: none;
+  }
+
+  .mk-word,
+  .js .mk-draw {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .mk-tilt {
+    transform: none !important;
   }
 
   *,
