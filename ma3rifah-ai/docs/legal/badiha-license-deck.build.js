@@ -167,28 +167,46 @@ const card=(s,x,y,w,h,title,body,o={})=>{
   });
 }
 
-// ═══════════════════════════════ 8 · الخطوة القادمة والتوسع
+// ═══════════════════════════════ 8 · خارطة التطوّر والتوسع
 {
-  const s=pres.addSlide(); header(s,'الخطوة القادمة وخطة التوسع','Next feature & expansion plan');
-  box(s,0.6,1.25,8.8,1.72,SAND,GOLD);
-  T(s,'الميزة القادمة: استوديو السياسات — مواصفة معتمدة، لم تُنشر بعد، تُبنى بعد العميل الثالث',
-    {x:0.8,y:1.37,w:8.4,h:0.3,fontSize:12,bold:true,color:NAVY,align:'right'});
-  T(s,'مساعد يساعد الشركة على كتابة سياساتها لا الإجابة منها فقط: يسأل المدير ثلاثة إلى خمسة أسئلة توضيحية، ثم يكتب مسودة مستندة إلى وثائق الشركة وإلى مكتبة مرجعية رسمية (نظام العمل ولوائحه) مع الاستشهاد بمواد النظام؛ يحرّرها المدير ويعتمدها فتدخل قاعدة المعرفة وتُغلق الفجوة.',
-    {x:0.8,y:1.72,w:8.4,h:0.62,fontSize:9.8,color:INK,align:'right',lineSpacingMultiple:1.14});
-  T(s,'أثرها الاستراتيجي: تقلب الاستبعاد سوقًا — الشركة بلا لوائح مستبعَدة اليوم، وبها تصير العميل المثالي. و٧٠٪ من أجزائها مبنيّ فعلًا في المنصة.',
-    {x:0.8,y:2.42,w:8.4,h:0.42,fontSize:9.8,bold:true,color:NAVY,align:'right',lineSpacingMultiple:1.14});
+  const s=pres.addSlide(); header(s,'خارطة التطوّر وخطة التوسع','Product roadmap & expansion');
+
+  // ── أربع مراحل: اثنتان منشورتان واثنتان مخطَّطتان
+  const phases=[
+    ['١ · اسأل · أجب · تحقّق','منشورة',true],
+    ['٢ · اكتشف · وثّق · أغلق','منشورة',true],
+    ['٣ · أنشئ · راجِع · احكم','بعد ٣ عملاء',false],
+    ['٤ · اربط · وجّه · نفّذ','بعد ١٥ عميلًا',false],
+  ];
+  phases.forEach(([t,st,done],i)=>{
+    const x=0.6+(3-i)*2.22;
+    box(s,x,1.25,2.12,0.72,done?NAVY:WHITE,done?null:GOLD);
+    T(s,t,{x:x+0.1,y:1.34,w:1.92,h:0.26,fontSize:10,bold:true,color:done?WHITE:NAVY,align:'center'});
+    T(s,(done?'✔ ':'')+st,{x:x+0.1,y:1.62,w:1.92,h:0.24,fontSize:9,bold:true,color:done?GOLD:MUTED,align:'center'});
+  });
+  T(s,'من منصة تجيب عن المعرفة ← إلى منصة تعرف حالتها ← إلى منصة تبنيها ← إلى منصة تنفّذ بها. والمرحلتان الأوليان تعملان اليوم.',
+    {x:0.6,y:2.06,w:8.8,h:0.28,fontSize:9.5,color:MUTED,align:'right'});
+
+  // ── الميزة القادمة
+  box(s,0.6,2.42,8.8,0.92,SAND,GOLD);
+  T(s,'الخطوة القادمة: استوديو السياسات — مواصفة معتمدة، لم تُنشر بعد',
+    {x:0.8,y:2.52,w:8.4,h:0.28,fontSize:11.5,bold:true,color:NAVY,align:'right'});
+  T(s,'يكتب مسودة سياسة من وثائق الشركة ومن مكتبة مرجعية رسمية مع الاستشهاد بمواد النظام، يعتمدها المدير فتدخل قاعدة المعرفة. أثرها: تقلب الاستبعاد سوقًا — الشركة بلا لوائح تصير العميل المثالي، و٧٠٪ من أجزائها مبنيّ فعلًا.',
+    {x:0.8,y:2.82,w:8.4,h:0.46,fontSize:9.3,color:INK,align:'right',lineSpacingMultiple:1.12});
+
+  // ── التوسع
   const stages=[
     ['السنوات ١ إلى ٣','داخل المملكة','الرياض ثم جدة والدمام. بيع مباشر وقناة شركاء، وبناء المراجع والشهادة الأمنية. المنشأة والفريق والاستضافة والعملاء داخل المملكة.'],
     ['السنتان ٤ و٥','دول الخليج','الإمارات وقطر والكويت عبر شركاء محليين، بالمنتج نفسه واللغة نفسها، مع خيار استضافة إقليمية.'],
     ['بعد السنة ٥','الأسواق الناطقة بالعربية','مصر والأردن والمغرب العربي، حيث لا يوجد بديل عربي أولًا وبمعايير أمان مبنية للمؤسسات.'],
   ];
-  s.addShape(pres.shapes.LINE,{x:1.2,y:3.7,w:7.6,h:0,line:{color:GOLD,width:2}});
+  s.addShape(pres.shapes.LINE,{x:1.2,y:3.92,w:7.6,h:0,line:{color:GOLD,width:2}});
   stages.forEach(([when,where,body],i)=>{
     const x=0.6+(2-i)*3.0;
-    s.addShape(pres.shapes.OVAL,{x:x+1.2,y:3.5,w:0.4,h:0.4,fill:{color:i===0?GOLD:WHITE},line:{color:GOLD,width:2}});
-    T(s,when,{x,y:3.15,w:2.8,h:0.28,fontSize:9.5,color:MUTED,align:'center'});
-    T(s,where,{x,y:4.05,w:2.8,h:0.34,fontSize:14,bold:true,color:NAVY,align:'center'});
-    T(s,body,{x:x+0.1,y:4.42,w:2.6,h:0.9,fontSize:9,color:INK,align:'right',lineSpacingMultiple:1.12});
+    s.addShape(pres.shapes.OVAL,{x:x+1.2,y:3.72,w:0.4,h:0.4,fill:{color:i===0?GOLD:WHITE},line:{color:GOLD,width:2}});
+    T(s,when,{x,y:3.44,w:2.8,h:0.26,fontSize:9,color:MUTED,align:'center'});
+    T(s,where,{x,y:4.25,w:2.8,h:0.32,fontSize:13.5,bold:true,color:NAVY,align:'center'});
+    T(s,body,{x:x+0.1,y:4.6,w:2.6,h:0.72,fontSize:8.6,color:INK,align:'right',lineSpacingMultiple:1.1});
   });
 }
 
