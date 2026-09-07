@@ -245,6 +245,13 @@ type KnowledgeGapRow = {
   times_asked: number;
   department_id: string | null;
   status: GapStatus;
+  /** الخبير المُسنَد إليه السؤال — يرى صفّه هذا وحده ولا يكتب فيه إلا مسوّدته */
+  assigned_to: string | null;
+  assigned_by: string | null;
+  assigned_at: string | null;
+  /** مسوّدة الخبير قبل اعتماد المدير — ليست ما يدخل قاعدة المعرفة */
+  expert_answer: string | null;
+  expert_answered_at: string | null;
   resolution_note: string | null;
   linked_document_id: string | null;
   /** الإجابة المعتمدة كما كتبها المدير */
@@ -270,6 +277,8 @@ type KnowledgeGapAskerRow = {
 export type NotificationType =
   | 'GAP_ANSWERED'
   | 'GAP_OPENED'
+  | 'GAP_ASSIGNED'
+  | 'GAP_EXPERT_ANSWERED'
   | 'DOCUMENT_FAILED'
   | 'DOCUMENT_READY'
   | 'QUOTA_WARNING'
@@ -575,6 +584,10 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      submit_expert_answer: {
+        Args: { p_gap_id: string; p_answer: string };
+        Returns: boolean;
+      };
       match_document_chunks: {
         Args: {
           p_query_embedding: string;

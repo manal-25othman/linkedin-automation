@@ -12,6 +12,7 @@ const PROTECTED_PREFIXES = [
   '/help',
 
   '/knowledge-gaps',
+  '/assigned',
   '/analytics',
   '/users',
   '/departments',

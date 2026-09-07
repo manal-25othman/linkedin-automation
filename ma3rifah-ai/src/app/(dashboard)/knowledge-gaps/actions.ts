@@ -3,10 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
-import { knowledgeGapUpdateSchema, firstIssueMessage } from '@/lib/validation/schemas';
+import { knowledgeGapUpdateSchema, gapAssignSchema, firstIssueMessage } from '@/lib/validation/schemas';
 import { recordAudit } from '@/lib/audit';
 import { upsertCuratedAnswer, removeCuratedAnswer } from '@/lib/rag/curated-answer';
 import { notifyUsers, clearEntityNotifications } from '@/lib/notifications';
+import { truncate } from '@/lib/utils';
 import { AppError, toAppError } from '@/lib/errors';
 import { retrieveRelevantChunks, summarizeSources } from '@/lib/rag/retrieval';
 import { generateAnswer, estimateCostUsd, rewriteSearchQuery } from '@/lib/ai/claude';
@@ -307,6 +308,127 @@ export async function suggestGapAnswerAction(gapId: string): Promise<SuggestGapA
     });
 
     return { ok: true, draft: stripCitationMarkers(completion.text).trim(), sources };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+/**
+ * إسناد فجوة إلى خبير داخل الشركة.
+ *
+ * لا يُوسَّع بها شيء من صلاحيات المُسنَد إليه: سياسة الكتابة على
+ * الجدول باقية على `is_company_admin()`، والإسناد يفتح له **القراءة**
+ * لصفّه هذا وحده، وكتابةً محصورة في دالّة `submit_expert_answer`.
+ *
+ * والحالة تنتقل إلى «قيد المراجعة» مع الإسناد: فجوةٌ أُرسلت إلى
+ * إنسان لم تعد «مفتوحة» بلا يد عليها، ومن يفتح الشاشة يجب أن يرى
+ * الفرق بين ما يُنتظر وما لم يُلمس بعد.
+ */
+export async function assignGapAction(formData: FormData): Promise<ActionResult> {
+  try {
+    const { profile, company } = await requirePermission('knowledge_gaps.manage');
+
+    const rawExpert = formData.get('expertId');
+    const parsed = gapAssignSchema.safeParse({
+      gapId: formData.get('gapId'),
+      expertId: rawExpert && String(rawExpert).length > 0 ? rawExpert : null,
+    });
+
+    if (!parsed.success) {
+      throw new AppError('VALIDATION', firstIssueMessage(parsed.error));
+    }
+
+    const { gapId, expertId } = parsed.data;
+    const supabase = await createClient();
+
+    const { data: gap } = await supabase
+      .from('knowledge_gaps')
+      .select('id, question, status, assigned_to')
+      .eq('id', gapId)
+      .maybeSingle();
+
+    if (!gap) throw new AppError('NOT_FOUND', 'الفجوة غير موجودة.');
+
+    /*
+     * الخبير من هذه الشركة ونشِط.
+     *
+     * سياسة `profiles` تحصر القراءة في الشركة، لكن الاعتماد عليها وحدها
+     * يعني أن معرّفًا من شركة أخرى يمرّ صامتًا فيُكتب في العمود ولا
+     * يُقرأ الصفّ بعدها أبدًا. فيُتحقق صراحةً ويُردّ الخطأ.
+     */
+    let expertName: string | null = null;
+
+    if (expertId) {
+      const { data: expert } = await supabase
+        .from('profiles')
+        .select('id, full_name, status')
+        .eq('id', expertId)
+        .maybeSingle();
+
+      if (!expert || expert.status !== 'ACTIVE') {
+        throw new AppError('VALIDATION', 'اختر موظفًا نشطًا في شركتك.');
+      }
+      expertName = expert.full_name;
+    }
+
+    const { error } = await supabase
+      .from('knowledge_gaps')
+      .update({
+        assigned_to: expertId,
+        assigned_by: expertId ? profile.id : null,
+        assigned_at: expertId ? new Date().toISOString() : null,
+        // رفع الإسناد يمحو مسوّدة من لم يعد مسؤولًا عنها
+        expert_answer: expertId ? undefined : null,
+        expert_answered_at: expertId ? undefined : null,
+        status: expertId && gap.status === 'OPEN' ? 'IN_REVIEW' : gap.status,
+      })
+      .eq('id', gapId);
+
+    if (error) throw error;
+
+    await recordAudit({
+      companyId: company.id,
+      actorId: profile.id,
+      actorEmail: profile.email,
+      action: expertId ? 'knowledge_gap.assigned' : 'knowledge_gap.unassigned',
+      entityType: 'knowledge_gap',
+      entityId: gapId,
+      metadata: { expertId },
+    });
+
+    if (!expertId) {
+      revalidatePath('/knowledge-gaps');
+      return { ok: true, message: 'رُفع الإسناد.' };
+    }
+
+    // تنبيه سابق عن الفجوة نفسها يسدّ الفهرس الفريد أمام إسناد جديد
+    await clearEntityNotifications({
+      companyId: company.id,
+      type: 'GAP_ASSIGNED',
+      entityId: gapId,
+    });
+
+    const notified = await notifyUsers({
+      companyId: company.id,
+      userIds: [expertId],
+      type: 'GAP_ASSIGNED',
+      title: `سؤال موجَّه إليك: ${truncate(gap.question, 90)}`,
+      body: 'اكتب الجواب من معرفتك، ويعتمده مدير الشركة قبل نشره.',
+      link: '/assigned',
+      entityType: 'knowledge_gap',
+      entityId: gapId,
+    });
+
+    revalidatePath('/knowledge-gaps');
+    revalidatePath('/dashboard');
+
+    return {
+      ok: true,
+      message:
+        notified > 0
+          ? `وُجّه السؤال إلى ${expertName ?? 'الخبير'} ووصله التنبيه.`
+          : `وُجّه السؤال إلى ${expertName ?? 'الخبير'} — ولم يصل التنبيه.`,
+    };
   } catch (error) {
     return { ok: false, message: toAppError(error).displayMessage };
   }

@@ -99,6 +99,28 @@ export const knowledgeGapUpdateSchema = z.object({
   answerText: z.string().trim().max(8000).optional().or(z.literal('')),
 });
 
+/**
+ * إسناد فجوة إلى خبير — أو رفع الإسناد بقيمة فارغة.
+ *
+ * الفارغ إسنادٌ يُرفع لا خطأ إدخال: المدير قد يسند ثم يعدل عن ذلك،
+ * ومنعُه يجبره على إسنادها إلى نفسه ليتخلّص منها.
+ */
+export const gapAssignSchema = z.object({
+  gapId: z.string().uuid(),
+  expertId: z.string().uuid().nullable(),
+});
+
+/**
+ * مسوّدة الخبير.
+ *
+ * حدّ أدنى عشرون حرفًا مطابقٌ لما تفرضه الدالّة في قاعدة البيانات:
+ * «نعم» أو «لا أعرف» ليست جوابًا يُعتمد ويُفهرس.
+ */
+export const expertAnswerSchema = z.object({
+  gapId: z.string().uuid(),
+  answer: z.string().trim().min(20, 'اكتب جوابًا لا يقلّ عن عشرين حرفًا.').max(8000),
+});
+
 export const aiSettingsSchema = z.object({
   tone: z.enum(['professional', 'friendly', 'concise']),
   retrieval_top_k: z.number().int().min(3).max(20),

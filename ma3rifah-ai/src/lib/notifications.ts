@@ -19,6 +19,8 @@ import { truncate } from '@/lib/utils';
 export type NotificationType =
   | 'GAP_ANSWERED'
   | 'GAP_OPENED'
+  | 'GAP_ASSIGNED'
+  | 'GAP_EXPERT_ANSWERED'
   | 'DOCUMENT_FAILED'
   | 'DOCUMENT_READY'
   | 'QUOTA_WARNING'

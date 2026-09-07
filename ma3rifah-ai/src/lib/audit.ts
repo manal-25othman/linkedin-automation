@@ -47,6 +47,9 @@ export type AuditAction =
   | 'knowledge_gap.status_changed'
   | 'knowledge_gap.resolved'
   | 'knowledge_gap.draft_suggested'
+  | 'knowledge_gap.assigned'
+  | 'knowledge_gap.unassigned'
+  | 'knowledge_gap.expert_answered'
   | 'feedback_survey.submitted'
   | 'assistant.question_asked'
   | 'assistant.answer_unanswered';
