@@ -4,7 +4,7 @@ import { LegalPage, LegalSection } from '@/components/marketing/legal-layout';
 export const metadata: Metadata = {
   title: 'شروط الاستخدام',
   description:
-    'شروط استخدام منصة معرفة AI: الاشتراك والدفع والتجديد والإلغاء، حدود الخطط، ملكية المحتوى، ومسؤولية استخدام إجابات المساعد الذكي.',
+    'شروط استخدام منصة بديهة: الاشتراك والدفع والتجديد والإلغاء، حدود الخطط، ملكية المحتوى، ومسؤولية استخدام إجابات المساعد الذكي.',
 };
 
 export default function TermsPage() {

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
 import './globals.css';
 
-const APP_NAME = 'معرفة AI';
+const APP_NAME = 'بديهة';
 const APP_TAGLINE = 'حوّل معرفة شركتك إلى ذكاء يعمل معك.';
 const APP_DESCRIPTION =
   'منصة ذكاء معرفي للشركات السعودية: حوّل سياساتك وإجراءاتك ومستنداتك إلى قاعدة معرفة ذكية يسأل عنها موظفوك ويحصلون على إجابات موثقة بالمصدر في ثوانٍ.';

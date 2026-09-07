@@ -5,7 +5,7 @@ import { SUBPROCESSORS } from '@/lib/config/legal';
 export const metadata: Metadata = {
   title: 'سياسة الخصوصية',
   description:
-    'كيف تجمع منصة معرفة AI بيانات عملائها وتعالجها وتحميها، ومن هم المعالِجون الفرعيون، وحقوق أصحاب البيانات.',
+    'كيف تجمع منصة بديهة بيانات عملائها وتعالجها وتحميها، ومن هم المعالِجون الفرعيون، وحقوق أصحاب البيانات.',
 };
 
 export default function PrivacyPage() {

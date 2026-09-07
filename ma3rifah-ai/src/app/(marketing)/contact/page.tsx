@@ -6,7 +6,7 @@ import { ContactForm } from './contact-form';
 export const metadata: Metadata = {
   title: 'تواصل معنا',
   description:
-    'اطلب عرضًا توضيحيًا لمنصة معرفة AI، أو تحدث مع فريقنا حول احتياجات مؤسستك في إدارة المعرفة بالذكاء الاصطناعي.',
+    'اطلب عرضًا توضيحيًا لمنصة بديهة، أو تحدث مع فريقنا حول احتياجات مؤسستك في إدارة المعرفة بالذكاء الاصطناعي.',
 };
 
 export default function ContactPage() {

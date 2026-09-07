@@ -596,7 +596,7 @@ async function ensureUsageRecords(admin: Admin, companyId: string): Promise<void
 
 async function main(): Promise<void> {
   console.log('\n═══════════════════════════════════════════');
-  console.log('  معرفة AI — بيانات العرض التجريبية');
+  console.log('  بديهة — بيانات العرض التجريبية');
   console.log('  DEMO DATA — بيانات وهمية بالكامل');
   console.log('═══════════════════════════════════════════');
 

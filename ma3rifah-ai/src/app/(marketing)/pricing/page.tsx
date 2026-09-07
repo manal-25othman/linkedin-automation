@@ -12,7 +12,7 @@ import { faqByCategory } from '@/lib/content/faq';
 export const metadata: Metadata = {
   title: 'الأسعار',
   description:
-    'خطط اشتراك واضحة لمنصة معرفة AI: Starter وBusiness وEnterprise. جميع الخطط تشمل المساعد الذكي وقاعدة المعرفة والتحليلات.',
+    'خطط اشتراك واضحة لمنصة بديهة: Starter وBusiness وEnterprise. جميع الخطط تشمل المساعد الذكي وقاعدة المعرفة والتحليلات.',
 };
 
 export default async function PricingPage() {

@@ -12,7 +12,7 @@ export const WHATSAPP_NUMBER = RAW_WHATSAPP.length >= 8 ? RAW_WHATSAPP : '';
 
 export const WHATSAPP_DEFAULT_MESSAGE =
   process.env.NEXT_PUBLIC_WHATSAPP_MESSAGE?.trim() ||
-  'السلام عليكم، أرغب في معرفة المزيد عن منصة معرفة AI.';
+  'السلام عليكم، أرغب في معرفة المزيد عن منصة بديهة.';
 
 /** الرابط جاهزًا، أو سلسلة فارغة إذا لم يُضبط الرقم فيُخفى الزر */
 export function whatsappLink(message?: string): string {
