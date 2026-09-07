@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Sparkles, Target } from 'lucide-react';
+import { Sparkles, Target, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,7 +18,7 @@ import {
 import { EmptyState } from '@/components/shared/states';
 import { CrudDialog } from '@/components/dashboard/crud-dialog';
 import { formatNumber, formatRelativeTime } from '@/lib/utils';
-import { suggestGapAnswerAction, updateKnowledgeGapAction } from './actions';
+import { assignGapAction, suggestGapAnswerAction, updateKnowledgeGapAction } from './actions';
 import type { GapStatus } from '@/types/database';
 
 export interface GapRowData {
@@ -31,6 +31,17 @@ export interface GapRowData {
   resolutionNote: string | null;
   linkedDocumentId: string | null;
   answerText: string | null;
+  assignedTo: string | null;
+  assignedName: string | null;
+  /** مسوّدة الخبير — لم تُنشر بعد */
+  expertAnswer: string | null;
+  expertAnsweredAt: string | null;
+}
+
+export interface CompanyMember {
+  id: string;
+  name: string;
+  role: string;
 }
 
 const STATUS_META: Record<
@@ -46,13 +57,17 @@ const STATUS_META: Record<
 export function GapsClient({
   gaps,
   documents,
+  members,
   canManage,
 }: {
   gaps: GapRowData[];
   documents: { id: string; name: string }[];
+  members: CompanyMember[];
   canManage: boolean;
 }) {
   const [editing, setEditing] = useState<GapRowData | null>(null);
+  /** نافذة التوجيه — منفصلة عن نافذة المعالجة: فعلٌ آخر وقرارٌ آخر */
+  const [assigning, setAssigning] = useState<GapRowData | null>(null);
 
   /*
    * مسوّدة الوكيل — لا تُحفظ من تلقاء نفسها.
@@ -108,10 +123,10 @@ export function GapsClient({
             <TableRow>
               <TableHead>السؤال</TableHead>
               <TableHead>التكرار</TableHead>
-              <TableHead>القسم</TableHead>
+              <TableHead>القسم أو الخبير</TableHead>
               <TableHead>آخر مرة</TableHead>
               <TableHead>الحالة</TableHead>
-              {canManage ? <TableHead className="w-24" /> : null}
+              {canManage ? <TableHead className="w-32" /> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -133,7 +148,14 @@ export function GapsClient({
                 </TableCell>
 
                 <TableCell className="text-sm text-muted-foreground">
-                  {gap.departmentName || '—'}
+                  {gap.assignedName ? (
+                    <span className="flex items-center gap-1.5">
+                      <UserCheck className="size-3.5 shrink-0 text-primary" aria-hidden />
+                      {gap.assignedName}
+                    </span>
+                  ) : (
+                    gap.departmentName || '—'
+                  )}
                 </TableCell>
 
                 <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
@@ -141,16 +163,32 @@ export function GapsClient({
                 </TableCell>
 
                 <TableCell>
-                  <Badge variant={STATUS_META[gap.status].variant}>
-                    {STATUS_META[gap.status].label}
-                  </Badge>
+                  {/* جواب خبير وصل ولم يُعتمد: حالة تنتظر المدير، وعرضها
+                      بوسم الحالة العام يخفي أن عليه فعلًا الآن */}
+                  {gap.expertAnsweredAt && !gap.answerText ? (
+                    <Badge variant="warning">بانتظار اعتمادك</Badge>
+                  ) : (
+                    <Badge variant={STATUS_META[gap.status].variant}>
+                      {STATUS_META[gap.status].label}
+                    </Badge>
+                  )}
                 </TableCell>
 
                 {canManage ? (
                   <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => openGap(gap)}>
-                      معالجة
-                    </Button>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" onClick={() => openGap(gap)}>
+                        معالجة
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAssigning(gap)}
+                        title="وجّه السؤال إلى من يعرف جوابه"
+                      >
+                        <UserCheck className="size-4" aria-hidden />
+                      </Button>
+                    </div>
                   </TableCell>
                 ) : null}
               </TableRow>
@@ -213,14 +251,22 @@ export function GapsClient({
             name="answerText"
             rows={5}
             maxLength={8000}
-            key={draft && editing && draft.gapId === editing.id ? 'draft' : editing?.id ?? 'blank'}
+  key={
+            draft && editing && draft.gapId === editing.id ? 'draft' : (editing?.id ?? 'blank')
+          }
             defaultValue={
               draft && editing && draft.gapId === editing.id
                 ? draft.text
-                : (editing?.answerText ?? '')
+                : (editing?.answerText ?? editing?.expertAnswer ?? '')
             }
             placeholder="اكتب الجواب كما تريد أن يصل موظفيك. مثال: تُقدَّم طلبات العمل الإضافي عبر مدير القسم قبل يومين على الأقل، وتُحتسب بواقع 150% من الأجر."
           />
+          {editing?.expertAnswer && !editing.answerText ? (
+            <p className="rounded-lg border border-primary/25 bg-primary/5 p-2.5 text-xs leading-relaxed">
+              <b className="text-foreground">مسوّدة من {editing.assignedName ?? 'الخبير'}</b> —
+              عُبِّئت في الحقل أعلاه. راجعها واحفظها لتدخل قاعدة المعرفة، أو عدّلها أولًا.
+            </p>
+          ) : null}
           {suggestNote ? (
             <p className="text-xs leading-relaxed text-warning">
               {suggestNote}
@@ -280,6 +326,39 @@ export function GapsClient({
             defaultValue={editing?.resolutionNote ?? ''}
             placeholder="ملاحظة إدارية داخلية لا يراها الموظفون. مثال: يُراجع الجواب بعد اعتماد اللائحة الجديدة."
           />
+        </div>
+      </CrudDialog>
+      <CrudDialog
+        open={assigning !== null}
+        onOpenChange={(open) => !open && setAssigning(null)}
+        title="وجّه السؤال إلى من يعرف جوابه"
+        description={assigning?.question}
+        submitLabel="وجّه"
+        action={assignGapAction}
+      >
+        <input type="hidden" name="gapId" value={assigning?.id ?? ''} />
+
+        <div className="space-y-2">
+          <Label htmlFor="expertId">الخبير</Label>
+          <select
+            id="expertId"
+            name="expertId"
+            key={assigning?.id ?? 'blank'}
+            defaultValue={assigning?.assignedTo ?? ''}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">بلا توجيه</option>
+            {members.map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.name} — {member.role}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            يصل الموظف تنبيه، ويرى <b>هذا السؤال وحده</b> في صفحة «أسئلة موجَّهة إليك» — لا
+            بقية الفجوات ولا أي شيء آخر لا يخصّه. ويكتب الجواب، فيعود إليك لاعتماده قبل أن
+            يظهر لأحد.
+          </p>
         </div>
       </CrudDialog>
     </>

@@ -30,6 +30,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'document.permissions_changed': 'تغيير صلاحيات مستند',
   'knowledge_gap.status_changed': 'تغيير حالة فجوة معرفة',
   'knowledge_gap.resolved': 'معالجة فجوة معرفة',
+  'knowledge_gap.draft_suggested': 'اقتراح مسوّدة جواب',
+  'knowledge_gap.assigned': 'توجيه سؤال إلى خبير',
+  'knowledge_gap.unassigned': 'رفع توجيه سؤال',
+  'knowledge_gap.expert_answered': 'جواب خبير بانتظار الاعتماد',
 };
 
 export function auditActionLabel(action: string): string {

@@ -10,6 +10,7 @@ import {
   Sparkles,
   Target,
   Users,
+  UserCheck,
 } from 'lucide-react';
 import { requireCompanySession } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
@@ -49,6 +50,7 @@ export default async function DashboardPage() {
     timeseriesResult,
     usageResult,
     subscriptionResult,
+    assignedResult,
   ] =
     await Promise.all([
       supabase.rpc('company_dashboard_stats'),
@@ -71,7 +73,19 @@ export default async function DashboardPage() {
         .from('subscriptions')
         .select('status, current_period_end, trial_ends_at, canceled_at')
         .maybeSingle(),
-    ]);
+          /*
+       * أسئلة موجَّهة إلى هذا المستخدم ولم يجب عنها بعد.
+       *
+       * لكل الأدوار لا للمديرين وحدهم: الخبير قد يكون موظفًا لا يرى
+       * شاشة الفجوات أصلًا، وبطاقة الرئيسية هي طريقه الثاني بعد التنبيه.
+       * وسياسة القراءة تحصر ما يُرى في ما أُسنِد إليه هو.
+       */
+      supabase
+        .from('knowledge_gaps')
+        .select('id', { count: 'exact', head: true })
+        .eq('assigned_to', profile.id)
+        .is('expert_answered_at', null),
+]);
 
   const stats = statsResult.data?.[0];
   const topQuestions = topQuestionsResult.data ?? [];
@@ -138,6 +152,30 @@ export default async function DashboardPage() {
       {onboarding.complete ? null : <WelcomeDialog steps={quickStartFor(profile.role)} />}
 
       <OnboardingCard progress={onboarding} />
+
+      {/* سؤال بانتظار جوابك — لا يظهر ما لم يوجَّه إليك شيء */}
+      {(assignedResult.count ?? 0) > 0 ? (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <UserCheck className="size-5" aria-hidden />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">
+                  {formatNumber(assignedResult.count ?? 0)} سؤال بانتظار جوابك
+                </p>
+                <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+                  وجّهها إليك مدير الشركة لأنك تعرف جوابها. ما تكتبه يعتمده المدير قبل نشره.
+                </p>
+              </div>
+            </div>
+            <Button asChild>
+              <Link href="/assigned">افتحها</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* بطاقات الإحصاءات */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

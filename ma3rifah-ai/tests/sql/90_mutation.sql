@@ -88,3 +88,41 @@ create policy mutation_open_ocr_pages on public.document_ocr_pages
 drop policy if exists feedback_surveys_select on public.feedback_surveys;
 create policy feedback_surveys_select on public.feedback_surveys
   for select to authenticated using (true);
+
+-- (٨) فتح كتابة الفجوات لكل مستخدم في الشركة — يجب أن تسقط اختبارات
+--     «كتابة الخبير المباشرة لم تُنفَّذ» و«الخبير لم يستطع تغيير الإسناد».
+drop policy if exists knowledge_gaps_write on public.knowledge_gaps;
+create policy knowledge_gaps_write on public.knowledge_gaps
+  for all to authenticated
+  using (public.belongs_to_current_company(company_id))
+  with check (public.belongs_to_current_company(company_id));
+
+-- (٩) إسقاط شرط الإسناد من دالّة جواب الخبير — يجب أن تسقط اختبارات
+--     «الدالّة ترفض من لم يُسنَد إليه» و«مسوّدة الزميل لم تُكتب فوقها».
+create or replace function public.submit_expert_answer(
+  p_gap_id uuid,
+  p_answer text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_updated int;
+begin
+  update public.knowledge_gaps
+  set expert_answer      = btrim(p_answer),
+      expert_answered_at = now()
+  where id = p_gap_id;                 -- ⚠ كان: و company_id و assigned_to
+
+  get diagnostics v_updated = row_count;
+  return v_updated > 0;
+end;
+$$;
+
+-- (١٠) فتح قراءة الفجوات لكل موظف — يجب أن يسقط اختبارا «موظف بلا إسناد
+--      لا يرى فجوات شركته» و«الإسناد لا يخترق حدّ الشركة».
+drop policy if exists knowledge_gaps_select on public.knowledge_gaps;
+create policy knowledge_gaps_select on public.knowledge_gaps
+  for select to authenticated using (true);
