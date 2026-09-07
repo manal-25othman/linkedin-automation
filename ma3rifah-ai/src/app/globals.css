@@ -209,53 +209,249 @@
   /* الأساس: تلتزم الصفحة بألوان السمة الجارية صراحةً، فلا ترث أرضًا
      من أبٍ في الوضع الفاتح. والرموز نفسها تأتي من `:root`. */
   .marketing-shell {
+    /* الوضع الفاتح للتسويق: أرضٌ زرقاء باردة لا بيضاء صمّاء، وأزرقٌ
+       كهربائي أحيا من كحليّ اللوحة. اللوحة تقرأ `:root` ولا تصلها هذه. */
+    --background: 222 40% 98%;
+    --foreground: 228 40% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 228 40% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 40% 8%;
+
+    --primary: 224 82% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    --gold: 40 55% 46%;
+    --gold-foreground: 0 0% 100%;
+    --gold-soft: 42 60% 94%;
+
+    --secondary: 222 30% 94%;
+    --secondary-foreground: 228 40% 8%;
+
+    --muted: 222 30% 95%;
+    --muted-foreground: 226 15% 42%;
+
+    --accent: 224 80% 95%;
+    --accent-foreground: 224 70% 30%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 60% 32%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 25 88% 45%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 222 24% 88%;
+    --input: 222 24% 88%;
+    --ring: 224 82% 52%;
+
+    /* لون التوهّج الثاني: سماويّ يقابل الأزرق في التدرّجات وحدها */
+    --glow-b: 196 90% 48%;
+    --mesh-a: 0.16;
+    --mesh-b: 0.12;
+    --mesh-c: 0.1;
+
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
 
   .dark .marketing-shell {
-    --background: 222 44% 5%;
+    --background: 228 45% 5%;
     --foreground: 210 30% 96%;
 
-    --card: 220 26% 11%;
+    --card: 228 32% 9%;
     --card-foreground: 210 30% 96%;
 
-    --popover: 220 26% 12%;
+    --popover: 228 32% 10%;
     --popover-foreground: 210 30% 96%;
 
-    --primary: 213 62% 63%;
-    --primary-foreground: 222 44% 6%;
+    --primary: 220 95% 68%;
+    --primary-foreground: 228 45% 6%;
 
-    --gold: 42 45% 58%;
-    --gold-foreground: 222 44% 6%;
-    --gold-soft: 42 22% 15%;
+    --gold: 42 60% 62%;
+    --gold-foreground: 228 45% 6%;
+    --gold-soft: 42 25% 14%;
 
-    --secondary: 220 26% 14%;
+    --secondary: 228 28% 13%;
     --secondary-foreground: 210 30% 96%;
 
-    --muted: 220 26% 12%;
-    --muted-foreground: 215 16% 64%;
+    --muted: 228 30% 10%;
+    --muted-foreground: 222 16% 66%;
 
-    --accent: 220 30% 14%;
+    --accent: 226 40% 14%;
     --accent-foreground: 210 30% 96%;
 
     --destructive: 0 66% 56%;
     --destructive-foreground: 0 0% 100%;
 
     --success: 152 50% 46%;
-    --success-foreground: 222 44% 6%;
+    --success-foreground: 228 45% 6%;
 
     --warning: 25 82% 58%;
-    --warning-foreground: 222 44% 6%;
+    --warning-foreground: 228 45% 6%;
 
-    --border: 220 18% 21%;
-    --input: 220 18% 21%;
-    --ring: 213 62% 63%;
+    --border: 228 20% 17%;
+    --input: 228 20% 17%;
+    --ring: 220 95% 68%;
+
+    --glow-b: 196 90% 55%;
+    --mesh-a: 0.32;
+    --mesh-b: 0.2;
+    --mesh-c: 0.12;
 
     /* يُخبر المتصفّح فيلوّن أشرطة التمرير وحقول النماذج تبعًا */
     color-scheme: dark;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+
+  /* ------------------------------------------------------------------
+     مفردات هوية «بديهة» التسويقية — كلها من الرموز أعلاه.
+     ------------------------------------------------------------------ */
+
+  /* سديم لونيّ خلف الصدر: أزرق وسماوي ولمسة ذهب، بلا صورة تُحمَّل */
+  .mk-mesh {
+    background:
+      radial-gradient(55% 45% at 82% 8%, hsl(var(--primary) / var(--mesh-a)), transparent 62%),
+      radial-gradient(45% 40% at 12% 22%, hsl(var(--glow-b) / var(--mesh-b)), transparent 62%),
+      radial-gradient(38% 36% at 58% 96%, hsl(var(--gold) / var(--mesh-c)), transparent 62%);
+  }
+
+  /* نصّ بتدرّج: للعبارة الواحدة التي تحمل الوعد، لا للفقرات */
+  .mk-gradient-text {
+    background-image: linear-gradient(120deg, hsl(var(--primary)) 0%, hsl(var(--glow-b)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* بطاقة زجاجية: أرض شبه شفّافة وحدٌّ خافت وتمويه خلفها */
+  .mk-card {
+    background-color: hsl(var(--card) / 0.72);
+    border: 1px solid hsl(var(--border) / 0.9);
+    border-radius: 1.25rem;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  /* حلقة بتدرّج حول العنصر المرفوع — بقناع لا بحدٍّ ملوّن مصمت */
+  .mk-ring {
+    position: relative;
+    isolation: isolate;
+  }
+  .mk-ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.85),
+      hsl(var(--glow-b) / 0.45) 50%,
+      hsl(var(--gold) / 0.55)
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* أيقونة في مربّع متدرّج — العلامة المتكرّرة في الصفحة كلها */
+  .mk-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.9rem;
+    color: hsl(var(--primary-foreground));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--glow-b)));
+    box-shadow: 0 8px 24px -10px hsl(var(--primary) / 0.7);
+  }
+
+  /* الزرّ الأول: تدرّج ووهج — واحدٌ في كل شاشة */
+  .mk-cta {
+    color: hsl(var(--primary-foreground));
+    background-image: linear-gradient(120deg, hsl(var(--primary)), hsl(var(--glow-b)));
+    background-size: 160% 100%;
+    background-position: 0% 0;
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.35),
+      0 14px 40px -12px hsl(var(--primary) / 0.7);
+    transition: background-position 0.5s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .mk-cta:hover {
+    background-position: 100% 0;
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.45),
+      0 18px 48px -12px hsl(var(--primary) / 0.8);
+  }
+
+  /* لوح داكن بذاته في الوضعين — للأمان والدعوة الختامية.
+     الرموز مُعادة داخله فتقرأ الأزرار والنصوص الرمادية على أرضه. */
+  .mk-panel {
+    --background: 228 45% 7%;
+    --foreground: 210 30% 96%;
+    --card: 228 32% 11%;
+    --card-foreground: 210 30% 96%;
+    --popover: 228 32% 11%;
+    --popover-foreground: 210 30% 96%;
+    --primary: 220 95% 70%;
+    --primary-foreground: 228 45% 7%;
+    --secondary: 228 28% 14%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 228 30% 12%;
+    --muted-foreground: 220 16% 70%;
+    --accent: 226 40% 16%;
+    --accent-foreground: 210 30% 96%;
+    --border: 228 20% 20%;
+    --input: 228 20% 20%;
+    --ring: 220 95% 70%;
+    --gold: 42 60% 62%;
+    --glow-b: 196 90% 55%;
+    --mesh-a: 0.3;
+    --mesh-b: 0.18;
+    --mesh-c: 0.14;
+    color-scheme: dark;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* شريط الترويسة العائم */
+  .mk-nav {
+    background-color: hsl(var(--background) / 0.72);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    backdrop-filter: blur(18px) saturate(1.4);
+    box-shadow:
+      0 1px 0 hsl(var(--border) / 0.9) inset,
+      0 12px 40px -18px hsl(var(--foreground) / 0.25);
+  }
+
+  /* الأرقام الكبيرة في مسار «كيف تعمل» */
+  .mk-step-number {
+    font-size: 3.25rem;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background-image: linear-gradient(160deg, hsl(var(--primary)) 0%, hsl(var(--glow-b)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    opacity: 0.9;
+  }
+
+  @keyframes mk-float {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50% { transform: translate3d(0, -10px, 0) rotate(-0.4deg); }
+  }
+  .mk-float {
+    animation: mk-float 9s ease-in-out infinite;
   }
 
   /* شبكة نقاط لا خطوط: النقطة أهدأ على الأرض الداكنة، والخطّ عليها
@@ -463,6 +659,7 @@
   }
 
   .animate-soft-float,
+  .mk-float,
   .animate-aurora,
   .animate-caret,
   .showcase-progress,

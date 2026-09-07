@@ -15,7 +15,6 @@ import {
   UserMinus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Section, SectionHeading } from '@/components/marketing/sections';
 import { Reveal } from '@/components/marketing/reveal';
 import { Pulse } from '@/components/marketing/pulse';
@@ -43,6 +42,10 @@ import { cn } from '@/lib/utils';
  * والنصوص كلها تُقرأ من سجلّ المحتوى لا من هذا الملف: ما تكتبه صاحبة
  * المنتج في اللوحة يظهر هنا مباشرةً. وما بقي في الشيفرة هو الأيقونات
  * والتخطيط وحدهما.
+ *
+ * الهوية البصرية: صدرٌ بعمودين — الوعد يمينًا والمنتج يعمل يسارًا —
+ * وسديمٌ لونيّ خلفه، وبطاقات زجاجية، وحلقة متدرّجة حول ما يُرفع.
+ * الجرأة في موضع واحد (الصدر والدعوة الختامية) وما بينهما هادئ.
  */
 
 const PROBLEM_ICONS = [Repeat2, Clock, UserMinus];
@@ -64,106 +67,98 @@ export default async function HomePage() {
   return (
     <>
       {/* ------------------------------------------------------------ Hero */}
-      <section className="relative overflow-hidden border-b bg-background">
-        <div className="hero-halo pointer-events-none absolute inset-0" aria-hidden />
-        <div className="tech-dots pointer-events-none absolute inset-0" aria-hidden />
+      <section className="relative overflow-hidden">
+        <div className="mk-mesh pointer-events-none absolute inset-0" aria-hidden />
+        <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
 
-        <div className="container relative py-20 sm:py-28">
-          <div className="reveal-now mx-auto max-w-3xl text-center">
-            {/* حبّة الإعلان: حدٌّ خافت وزجاجٌ خفيف بدل خلفية مصمتة —
-                تجلس على الهالة ولا تقطعها. */}
-            <Badge
-              variant="outline"
-              className="mb-6 gap-2 rounded-full border-border/70 bg-card/60 px-4 py-1.5 text-xs font-medium backdrop-blur"
-            >
-              <Pulse />
-              {t('home.badge')}
-            </Badge>
+        <div className="container relative pb-16 pt-12 sm:pb-24 sm:pt-16 lg:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
+            <div className="reveal-now text-center lg:text-start">
+              <p className="flex justify-center lg:justify-start">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-card/70 px-4 py-1.5 text-xs font-bold text-primary backdrop-blur">
+                  <Pulse />
+                  {t('home.badge')}
+                </span>
+              </p>
 
-            {/*
-             * ثلاث درجات لا درجتان.
-             *
-             * كان السطران بالمقاس نفسه، على افتراض أنهما عبارتان
-             * قصيرتان. فلمّا كُتبا جملتين كاملتين ملآ شاشة الهاتف
-             * سبعة أسطر، ولم يبقَ للبرهان ولا للزرّ موضع.
-             *
-             * فصار الأول عنوانًا والثاني سطرًا مساندًا أصغر منه
-             * وملوّنًا، والثالث شرحًا رماديًّا. والعين تقرأ الترتيب
-             * قبل أن تقرأ الكلمات.
-             */}
-            <h1
-              className={cn(
-                'text-balance font-semibold tracking-tight',
-                // المقاس يتبع الطول: عنوانٌ طويل بمقاس القصير يبتلع
-                // الشاشة، وقصيرٌ بمقاس الطويل يبدو باهتًا
-                heroLine1.length > 55
-                  ? 'text-[1.35rem] leading-[1.45] sm:text-3xl sm:leading-[1.3]'
-                  : 'text-[1.6rem] leading-[1.35] sm:text-4xl sm:leading-[1.25]',
-              )}
-            >
-              {heroLine1}
-            </h1>
-
-            {heroLine2 ? (
-              <p
+              {/*
+               * ثلاث درجات: عنوانٌ كبير، وسطرٌ مساند بتدرّج لونيّ يحمل
+               * الوعد، وشرحٌ رماديّ. والعين تقرأ الترتيب قبل الكلمات.
+               */}
+              <h1
                 className={cn(
-                  'mx-auto mt-4 max-w-2xl text-balance font-medium leading-relaxed text-primary',
-                  heroLine2.length > 55 ? 'text-base sm:text-lg' : 'text-lg sm:text-xl',
+                  'mt-6 text-balance font-extrabold tracking-tight',
+                  heroLine1.length > 55
+                    ? 'text-3xl leading-[1.3] sm:text-4xl lg:text-[2.9rem] lg:leading-[1.22]'
+                    : 'text-4xl leading-[1.22] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.15]',
                 )}
               >
-                {heroLine2}
+                {heroLine1}
+              </h1>
+
+              {heroLine2 ? (
+                <p
+                  className={cn(
+                    'mk-gradient-text mx-auto mt-4 max-w-2xl text-balance font-extrabold leading-snug lg:mx-0',
+                    heroLine2.length > 55 ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl',
+                  )}
+                >
+                  {heroLine2}
+                </p>
+              ) : null}
+
+              <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-loose text-muted-foreground sm:text-lg lg:mx-0">
+                {t('home.hero.subtitle')}
               </p>
-            ) : null}
 
-            <p className="mx-auto mt-5 max-w-2xl text-pretty text-[0.95rem] leading-loose text-muted-foreground sm:text-base">
-              {t('home.hero.subtitle')}
-            </p>
+              <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
+                <Button
+                  size="lg"
+                  asChild
+                  className="mk-cta group h-12 rounded-full border-0 px-8 text-base font-bold"
+                >
+                  <Link href="/register">
+                    {t('home.cta.primary')}
+                    <ArrowLeft
+                      className="size-4 transition-transform group-hover:-translate-x-1"
+                      aria-hidden
+                    />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="h-12 rounded-full border-border/80 bg-card/60 px-8 text-base backdrop-blur"
+                >
+                  <Link href="/contact">{t('home.cta.secondary')}</Link>
+                </Button>
+              </div>
 
-            {/* الزرّان حبّتان مستديرتان: الأول متوهّج والثاني محدّد فقط.
-                والفرق بينهما بصريّ لا لفظيّ — يُعرف الأهمّ قبل قراءته. */}
-            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button
-                size="lg"
-                asChild
-                className="glow-primary group h-12 rounded-full px-7 text-base font-semibold"
-              >
-                <Link href="/register">
-                  {t('home.cta.primary')}
-                  <ArrowLeft
-                    className="size-4 transition-transform group-hover:-translate-x-1"
-                    aria-hidden
-                  />
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="h-12 rounded-full border-border/80 bg-card/50 px-7 text-base backdrop-blur"
-              >
-                <Link href="/contact">{t('home.cta.secondary')}</Link>
-              </Button>
+              <p className="mt-5 text-sm text-muted-foreground">{t('home.cta.note')}</p>
             </div>
 
-            <p className="mt-5 text-sm text-muted-foreground">{t('home.cta.note')}</p>
-          </div>
-
-          {/* إطارٌ حول لوحة العرض: حلقةٌ خافتة ووهجٌ تحتها يرفعانها عن
-              الأرض، فتُقرأ نافذةَ منتجٍ لا صندوقًا في الصفحة. */}
-          <div
-            className="reveal-now mx-auto mt-16 max-w-4xl rounded-2xl bg-card/40 p-1.5 ring-1 ring-border/70 backdrop-blur"
-            style={{
-              animationDelay: '120ms',
-              boxShadow: '0 34px 96px -46px hsl(var(--primary) / 0.22)',
-            }}
-          >
-            <DemoConsole />
+            {/* المنتج يعمل: حلقةٌ متدرّجة ووهجٌ تحته وطفوٌ بطيء، فيُقرأ
+                نافذةَ منتجٍ حيّ لا صورةً في الصفحة. */}
+            <div className="reveal-now relative" style={{ animationDelay: '140ms' }}>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-6 -z-10 rounded-[2.5rem] opacity-70 blur-3xl"
+                style={{
+                  background:
+                    'radial-gradient(60% 60% at 50% 40%, hsl(var(--primary) / 0.35), transparent 70%)',
+                }}
+              />
+              <div className="mk-ring mk-float rounded-[1.75rem] bg-card/50 p-2 backdrop-blur">
+                <DemoConsole />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* --------------------------------------------------------- المشكلة */}
-      <Section>
+      <Section className="border-t">
         <Reveal>
           <SectionHeading
             eyebrow={t('home.problem.eyebrow')}
@@ -172,17 +167,17 @@ export default async function HomePage() {
           />
         </Reveal>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
+        <div className="mt-16 grid gap-5 md:grid-cols-3">
           {t.list('home.problem.cards').map((item, index) => {
             const Icon = pickIcon(PROBLEM_ICONS, index);
             return (
               <Reveal key={`${item.title}-${index}`} delay={index * 110}>
-                <article className="lift h-full rounded-xl border bg-card p-6">
-                  <div className="flex size-11 items-center justify-center rounded-lg bg-destructive/10">
-                    <Icon className="size-5 text-destructive" aria-hidden />
+                <article className="mk-card lift h-full p-7">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                    <Icon className="size-6" aria-hidden />
                   </div>
-                  <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  <h3 className="mt-5 text-lg font-bold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-loose text-muted-foreground">
                     {item.description}
                   </p>
                 </article>
@@ -203,7 +198,7 @@ export default async function HomePage() {
         </Reveal>
 
         <Reveal>
-          <div className="mt-14">
+          <div className="mt-16">
             <FeatureShowcase
               items={t.list('home.diff.cards').map((item) => ({
                 badge: item.badge,
@@ -237,20 +232,21 @@ export default async function HomePage() {
       </Section>
 
       {/* ------------------------------------------------------- كيف تعمل */}
-      <Section>
+      <Section muted>
         <Reveal>
           <SectionHeading eyebrow={t('home.steps.eyebrow')} title={t('home.steps.title')} />
         </Reveal>
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {t.list('home.steps.items').map((item, index) => (
             <Reveal key={`${item.title}-${index}`} delay={index * 100}>
-              <div className="lift relative h-full rounded-xl border bg-card p-6">
-                <span className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+              <div className="mk-card lift relative h-full overflow-hidden p-7">
+                {/* الرقم كبيرٌ بتدرّج: هو الترتيب، والترتيب هنا معنًى */}
+                <span className="mk-step-number block" aria-hidden>
                   {item.step}
                 </span>
-                <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                <h3 className="mt-4 text-lg font-bold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-loose text-muted-foreground">
                   {item.description}
                 </p>
               </div>
@@ -260,43 +256,47 @@ export default async function HomePage() {
       </Section>
 
       {/* --------------------------------------------------------- الأمان */}
-      <Section muted>
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <Reveal>
-            <SectionHeading
-              align="start"
-              eyebrow={t('home.security.eyebrow')}
-              title={t('home.security.title')}
-              description={t('home.security.description')}
-            />
-            <div className="mt-8">
-              <Button variant="outline" asChild>
-                <Link href="/security">
-                  {t('home.security.link')}
-                  <ArrowLeft className="size-4" aria-hidden />
-                </Link>
-              </Button>
+      <Section>
+        <div className="mk-panel relative overflow-hidden rounded-[2rem] px-6 py-12 sm:px-12 sm:py-16">
+          <div className="mk-mesh pointer-events-none absolute inset-0" aria-hidden />
+          <div className="tech-dots pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+
+          <div className="relative grid items-center gap-12 lg:grid-cols-2">
+            <Reveal>
+              <SectionHeading
+                align="start"
+                eyebrow={t('home.security.eyebrow')}
+                title={t('home.security.title')}
+                description={t('home.security.description')}
+              />
+              <div className="mt-8">
+                <Button variant="outline" asChild className="rounded-full bg-card/40">
+                  <Link href="/security">
+                    {t('home.security.link')}
+                    <ArrowLeft className="size-4" aria-hidden />
+                  </Link>
+                </Button>
+              </div>
+            </Reveal>
+
+            <div>
+              <SecurityFlow
+                stages={t.list('home.security.flow').map((item) => ({
+                  stage: item.stage,
+                  detail: item.detail,
+                }))}
+              />
             </div>
-          </Reveal>
-
-          <div>
-            <SecurityFlow
-              stages={t.list('home.security.flow').map((item) => ({
-                stage: item.stage,
-                detail: item.detail,
-              }))}
-            />
           </div>
-        </div>
 
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="relative mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {t.list('home.security.cards').map((item, index) => {
               const Icon = pickIcon(SECURITY_ICONS, index);
               return (
                 <Reveal key={`${item.title}-${index}`} delay={index * 90}>
-                  <div className="lift h-full rounded-xl border bg-card p-5">
+                  <div className="lift h-full rounded-2xl border border-border/70 bg-card/60 p-5 backdrop-blur">
                     <Icon className="size-5 text-primary" aria-hidden />
-                    <h3 className="mt-3 text-sm font-semibold">{item.title}</h3>
+                    <h3 className="mt-3 text-sm font-bold">{item.title}</h3>
                     <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
                       {item.description}
                     </p>
@@ -304,11 +304,12 @@ export default async function HomePage() {
                 </Reveal>
               );
             })}
+          </div>
         </div>
       </Section>
 
       {/* -------------------------------------------------------- المميزات */}
-      <Section>
+      <Section muted>
         <Reveal>
           <SectionHeading
             eyebrow={t('home.platform.eyebrow')}
@@ -316,17 +317,43 @@ export default async function HomePage() {
           />
         </Reveal>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* شبكة «بينتو»: البطاقة الأولى أعرض لأنها المساعد نفسه — الميزة
+            التي تُشترى، والبقية تخدمها. */}
+        <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {t.list('home.platform.cards').map((item, index) => {
             const Icon = pickIcon(PLATFORM_ICONS, index);
+            const lead = index === 0;
             return (
-              <Reveal key={`${item.title}-${index}`} delay={(index % 3) * 90}>
-                <div className="lift h-full rounded-xl border bg-card p-6">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                    <Icon className="size-5 text-primary" aria-hidden />
+              <Reveal
+                key={`${item.title}-${index}`}
+                delay={(index % 3) * 90}
+                className={cn(lead && 'md:col-span-2')}
+              >
+                <div
+                  className={cn(
+                    'mk-card lift relative h-full overflow-hidden p-7',
+                    lead && 'mk-ring sm:p-9',
+                  )}
+                >
+                  {lead ? (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute -end-16 -top-16 size-56 rounded-full opacity-60 blur-3xl"
+                      style={{ background: 'hsl(var(--primary) / 0.28)' }}
+                    />
+                  ) : null}
+                  <div className={cn('mk-icon', lead ? 'size-14' : 'size-11')}>
+                    <Icon className={lead ? 'size-7' : 'size-5'} aria-hidden />
                   </div>
-                  <h3 className="mt-4 text-base font-semibold">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  <h3 className={cn('mt-5 font-bold', lead ? 'text-2xl' : 'text-lg')}>
+                    {item.title}
+                  </h3>
+                  <p
+                    className={cn(
+                      'mt-2 leading-loose text-muted-foreground',
+                      lead ? 'max-w-xl text-base' : 'text-sm',
+                    )}
+                  >
                     {item.description}
                   </p>
                 </div>
@@ -337,7 +364,7 @@ export default async function HomePage() {
       </Section>
 
       {/* --------------------------------------------------------- الأسعار */}
-      <Section muted id="pricing">
+      <Section id="pricing">
         <Reveal>
           <SectionHeading
             eyebrow={t('home.pricing.eyebrow')}
@@ -345,48 +372,61 @@ export default async function HomePage() {
             description={t('home.pricing.description')}
           />
         </Reveal>
-        <Reveal className="mt-14" delay={100}>
+        <Reveal className="mt-16" delay={100}>
           <PricingTable />
         </Reveal>
       </Section>
 
       {/* --------------------------------------------------- أسئلة شائعة */}
-      <Section>
+      <Section muted>
         <Reveal>
           <SectionHeading eyebrow={t('home.faq.eyebrow')} title={t('home.faq.title')} />
         </Reveal>
-        <Reveal className="mx-auto mt-12 max-w-3xl" delay={80}>
+        <Reveal className="mx-auto mt-14 max-w-3xl" delay={80}>
           <FaqList items={homeFaq(t)} />
         </Reveal>
       </Section>
 
       {/* ------------------------------------------------------ دعوة ختامية */}
-      <section className="border-t bg-gradient-to-b from-background to-accent/40">
-        <div className="container py-20 sm:py-24">
-          <Reveal className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {t('home.final.title')}
-            </h2>
-            <p className="mt-4 text-base leading-loose text-muted-foreground">
-              {t('home.final.description')}
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button size="lg" asChild className="group">
-                <Link href="/register">
-                  {t('home.cta.primary')}
-                  <ArrowLeft
-                    className="size-4 transition-transform group-hover:-translate-x-1"
-                    aria-hidden
-                  />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/contact">{t('home.final.secondary')}</Link>
-              </Button>
+      <Section>
+        <Reveal>
+          <div className="mk-panel relative overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-12 sm:py-24">
+            <div className="mk-mesh pointer-events-none absolute inset-0" aria-hidden />
+            <div className="tech-grid pointer-events-none absolute inset-0 opacity-70" aria-hidden />
+            <div className="relative mx-auto max-w-2xl">
+              <h2 className="mk-gradient-text text-balance text-3xl font-extrabold leading-[1.25] sm:text-4xl lg:text-5xl">
+                {t('home.final.title')}
+              </h2>
+              <p className="mt-5 text-base leading-loose text-muted-foreground sm:text-lg">
+                {t('home.final.description')}
+              </p>
+              <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button
+                  size="lg"
+                  asChild
+                  className="mk-cta group h-12 rounded-full border-0 px-8 text-base font-bold"
+                >
+                  <Link href="/register">
+                    {t('home.cta.primary')}
+                    <ArrowLeft
+                      className="size-4 transition-transform group-hover:-translate-x-1"
+                      aria-hidden
+                    />
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  asChild
+                  className="h-12 rounded-full bg-card/40 px-8 text-base"
+                >
+                  <Link href="/contact">{t('home.final.secondary')}</Link>
+                </Button>
+              </div>
             </div>
-          </Reveal>
-        </div>
-      </section>
+          </div>
+        </Reveal>
+      </Section>
     </>
   );
 }

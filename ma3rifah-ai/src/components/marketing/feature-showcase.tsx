@@ -107,19 +107,17 @@ export function FeatureShowcase({ items }: { items: ShowcaseItem[] }) {
                 setActive(index);
               }}
               className={cn(
-                'group relative flex-1 overflow-hidden rounded-xl border p-4 text-start transition-colors lg:flex-none',
+                'group relative flex-1 overflow-hidden rounded-2xl border p-4 text-start transition-colors lg:flex-none',
                 selected
-                  ? 'border-primary/40 bg-card shadow-sm'
-                  : 'border-transparent bg-muted/40 hover:bg-muted/70',
+                  ? 'border-primary/40 bg-card shadow-lg shadow-primary/10'
+                  : 'border-transparent bg-card/40 hover:bg-card/70',
               )}
             >
               <span className="flex items-center gap-3">
                 <span
                   className={cn(
-                    'flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors',
-                    selected
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-background text-muted-foreground',
+                    'flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors',
+                    selected ? 'mk-icon' : 'bg-muted text-muted-foreground',
                   )}
                 >
                   <Icon className="size-5" aria-hidden />
@@ -180,11 +178,11 @@ export function FeatureShowcase({ items }: { items: ShowcaseItem[] }) {
               aria-labelledby={`showcase-tab-${index}`}
               hidden={index !== active}
               tabIndex={0}
-              className="rounded-2xl border bg-card p-6 sm:p-8"
+              className="mk-card mk-ring p-6 sm:p-10"
             >
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                  <Icon className="size-6 text-primary" aria-hidden />
+                <div className="mk-icon size-14 shrink-0">
+                  <Icon className="size-7" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
                   {item.badge ? (
@@ -192,8 +190,8 @@ export function FeatureShowcase({ items }: { items: ShowcaseItem[] }) {
                       {item.badge}
                     </Badge>
                   ) : null}
-                  <h3 className="text-lg font-semibold leading-snug">{item.title}</h3>
-                  <p className="mt-3 text-sm leading-loose text-muted-foreground">
+                  <h3 className="text-xl font-bold leading-snug sm:text-2xl">{item.title}</h3>
+                  <p className="mt-4 text-base leading-loose text-muted-foreground">
                     {item.description}
                   </p>
                 </div>
