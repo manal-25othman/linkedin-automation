@@ -31,6 +31,7 @@ export interface GapRowData {
   resolutionNote: string | null;
   linkedDocumentId: string | null;
   answerText: string | null;
+  departmentId: string | null;
   assignedTo: string | null;
   assignedName: string | null;
   /** مسوّدة الخبير — لم تُنشر بعد */
@@ -42,6 +43,52 @@ export interface CompanyMember {
   id: string;
   name: string;
   role: string;
+  jobTitle: string | null;
+  departmentId: string | null;
+  departmentName: string | null;
+}
+
+/**
+ * ترتيب المرشَّحين للتوجيه.
+ *
+ * قسم السائل أولًا: سؤالُ موظفٍ في المستودع عن عهدة السلامة يُجيبه من
+ * في المستودع غالبًا، والقائمة الهجائية في شركة من ستين موظفًا تجعل
+ * الاختيار بحثًا لا قرارًا.
+ *
+ * وليس ترشيحًا آليًا: القرار للمدير، والترتيب يقرّب له الأرجح لا غير.
+ */
+function groupMembers(
+  members: CompanyMember[],
+  gapDepartmentId: string | null,
+): Array<{ label: string; members: CompanyMember[] }> {
+  const byDepartment = new Map<string, CompanyMember[]>();
+
+  for (const member of members) {
+    const key = member.departmentName ?? 'بلا قسم';
+    const list = byDepartment.get(key) ?? [];
+    list.push(member);
+    byDepartment.set(key, list);
+  }
+
+  const askerDepartment = members.find(
+    (member) => gapDepartmentId !== null && member.departmentId === gapDepartmentId,
+  )?.departmentName;
+
+  return [...byDepartment.entries()]
+    .map(([label, list]) => ({ label, members: list }))
+    .sort((first, second) => {
+      if (first.label === askerDepartment) return -1;
+      if (second.label === askerDepartment) return 1;
+      // «بلا قسم» في الآخر دائمًا: لا يقول شيئًا يساعد على الاختيار
+      if (first.label === 'بلا قسم') return 1;
+      if (second.label === 'بلا قسم') return -1;
+      return first.label.localeCompare(second.label, 'ar');
+    });
+}
+
+/** الوصف الذي يميّز الشخص: مسمّاه الوظيفي إن كُتب، وإلا دوره */
+function memberHint(member: CompanyMember): string {
+  return member.jobTitle?.trim() || member.role;
 }
 
 const STATUS_META: Record<
@@ -348,12 +395,22 @@ export function GapsClient({
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="">بلا توجيه</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name} — {member.role}
-              </option>
+            {groupMembers(members, assigning?.departmentId ?? null).map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name} — {memberHint(member)}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
+          {assigning?.departmentName ? (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              سأل هذا السؤالَ موظف من <b className="text-foreground">{assigning.departmentName}</b>،
+              فقُدِّم قسمه في القائمة.
+            </p>
+          ) : null}
           <p className="text-xs leading-relaxed text-muted-foreground">
             يصل الموظف تنبيه، ويرى <b>هذا السؤال وحده</b> في صفحة «أسئلة موجَّهة إليك» — لا
             بقية الفجوات ولا أي شيء آخر لا يخصّه. ويكتب الجواب، فيعود إليك لاعتماده قبل أن
