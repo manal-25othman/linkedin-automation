@@ -24,6 +24,8 @@ import { Comparison } from '@/components/marketing/comparison';
 import { SecurityFlow } from '@/components/marketing/security-flow';
 import { PricingTable } from '@/components/marketing/pricing-table';
 import { FaqList } from '@/components/marketing/faq-list';
+import { SpotlightGroup, TiltCard } from '@/components/marketing/motion';
+import { QuestionRibbon, SplitWords } from '@/components/marketing/ribbon';
 import { getSiteText } from '@/lib/content/site-text';
 import { homeFaq } from '@/lib/content/faq';
 import { pickIcon } from '@/components/marketing/icon-cycle';
@@ -69,6 +71,9 @@ export default async function HomePage() {
       {/* ------------------------------------------------------------ Hero */}
       <section className="relative overflow-hidden">
         <div className="mk-mesh pointer-events-none absolute inset-0" aria-hidden />
+        <div className="mk-blob mk-blob-a" aria-hidden />
+        <div className="mk-blob mk-blob-b" aria-hidden />
+        <div className="mk-blob mk-blob-c" aria-hidden />
         <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
 
         <div className="container relative pb-16 pt-12 sm:pb-24 sm:pt-16 lg:pt-20">
@@ -93,7 +98,7 @@ export default async function HomePage() {
                     : 'text-4xl leading-[1.22] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.15]',
                 )}
               >
-                {heroLine1}
+                <SplitWords text={heroLine1} baseDelay={80} />
               </h1>
 
               {heroLine2 ? (
@@ -149,16 +154,21 @@ export default async function HomePage() {
                     'radial-gradient(60% 60% at 50% 40%, hsl(var(--primary) / 0.35), transparent 70%)',
                 }}
               />
-              <div className="mk-ring mk-float rounded-[1.75rem] bg-card/50 p-2 backdrop-blur">
-                <DemoConsole />
+              <div className="mk-float">
+                <TiltCard className="mk-ring mk-ring-live rounded-[1.75rem] bg-card/50 p-2 backdrop-blur">
+                  <DemoConsole />
+                </TiltCard>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* شريط الأسئلة: ما يُسأل فعلًا، يمرّ أمام الزائر قبل أن يقرأ المشكلة */}
+      <QuestionRibbon />
+
       {/* --------------------------------------------------------- المشكلة */}
-      <Section className="border-t">
+      <Section>
         <Reveal>
           <SectionHeading
             eyebrow={t('home.problem.eyebrow')}
@@ -167,7 +177,7 @@ export default async function HomePage() {
           />
         </Reveal>
 
-        <div className="mt-16 grid gap-5 md:grid-cols-3">
+        <SpotlightGroup className="mt-16 grid gap-5 md:grid-cols-3">
           {t.list('home.problem.cards').map((item, index) => {
             const Icon = pickIcon(PROBLEM_ICONS, index);
             return (
@@ -184,7 +194,7 @@ export default async function HomePage() {
               </Reveal>
             );
           })}
-        </div>
+        </SpotlightGroup>
       </Section>
 
       {/* ------------------------------------------------------ ما يميّزنا */}
@@ -237,7 +247,17 @@ export default async function HomePage() {
           <SectionHeading eyebrow={t('home.steps.eyebrow')} title={t('home.steps.title')} />
         </Reveal>
 
-        <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Reveal className="relative mt-16">
+          {/* خطّ يُرسم من اليمين إلى اليسار حين يظهر القسم: الترتيب حركةٌ لا رقمٌ فقط */}
+          <div
+            className="mk-draw pointer-events-none absolute inset-x-10 top-[3.4rem] hidden h-px lg:block"
+            style={{
+              backgroundImage:
+                'linear-gradient(90deg, hsl(var(--glow-b) / 0.6), hsl(var(--primary) / 0.6))',
+            }}
+            aria-hidden
+          />
+        <SpotlightGroup className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {t.list('home.steps.items').map((item, index) => (
             <Reveal key={`${item.title}-${index}`} delay={index * 100}>
               <div className="mk-card lift relative h-full overflow-hidden p-7">
@@ -252,7 +272,8 @@ export default async function HomePage() {
               </div>
             </Reveal>
           ))}
-        </div>
+        </SpotlightGroup>
+        </Reveal>
       </Section>
 
       {/* --------------------------------------------------------- الأمان */}
@@ -319,7 +340,7 @@ export default async function HomePage() {
 
         {/* شبكة «بينتو»: البطاقة الأولى أعرض لأنها المساعد نفسه — الميزة
             التي تُشترى، والبقية تخدمها. */}
-        <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <SpotlightGroup className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {t.list('home.platform.cards').map((item, index) => {
             const Icon = pickIcon(PLATFORM_ICONS, index);
             const lead = index === 0;
@@ -332,7 +353,7 @@ export default async function HomePage() {
                 <div
                   className={cn(
                     'mk-card lift relative h-full overflow-hidden p-7',
-                    lead && 'mk-ring sm:p-9',
+                    lead && 'mk-ring mk-ring-live sm:p-9',
                   )}
                 >
                   {lead ? (
@@ -360,7 +381,7 @@ export default async function HomePage() {
               </Reveal>
             );
           })}
-        </div>
+        </SpotlightGroup>
       </Section>
 
       {/* --------------------------------------------------------- الأسعار */}
@@ -392,6 +413,8 @@ export default async function HomePage() {
         <Reveal>
           <div className="mk-panel relative overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-12 sm:py-24">
             <div className="mk-mesh pointer-events-none absolute inset-0" aria-hidden />
+            <div className="mk-blob mk-blob-a" aria-hidden />
+            <div className="mk-blob mk-blob-b" aria-hidden />
             <div className="tech-grid pointer-events-none absolute inset-0 opacity-70" aria-hidden />
             <div className="relative mx-auto max-w-2xl">
               <h2 className="mk-gradient-text text-balance text-3xl font-extrabold leading-[1.25] sm:text-4xl lg:text-5xl">

@@ -56,7 +56,7 @@ export async function PricingTable() {
             key={plan.id}
             className={cn(
               'mk-card lift relative flex flex-col p-8',
-              isRecommended && 'mk-ring shadow-2xl shadow-primary/15 lg:-translate-y-3',
+              isRecommended && 'mk-ring mk-ring-live mk-pulse-glow lg:-translate-y-3',
             )}
           >
             {isRecommended ? (

@@ -32,8 +32,8 @@ export function SecurityFlow({ stages }: { stages: SecurityStage[] }) {
 
         return (
           <li key={item.stage} className="relative">
-            <div className="flex items-start gap-4 rounded-xl border bg-card p-4">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="lift flex items-start gap-4 rounded-2xl border border-border/70 bg-card/70 p-4 backdrop-blur">
+              <span className="mk-icon size-10 shrink-0">
                 <Icon className="size-5" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
@@ -56,9 +56,10 @@ export function SecurityFlow({ stages }: { stages: SecurityStage[] }) {
                 لأنه أيقونةٌ مقلوبة أصلًا، ويُخفى بعد الأخيرة */}
             {last ? null : (
               <span
-                className="flex justify-center py-1 text-muted-foreground/50"
+                className="relative flex justify-center py-1 text-muted-foreground/50"
                 aria-hidden
               >
+                <span className="mk-beam" />
                 <ArrowLeft className="size-4 -rotate-90" />
               </span>
             )}
