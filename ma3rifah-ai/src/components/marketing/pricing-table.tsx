@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { FALLBACK_PLANS, formatLimit } from '@/lib/config/plans';
 import { formatCurrency, cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -42,7 +41,13 @@ export async function PricingTable() {
   const recommendedCode = plans.length >= 2 ? plans[1].code : plans[0]?.code;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div
+      className={cn(
+        'grid gap-6 lg:items-start',
+        // أربع خطط في صفّ واحد على الشاشات الواسعة، لا ثلاث ثم واحدة يتيمة
+        plans.length >= 4 ? 'md:grid-cols-2 xl:grid-cols-4' : 'lg:grid-cols-3',
+      )}
+    >
       {plans.map((plan) => {
         const isRecommended = plan.code === recommendedCode;
 
@@ -50,15 +55,17 @@ export async function PricingTable() {
           <div
             key={plan.id}
             className={cn(
-              'relative flex flex-col rounded-xl border bg-card p-7',
-              isRecommended && 'border-primary shadow-md ring-1 ring-primary/20',
+              'mk-card lift relative flex flex-col p-8',
+              isRecommended && 'mk-ring shadow-2xl shadow-primary/15 lg:-translate-y-3',
             )}
           >
             {isRecommended ? (
-              <Badge className="absolute -top-3 start-7">الأكثر اختيارًا</Badge>
+              <span className="mk-cta absolute -top-3.5 start-8 rounded-full px-3.5 py-1 text-xs font-bold">
+                الأكثر اختيارًا
+              </span>
             ) : null}
 
-            <h3 className="text-lg font-semibold">{plan.name}</h3>
+            <h3 className="text-xl font-bold">{plan.name}</h3>
             {plan.description ? (
               <p className="mt-2 min-h-[2.75rem] text-sm leading-relaxed text-muted-foreground">
                 {plan.description}
@@ -66,7 +73,7 @@ export async function PricingTable() {
             ) : null}
 
             <div className="mt-6 flex items-baseline gap-2">
-              <span className="text-3xl font-semibold tracking-tight">
+              <span className="text-4xl font-extrabold tracking-tight">
                 {plan.is_custom_priced
                   ? 'تسعير مخصص'
                   : formatCurrency(plan.price_amount, plan.currency)}
@@ -102,7 +109,9 @@ export async function PricingTable() {
             <ul className="mt-6 flex-1 space-y-3">
               {(plan.features ?? []).map((feature) => (
                 <li key={feature} className="flex items-start gap-2.5">
-                  <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Check className="size-3" aria-hidden />
+                  </span>
                   <span className="text-sm leading-relaxed text-muted-foreground">
                     {feature}
                   </span>
@@ -111,7 +120,10 @@ export async function PricingTable() {
             </ul>
 
             <Button
-              className="mt-8"
+              className={cn(
+                'mt-8 h-11 rounded-full',
+                isRecommended && 'mk-cta border-0 font-bold',
+              )}
               variant={isRecommended ? 'default' : 'outline'}
               asChild
             >

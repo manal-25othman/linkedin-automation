@@ -40,27 +40,28 @@ export async function SiteFooter() {
   const t = await getSiteText();
 
   return (
-    <footer className="border-t bg-muted/25">
-      <div className="container py-14">
-        <div className="grid gap-10 lg:grid-cols-[1.5fr_repeat(3,1fr)]">
+    <footer className="relative overflow-hidden border-t">
+      <div className="mk-mesh pointer-events-none absolute inset-0 opacity-60" aria-hidden />
+      <div className="container relative py-16">
+        <div className="grid gap-12 lg:grid-cols-[1.6fr_repeat(4,1fr)]">
           <div className="max-w-sm">
             <Logo />
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-5 text-sm leading-loose text-muted-foreground">
               {t('site.tagline')}
             </p>
           </div>
 
           {FOOTER_SECTIONS.map((section) => (
             <div key={section.title}>
-              <h3 className="text-sm font-semibold">{section.title}</h3>
-              <ul className="mt-4 space-y-2.5">
+              <h3 className="text-sm font-bold">{section.title}</h3>
+              <ul className="mt-4 space-y-2">
                 {section.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
                       // ارتفاع اللمس على الهاتف: الرابط النصّي ستّة عشر
                       // بكسلًا، والإصبع يخطئه إلى جاره فوقه أو تحته
-                      className="inline-flex min-h-9 items-center text-sm text-muted-foreground transition-colors hover:text-foreground sm:min-h-0"
+                      className="inline-flex min-h-9 items-center text-sm text-muted-foreground transition-colors hover:text-primary sm:min-h-0"
                     >
                       {link.label}
                     </Link>
@@ -71,8 +72,9 @@ export async function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-12 border-t pt-6 text-sm text-muted-foreground">
+        <div className="mt-14 flex flex-col gap-3 border-t border-border/60 pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} بديهة. جميع الحقوق محفوظة.</p>
+          <p className="text-xs">صُنعت في المملكة العربية السعودية</p>
         </div>
       </div>
     </footer>
