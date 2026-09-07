@@ -259,7 +259,7 @@ export default async function SetupPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl bg-white px-5 py-10">
-      <p className="text-sm text-muted-foreground">معرفة AI</p>
+      <p className="text-sm text-muted-foreground">بديهة</p>
       <h1 className="mt-1 text-2xl font-bold text-foreground">حالة التجهيز</h1>
 
       <div

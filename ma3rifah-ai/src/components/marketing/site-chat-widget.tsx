@@ -15,9 +15,9 @@ export function SiteChatWidget() {
 
   return (
     <ChatBubblePanel
-      title="مساعد معرفة AI"
+      title="مساعد بديهة"
       subtitle="اسأل عن المنصة والباقات"
-      greeting="أهلًا بك. أنا مساعد الموقع، أجيب عن أسئلتك حول منصة معرفة AI وكيف تعمل وباقاتها. كيف أساعدك؟"
+      greeting="أهلًا بك. أنا مساعد الموقع، أجيب عن أسئلتك حول منصة بديهة وكيف تعمل وباقاتها. كيف أساعدك؟"
       suggestions={SITE_SUGGESTED_QUESTIONS}
       launcherLabel="افتح محادثة المساعد"
       placeholder="اسأل عن المنصة…"

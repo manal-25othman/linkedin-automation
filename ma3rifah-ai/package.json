@@ -2,7 +2,7 @@
   "name": "ma3rifah-ai",
   "version": "0.1.0",
   "private": true,
-  "description": "معرفة AI — منصة إدارة المعرفة المؤسسية بالذكاء الاصطناعي",
+  "description": "بديهة — منصة إدارة المعرفة المؤسسية بالذكاء الاصطناعي",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

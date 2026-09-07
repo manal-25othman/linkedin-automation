@@ -7,7 +7,7 @@ import { inviteRequired } from '@/lib/auth/invite';
 
 export const metadata: Metadata = {
   title: 'إنشاء حساب',
-  description: 'أنشئ حساب شركتك في منصة معرفة AI وابدأ ببناء قاعدة معرفة ذكية.',
+  description: 'أنشئ حساب شركتك في منصة بديهة وابدأ ببناء قاعدة معرفة ذكية.',
   robots: { index: false, follow: false },
 };
 

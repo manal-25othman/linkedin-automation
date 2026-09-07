@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
+/**
+ * علامة «بديهة»: شرارة رباعية — الفكرة تحضر في لحظتها.
+ *
+ * الشرارة الكبرى ذهبية وحدها، والصغرى بيضاء شفافة: لمسة ذهب واحدة
+ * تكفي، وتوزيعه على العنصرين يُفقد العلامة رصانتها.
+ * الأشكال نفسها مكرَّرة في public/icon.svg بألوان صريحة لأيقونة التبويب.
+ */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg
@@ -10,30 +17,14 @@ export function LogoMark({ className }: { className?: string }) {
       className={cn('size-8 shrink-0', className)}
     >
       <rect width="32" height="32" rx="8" className="fill-primary" />
-      {/* ثلاث طبقات: المستندات تتحوّل إلى معرفة */}
-      {/* الطبقة العليا ذهبية وحدها: لمسةٌ واحدة تكفي.
-          والذهبيّ الموزَّع على كل الطبقات يُفقد العلامة رصانتها. */}
       <path
-        d="M8 11.5 16 7.5l8 4-8 4-8-4Z"
+        d="M14.5 6c.7 5.4 3 7.7 8.5 8.5-5.5.8-7.8 3.1-8.5 8.5-.7-5.4-3-7.7-8.5-8.5 5.5-.8 7.8-3.1 8.5-8.5Z"
         className="fill-gold"
       />
       <path
-        d="M8 16l8 4 8-4"
-        stroke="currentColor"
-        className="text-primary-foreground"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.7"
-      />
-      <path
-        d="M8 20.5l8 4 8-4"
-        stroke="currentColor"
-        className="text-primary-foreground"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.45"
+        d="M23.5 19c.4 3 1.6 4.2 4.5 4.5-2.9.3-4.1 1.5-4.5 4.5-.4-3-1.6-4.2-4.5-4.5 2.9-.3 4.1-1.5 4.5-4.5Z"
+        className="fill-primary-foreground"
+        opacity="0.75"
       />
     </svg>
   );
@@ -54,11 +45,7 @@ export function Logo({
       className={cn('flex items-center gap-2.5 font-semibold tracking-tight', className)}
     >
       <LogoMark />
-      {showText ? (
-        <span className="text-lg">
-          معرفة <span className="text-primary">AI</span>
-        </span>
-      ) : null}
+      {showText ? <span className="text-lg">بديهة</span> : null}
     </Link>
   );
 }

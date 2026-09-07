@@ -20,7 +20,7 @@ import { getSiteText } from '@/lib/content/site-text';
 export const metadata: Metadata = {
   title: 'الأمان والخصوصية',
   description:
-    'عزل كامل بين الشركات عبر Row Level Security، صلاحيات على مستوى المستند، تشفير البيانات، وسجل تدقيق شامل. تعرّف على كيفية حماية معرفة AI لبيانات مؤسستك.',
+    'عزل كامل بين الشركات عبر Row Level Security، صلاحيات على مستوى المستند، تشفير البيانات، وسجل تدقيق شامل. تعرّف على كيفية حماية بديهة لبيانات مؤسستك.',
 };
 
 const CONTROL_ICONS = [

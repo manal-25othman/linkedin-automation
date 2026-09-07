@@ -69,7 +69,7 @@ export function TicketThread({
                 )}
               >
                 <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
-                  {message.from_platform ? 'فريق معرفة AI' : 'الشركة'}
+                  {message.from_platform ? 'فريق بديهة' : 'الشركة'}
                 </p>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
                 <p className="mt-2 text-[11px] text-muted-foreground">

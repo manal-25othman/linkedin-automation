@@ -5,7 +5,7 @@ import { LoginForm } from './login-form';
 
 export const metadata: Metadata = {
   title: 'تسجيل الدخول',
-  description: 'سجّل الدخول إلى حساب شركتك في منصة معرفة AI.',
+  description: 'سجّل الدخول إلى حساب شركتك في منصة بديهة.',
   robots: { index: false, follow: false },
 };
 

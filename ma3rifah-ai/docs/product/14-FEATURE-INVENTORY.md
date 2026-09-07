@@ -203,10 +203,10 @@
 |---|---|---|
 | تذاكر دعم (فئة، أولوية، حالة، ردود) | `/support` · `/support/[ticketId]` | `createTicketAction` · `replyToTicketAction` · `updateTicketStatusAction` |
 | استبيان الرضا (مرة لكل مستخدم) | `/feedback` | `submitFeedbackSurveyAction` · `feedback_surveys` |
-| مركز المساعدة (١٣ مقالًا) | `/help` · `/help/[slug]` | `src/content/help.ts`: what-is-maarifah · getting-started · upload-documents · document-permissions · duplicate-documents · asking-questions · confidence-and-sources · knowledge-gaps · roles · invite-users · analytics · subscription · troubleshooting |
+| مركز المساعدة (١٣ مقالًا) | `/help` · `/help/[slug]` | `src/content/help.ts`: what-is-badiha · getting-started · upload-documents · document-permissions · duplicate-documents · asking-questions · confidence-and-sources · knowledge-gaps · roles · invite-users · analytics · subscription · troubleshooting |
 | البدء السريع | `/help` | `QuickStart` |
 
-> عند تغيير الاسم: مقال `what-is-maarifah` يُعاد تسميته ومحتواه يُحدَّث، ولا يُحذف.
+> عند أي تغيير هوية: مقال «ما هي بديهة؟» (`what-is-badiha`) يُحدَّث محتواه ولا يُحذف.
 
 ## ١٤. الإشعارات (داخل المنصة)
 
@@ -302,7 +302,7 @@
 
 | العنصر | الموقع |
 |---|---|
-| الاسم | `NEXT_PUBLIC_APP_NAME` · `components/shared/brand` · `site-text.ts` (المفاتيح ذات الاسم) · `help.ts` (`what-is-maarifah`) · `metadata` في `layout.tsx` · رسائل واتساب · قوالب البريد |
+| الاسم | `NEXT_PUBLIC_APP_NAME` · `components/shared/brand` · `site-text.ts` (المفاتيح ذات الاسم) · `help.ts` (`what-is-badiha`) · `metadata` في `layout.tsx` · رسائل واتساب · قوالب البريد |
 | الشعار والألوان | `components/shared/brand` · `globals.css` (رموز التصميم — اختبار `design-tokens`) · `public/` |
 | الوثائق | `docs/product/*` · `docs/legal/04` و`05` و`06` · `docs/sales/*` · `README.md` |
 | مفاتيح لا تتغيّر | مفاتيح `site_content` · المسارات · أسماء الجداول والدوال · الصلاحيات |

@@ -72,7 +72,7 @@ export async function SiteFooter() {
         </div>
 
         <div className="mt-12 border-t pt-6 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} معرفة AI. جميع الحقوق محفوظة.</p>
+          <p>© {new Date().getFullYear()} بديهة. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     </footer>

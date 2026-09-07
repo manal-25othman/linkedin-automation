@@ -62,7 +62,7 @@ export function WelcomeDialog({ steps }: { steps: QuickStep[] }) {
     <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>أهلًا بك في معرفة AI</DialogTitle>
+          <DialogTitle>أهلًا بك في بديهة</DialogTitle>
           <DialogDescription>
             ثلاث خطوات تكفي للبدء. وكل ما تحتاجه بعدها في دليل الاستخدام.
           </DialogDescription>

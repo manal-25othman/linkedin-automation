@@ -35,7 +35,7 @@ export function Comparison({ rows }: { rows: ComparisonRow[] }) {
         */}
         <span aria-hidden />
         <span className="text-sm font-medium text-muted-foreground">أداة عامة</span>
-        <span className="text-sm font-semibold text-foreground">معرفة AI</span>
+        <span className="text-sm font-semibold text-foreground">بديهة</span>
       </div>
 
       <div className="overflow-hidden rounded-2xl border bg-card">
@@ -56,7 +56,7 @@ export function Comparison({ rows }: { rows: ComparisonRow[] }) {
               muted
             />
             <Cell
-              label="معرفة AI"
+              label="بديهة"
               text={row.ours}
               icon={<Check className="size-3.5" aria-hidden />}
             />
