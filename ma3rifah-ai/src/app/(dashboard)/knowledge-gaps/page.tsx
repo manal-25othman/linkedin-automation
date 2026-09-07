@@ -30,7 +30,7 @@ export default async function KnowledgeGapsPage() {
     // الشركة، والخبير قد يكون موظفًا لا مديرًا — وهذا هو المقصود.
     supabase
       .from('profiles')
-      .select('id, full_name, role')
+      .select('id, full_name, role, department_id, job_title')
       .eq('status', 'ACTIVE')
       .order('full_name'),
   ]);
@@ -47,6 +47,7 @@ export default async function KnowledgeGapsPage() {
     id: gap.id,
     question: gap.question,
     timesAsked: gap.times_asked,
+    departmentId: gap.department_id,
     departmentName: gap.department_id ? departmentNames.get(gap.department_id) ?? null : null,
     status: gap.status,
     answerText: gap.answer_text,
@@ -109,6 +110,11 @@ export default async function KnowledgeGapsPage() {
           id: member.id,
           name: member.full_name,
           role: ROLE_LABELS[member.role],
+          jobTitle: member.job_title,
+          departmentId: member.department_id,
+          departmentName: member.department_id
+            ? (departmentNames.get(member.department_id) ?? null)
+            : null,
         }))}
         canManage={can(profile.role, 'knowledge_gaps.manage')}
       />
