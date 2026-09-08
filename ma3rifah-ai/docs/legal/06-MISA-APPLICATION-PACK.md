@@ -68,9 +68,9 @@
 >
 > **3. Tenant isolation is enforced in the database and proven by tests.**
 > Isolation is implemented in PostgreSQL row-level security rather than
-> application code, and is covered by 232 automated tests plus mutation
-> testing: the guards are deliberately disabled in a test build and the
-> suite must fail — which it does.
+> application code, and is covered by 245 automated isolation tests plus
+> mutation testing: the guards are deliberately disabled in a test build
+> and 45 tests must then fail — which they do.
 >
 > **4. Scanned Arabic documents are usable.** Circulars and manuals that
 > exist only as scans are read page by page and indexed like any other
