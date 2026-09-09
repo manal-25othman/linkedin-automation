@@ -26,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* عمود المحتوى التسويقي */}
       <div className="hidden border-s bg-muted/30 lg:flex lg:flex-col lg:justify-center lg:px-14">
         <div className="max-w-md">
-          <h2 className="text-2xl font-semibold leading-snug tracking-tight">
+          <h2 className="text-2xl font-semibold leading-[1.5] tracking-tight">
             حوّل معرفة شركتك إلى ذكاء يعمل معك.
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">

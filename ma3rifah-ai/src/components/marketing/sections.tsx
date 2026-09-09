@@ -107,7 +107,7 @@ export function SectionHeading({
           </span>
         </p>
       ) : null}
-      <h2 className="text-balance text-3xl font-extrabold leading-[1.25] tracking-tight sm:text-4xl lg:text-[2.75rem]">
+      <h2 className="text-balance text-3xl font-extrabold leading-[1.45] tracking-tight sm:text-4xl lg:text-[2.75rem]">
         {title}
       </h2>
       {description ? (
@@ -171,7 +171,7 @@ export function PageHero({
               </span>
             </p>
           ) : null}
-          <h1 className="text-balance text-4xl font-extrabold leading-[1.2] tracking-tight sm:text-5xl">
+          <h1 className="text-balance text-4xl font-extrabold leading-[1.4] tracking-tight sm:text-5xl">
             {title}
           </h1>
           {description ? (
