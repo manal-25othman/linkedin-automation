@@ -94,14 +94,14 @@ const card=(s,x,y,w,h,title,body,o={})=>{
 {
   const s=pres.addSlide(); header(s,'الذكاء الاصطناعي داخل المنصة','Applied AI: seven roles, two agents');
   box(s,0.6,1.25,8.8,0.58,NAVY);
-  T(s,'سبعة أدوار ذكاء اصطناعي مستقلّة، منها وكيلان (★) يتّخذان خطوات بأنفسهما — ولكلٍّ موجّهه ونموذجه وحصته، وتكلفته تُقاس لكل شركة.',
+  T(s,'سبعة أدوار ذكاء اصطناعي مستقلّة، ولكلٍّ موجّهه ونموذجه وحصته، وتكلفته تُقاس لكل شركة. واثنان منها (★) مساران متعدّدا الخطوات.',
     {x:0.8,y:1.38,w:8.4,h:0.32,fontSize:10.5,bold:true,color:WHITE,align:'right'});
   const roles=[
     ['١ · المساعد الرئيسي','يجيب من مستندات الشركة بصلاحيات السائل'],
     ['٢ · الصياغة الإنقاذية','يعيد صوغ السؤال إن رجع البحث خاويًا'],
-    ['٣ · وكيل الفجوة ★','يبحث ثم يصوغ مسودة جواب يعتمدها المدير'],
+    ['٣ · مسار الفجوة ★','يبحث ثم يصوغ مسودة جواب يعتمدها المدير'],
     ['٤ · مساعد الموقع','يجيب الزوّار بمعزل عن بيانات أي شركة'],
-    ['٥ · وكيل واتساب ★','يتحقق من الهوية ثم يجيب بصلاحياتها'],
+    ['٥ · قناة واتساب ★','يتحقق من الهوية ثم يجيب بصلاحياتها'],
     ['٦ · عنوان المحادثة','يصوغ عنوانًا قصيرًا لكل محادثة'],
     ['٧ · القراءة الضوئية','ينسخ المسوحات والصور صفحةً صفحة'],
   ];
@@ -145,26 +145,42 @@ const card=(s,x,y,w,h,title,body,o={})=>{
 
 // ═══════════════════════════════ 10 · المالية والتوظيف
 {
-  const s=pres.addSlide(); header(s,'المالية والتوظيف لخمس سنوات','Five-year financial & hiring plan');
-  T(s,'الإيراد السنوي المتوقع (مليون ريال). الحدّ الأدنى من السيناريو المتحفّظ والأعلى من الأساسي؛ السنتان ٤ و٥ امتداد بالوتيرة نفسها.',
-    {x:3.2,y:1.32,w:6.2,h:0.4,fontSize:9.5,color:MUTED,align:'right'});
-  const years=['السنة ١','السنة ٢','السنة ٣','السنة ٤','السنة ٥'];
-  s.addChart(pres.charts.BAR,[
-    {name:'الحد الأدنى',labels:years,values:[0.08,0.35,0.80,1.30,1.90]},
-    {name:'الحد الأعلى',labels:years,values:[0.23,0.80,1.69,2.50,3.50]},
-  ],{x:3.2,y:1.75,w:6.2,h:3.25,barDir:'col',barGrouping:'clustered',chartColors:[GOLD,NAVY],
-     showValue:true,dataLabelPosition:'outEnd',dataLabelFontSize:8,dataLabelColor:INK,dataLabelFormatCode:'0.00',
-     catAxisLabelColor:INK,catAxisLabelFontSize:9,valAxisLabelColor:MUTED,valAxisLabelFontSize:8,valAxisMaxVal:4,
-     valGridLine:{color:LINE,size:0.5},catGridLine:{style:'none'},showLegend:true,legendPos:'b',legendFontSize:9,legendColor:INK});
-  box(s,0.6,1.32,2.4,3.68,SOFT);
-  T(s,'الفريق نهاية كل سنة',{x:0.75,y:1.46,w:2.1,h:0.3,fontSize:12,bold:true,color:NAVY,align:'right'});
-  [['١','المؤسِّسة'],['٢','+ مسؤول بيع'],['٣–٤','+ نجاح عملاء، مهندس'],['٥','+ مبيعات ثانٍ'],['٦–٧','+ مهندس، دعم']]
-   .forEach(([n,r],i)=>{
-    const y=1.95+i*0.58;
-    T(s,n,{x:2.25,y,w:0.6,h:0.45,fontSize:19,bold:true,color:NAVY,align:'center',valign:'middle'});
-    T(s,`السنة ${['١','٢','٣','٤','٥'][i]}`,{x:0.75,y:y+0.02,w:1.45,h:0.2,fontSize:8,color:MUTED,align:'right'});
-    T(s,r,{x:0.75,y:y+0.2,w:1.45,h:0.25,fontSize:9.5,color:INK,align:'right'});
+  const s=pres.addSlide(); header(s,'الخطة المالية وخطة التوظيف','Financial & hiring plan');
+  T(s,'الأرقام المالية الرسمية المعتمدة لملف الرخصة الريادية. كلها متوقَّعة ومستهدفة (Expected · Projected · Target)، لا مضمونة.',
+    {x:0.6,y:1.28,w:8.8,h:0.34,fontSize:10,color:MUTED,align:'right'});
+
+  // ── رأس المال
+  box(s,6.9,1.72,2.5,1.02,NAVY);
+  T(s,'رأس مال الشركة الناشئة',{x:7.05,y:1.84,w:2.2,h:0.24,fontSize:9.5,color:'B8C2D6',align:'right'});
+  T(s,'20,000 ريال',{x:7.05,y:2.12,w:2.2,h:0.42,fontSize:20,bold:true,color:GOLD,align:'right'});
+
+  // ── الفريق
+  box(s,6.9,2.9,2.5,2.1,SOFT);
+  T(s,'حجم الفريق الكلي',{x:7.05,y:3.02,w:2.2,h:0.28,fontSize:12,bold:true,color:NAVY,align:'right'});
+  [['السنة الأولى','1','المؤسِّسة وحدها'],['السنة الخامسة','5','مستهدف — بـ٤ تعيينات جديدة']].forEach(([lbl,n,note],i)=>{
+    const y=3.42+i*0.78;
+    T(s,n,{x:8.6,y,w:0.6,h:0.5,fontSize:24,bold:true,color:NAVY,align:'center',valign:'middle'});
+    T(s,lbl,{x:7.05,y:y+0.04,w:1.5,h:0.22,fontSize:8.5,color:MUTED,align:'right'});
+    T(s,note,{x:7.05,y:y+0.24,w:1.5,h:0.24,fontSize:9.5,color:INK,align:'right'});
   });
+
+  // ── الأرقام المالية
+  const fin=[
+    ['الاثنا عشر شهرًا القادمة','المصروفات (CapEx + OpEx)','60,000 ريال','الإيراد التراكمي المتوقَّع','65,000 ريال'],
+    ['الخمس سنوات القادمة','المصروفات التراكمية (CapEx + OpEx)','900,000 ريال','الإيراد التراكمي المتوقَّع','1,250,000 ريال'],
+  ];
+  fin.forEach(([head,l1,v1,l2,v2],i)=>{
+    const y=1.72+i*1.68;
+    box(s,0.6,y,6.1,1.5,i===0?SOFT:WHITE,i===0?null:LINE);
+    T(s,head,{x:0.78,y:y+0.14,w:5.74,h:0.28,fontSize:12.5,bold:true,color:NAVY,align:'right'});
+    T(s,l1,{x:3.7,y:y+0.55,w:2.82,h:0.22,fontSize:9,color:MUTED,align:'right'});
+    T(s,v1,{x:3.7,y:y+0.79,w:2.82,h:0.42,fontSize:19,bold:true,color:INK,align:'right'});
+    T(s,l2,{x:0.78,y:y+0.55,w:2.82,h:0.22,fontSize:9,color:MUTED,align:'right'});
+    T(s,v2,{x:0.78,y:y+0.79,w:2.82,h:0.42,fontSize:19,bold:true,color:CYAN,align:'right'});
+  });
+
+  T(s,'المشروع مموَّل ذاتيًا بالكامل ولا يطلب تمويلًا للبقاء؛ التعادل عند عدد صغير من العملاء والتكلفة الثابتة للبنية التحتية محدودة.',
+    {x:0.6,y:5.02,w:8.8,h:0.3,fontSize:9,color:MUTED,align:'right'});
 }
 
 // ═══════════════════════════════ 8 · خارطة التطوّر والتوسع

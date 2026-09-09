@@ -6,17 +6,17 @@
   :root {
     /* محايدات باردة — أساس واجهة مؤسسية هادئة */
     --background: 0 0% 100%;
-    --foreground: 215 28% 17%;
+    --foreground: 221 46% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 28% 17%;
+    --card-foreground: 221 46% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 28% 17%;
+    --popover-foreground: 221 46% 12%;
 
     /* اللون الأساسي: كحليّ عميق — لغة المكاتب النظامية والمالية.
        يقول «موثوق» لا «تقني»، وهو ما يشتريه مدير الامتثال. */
-    --primary: 218 55% 26%;
+    --primary: 220 55% 24%;
     --primary-foreground: 0 0% 100%;
 
     /* الذهبيّ: لمسة لا لون ثانٍ. مكسور عمدًا نحو النحاسيّ المطفأ لا
@@ -25,18 +25,18 @@
        ومشبَعٌ أقلّ من التحذير ومختلفٌ عنه في الدرجة اللونية، لأن
        الذهبيّ الفاقع يُقرأ إنذارًا: يرى المستخدم وسمًا ذهبيًّا فيظنّ
        أن شيئًا يحتاج انتباهه، ثم يتعلّم تجاهُلَ التحذيرات كلها. */
-    --gold: 40 48% 42%;
-    --gold-foreground: 0 0% 100%;
-    --gold-soft: 42 60% 95%;
+    --gold: 173 61% 44%;
+    --gold-foreground: 221 46% 12%;
+    --gold-soft: 173 45% 95%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 215 28% 17%;
+    --secondary: 220 38% 97%;
+    --secondary-foreground: 221 46% 12%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 38% 97%;
+    --muted-foreground: 221 14% 41%;
 
-    --accent: 218 45% 95%;
-    --accent-foreground: 218 55% 22%;
+    --accent: 220 45% 95%;
+    --accent-foreground: 220 55% 22%;
 
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
@@ -47,42 +47,42 @@
     --warning: 25 88% 45%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214 26% 90%;
-    --input: 214 26% 90%;
-    --ring: 218 55% 26%;
+    --border: 220 26% 90%;
+    --input: 220 26% 90%;
+    --ring: 173 61% 44%;
 
     /* نصف قطر أصغر: الحواف الأقرب إلى الحدّة تقرأ «أداة» لا «تطبيق ترفيهي» */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 215 32% 10%;
-    --foreground: 210 30% 96%;
+    --background: 224 63% 12%;
+    --foreground: 214 50% 95%;
 
-    --card: 215 30% 13%;
-    --card-foreground: 210 30% 96%;
+    --card: 221 40% 16%;
+    --card-foreground: 214 50% 95%;
 
-    --popover: 215 30% 13%;
-    --popover-foreground: 210 30% 96%;
+    --popover: 221 40% 16%;
+    --popover-foreground: 214 50% 95%;
 
     /* الكحليّ لا يُرى على خلفية داكنة، فيُرفع إلى أزرقٍ صافٍ يحفظ
        الهوية ويحقّق التباين. والالتزام بالدرجة نفسها هنا يُنتج زرًّا
        لا يكاد يُميَّز عن الخلفية. */
-    --primary: 214 80% 62%;
-    --primary-foreground: 215 32% 10%;
+    --primary: 220 70% 65%;
+    --primary-foreground: 224 63% 12%;
 
-    --gold: 42 55% 60%;
-    --gold-foreground: 215 32% 10%;
-    --gold-soft: 42 30% 18%;
+    --gold: 173 55% 55%;
+    --gold-foreground: 224 63% 12%;
+    --gold-soft: 173 30% 18%;
 
-    --secondary: 215 25% 19%;
-    --secondary-foreground: 210 30% 96%;
+    --secondary: 221 30% 20%;
+    --secondary-foreground: 214 50% 95%;
 
-    --muted: 215 25% 19%;
-    --muted-foreground: 215 15% 65%;
+    --muted: 221 30% 20%;
+    --muted-foreground: 220 25% 68%;
 
-    --accent: 218 28% 22%;
-    --accent-foreground: 210 30% 96%;
+    --accent: 220 32% 23%;
+    --accent-foreground: 214 50% 95%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -93,9 +93,9 @@
     --warning: 25 82% 58%;
     --warning-foreground: 215 32% 10%;
 
-    --border: 215 22% 24%;
-    --input: 215 22% 24%;
-    --ring: 214 80% 62%;
+    --border: 220 25% 25%;
+    --input: 220 25% 25%;
+    --ring: 173 55% 55%;
   }
 }
 
@@ -211,30 +211,30 @@
   .marketing-shell {
     /* الوضع الفاتح للتسويق: أرضٌ زرقاء باردة لا بيضاء صمّاء، وأزرقٌ
        كهربائي أحيا من كحليّ اللوحة. اللوحة تقرأ `:root` ولا تصلها هذه. */
-    --background: 222 40% 98%;
-    --foreground: 228 40% 8%;
+    --background: 220 38% 98%;
+    --foreground: 221 46% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 228 40% 8%;
+    --card-foreground: 221 46% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 228 40% 8%;
+    --popover-foreground: 221 46% 12%;
 
-    --primary: 224 82% 52%;
+    --primary: 220 55% 24%;
     --primary-foreground: 0 0% 100%;
 
-    --gold: 40 55% 46%;
-    --gold-foreground: 0 0% 100%;
-    --gold-soft: 42 60% 94%;
+    --gold: 173 61% 44%;
+    --gold-foreground: 221 46% 12%;
+    --gold-soft: 173 45% 94%;
 
-    --secondary: 222 30% 94%;
-    --secondary-foreground: 228 40% 8%;
+    --secondary: 220 30% 95%;
+    --secondary-foreground: 221 46% 12%;
 
-    --muted: 222 30% 95%;
-    --muted-foreground: 226 15% 42%;
+    --muted: 220 30% 95%;
+    --muted-foreground: 221 14% 41%;
 
-    --accent: 224 80% 95%;
-    --accent-foreground: 224 70% 30%;
+    --accent: 173 40% 94%;
+    --accent-foreground: 220 55% 24%;
 
     --destructive: 0 72% 45%;
     --destructive-foreground: 0 0% 100%;
@@ -245,45 +245,47 @@
     --warning: 25 88% 45%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 222 24% 88%;
-    --input: 222 24% 88%;
-    --ring: 224 82% 52%;
+    --border: 220 24% 88%;
+    --input: 220 24% 88%;
+    --ring: 173 61% 44%;
 
-    /* لون التوهّج الثاني: سماويّ يقابل الأزرق في التدرّجات وحدها */
-    --glow-b: 196 90% 48%;
-    --mesh-a: 0.16;
-    --mesh-b: 0.12;
-    --mesh-c: 0.1;
+    /* لون التوهّج الثاني: فيروزيّ الهوية، يقابل الكحليّ في التدرّجات.
+       وطبقتا الشبكة الفيروزيتان مخفوضتان عمدًا: الفيروزي وسمٌ صغير في
+       الهوية لا أرضية، ورفعهما يصبغ الصفحة كلها بلون أخضر باهت. */
+    --glow-b: 173 61% 46%;
+    --mesh-a: 0.14;
+    --mesh-b: 0.06;
+    --mesh-c: 0.05;
 
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
 
   .dark .marketing-shell {
-    --background: 228 45% 5%;
-    --foreground: 210 30% 96%;
+    --background: 224 63% 7%;
+    --foreground: 214 50% 95%;
 
-    --card: 228 32% 9%;
-    --card-foreground: 210 30% 96%;
+    --card: 224 45% 11%;
+    --card-foreground: 214 50% 95%;
 
-    --popover: 228 32% 10%;
-    --popover-foreground: 210 30% 96%;
+    --popover: 224 45% 12%;
+    --popover-foreground: 214 50% 95%;
 
-    --primary: 220 95% 68%;
-    --primary-foreground: 228 45% 6%;
+    --primary: 220 75% 68%;
+    --primary-foreground: 224 63% 8%;
 
-    --gold: 42 60% 62%;
-    --gold-foreground: 228 45% 6%;
-    --gold-soft: 42 25% 14%;
+    --gold: 173 55% 58%;
+    --gold-foreground: 224 63% 8%;
+    --gold-soft: 173 28% 15%;
 
-    --secondary: 228 28% 13%;
-    --secondary-foreground: 210 30% 96%;
+    --secondary: 224 30% 14%;
+    --secondary-foreground: 214 50% 95%;
 
-    --muted: 228 30% 10%;
-    --muted-foreground: 222 16% 66%;
+    --muted: 224 32% 11%;
+    --muted-foreground: 220 25% 68%;
 
-    --accent: 226 40% 14%;
-    --accent-foreground: 210 30% 96%;
+    --accent: 222 38% 15%;
+    --accent-foreground: 214 50% 95%;
 
     --destructive: 0 66% 56%;
     --destructive-foreground: 0 0% 100%;
@@ -294,11 +296,11 @@
     --warning: 25 82% 58%;
     --warning-foreground: 228 45% 6%;
 
-    --border: 228 20% 17%;
-    --input: 228 20% 17%;
-    --ring: 220 95% 68%;
+    --border: 222 22% 18%;
+    --input: 222 22% 18%;
+    --ring: 220 75% 68%;
 
-    --glow-b: 196 90% 55%;
+    --glow-b: 173 60% 52%;
     --mesh-a: 0.32;
     --mesh-b: 0.2;
     --mesh-c: 0.12;
@@ -396,25 +398,25 @@
   /* لوح داكن بذاته في الوضعين — للأمان والدعوة الختامية.
      الرموز مُعادة داخله فتقرأ الأزرار والنصوص الرمادية على أرضه. */
   .mk-panel {
-    --background: 228 45% 7%;
-    --foreground: 210 30% 96%;
-    --card: 228 32% 11%;
-    --card-foreground: 210 30% 96%;
-    --popover: 228 32% 11%;
-    --popover-foreground: 210 30% 96%;
-    --primary: 220 95% 70%;
-    --primary-foreground: 228 45% 7%;
-    --secondary: 228 28% 14%;
-    --secondary-foreground: 210 30% 96%;
-    --muted: 228 30% 12%;
-    --muted-foreground: 220 16% 70%;
-    --accent: 226 40% 16%;
-    --accent-foreground: 210 30% 96%;
-    --border: 228 20% 20%;
-    --input: 228 20% 20%;
-    --ring: 220 95% 70%;
-    --gold: 42 60% 62%;
-    --glow-b: 196 90% 55%;
+    --background: 224 63% 9%;
+    --foreground: 214 50% 95%;
+    --card: 224 45% 13%;
+    --card-foreground: 214 50% 95%;
+    --popover: 224 45% 13%;
+    --popover-foreground: 214 50% 95%;
+    --primary: 220 75% 70%;
+    --primary-foreground: 224 63% 9%;
+    --secondary: 224 30% 15%;
+    --secondary-foreground: 214 50% 95%;
+    --muted: 224 32% 13%;
+    --muted-foreground: 220 25% 70%;
+    --accent: 222 38% 17%;
+    --accent-foreground: 214 50% 95%;
+    --border: 222 22% 21%;
+    --input: 222 22% 21%;
+    --ring: 220 75% 70%;
+    --gold: 173 55% 58%;
+    --glow-b: 173 60% 52%;
     --mesh-a: 0.3;
     --mesh-b: 0.18;
     --mesh-c: 0.14;

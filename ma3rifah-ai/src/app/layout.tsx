@@ -42,11 +42,13 @@ export const metadata: Metadata = {
     siteName: APP_NAME,
     title: `${APP_NAME} — ${APP_TAGLINE}`,
     description: APP_DESCRIPTION,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: APP_NAME }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${APP_NAME} — ${APP_TAGLINE}`,
     description: APP_DESCRIPTION,
+    images: ['/og.png'],
   },
   robots: {
     index: true,
@@ -55,6 +57,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 };
 
@@ -77,23 +80,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
         <style
           /*
-            «تجوال» وحده لكل النص: حروفه مفتوحة العدادات وأطرافه هندسية،
-            فيقرأ جيدًا في الفقرات ويبقى حادًّا في العناوين الكبيرة.
+            خطّا الهوية المعتمدان: IBM Plex Sans Arabic للعربية وIBM Plex
+            Sans للاتيني — وهما أسرة واحدة بمقاسين، فلا يُقرأ اجتماعهما
+            تفكّكًا. الأوزان المعتمدة: ٦٠٠ للاسم والعناوين، ٥٠٠ للوصف،
+            ٤٠٠ للنصوص.
 
-            خط واحد لا اثنان: تعدّد الخطوط في واجهة عربية يُقرأ تفكّكًا لا
-            تنويعًا، والطابع التقني يأتي من النسيج والتخطيط لا من إقحام
-            خط ثانٍ. ويبقى الأحادي محصورًا في أسماء الجداول والأخطاء
-            التقنية — نصّ لاتيني بطبعه لا يقرؤه العميل.
+            واللاتيني مذكور بعد العربي في السلسلة لا قبله: المتصفّح يأخذ
+            أوّل خط يغطّي المحرف، فلو تقدّم اللاتيني لالتقط الأرقام
+            والرموز المشتركة وانكسر اتّساق النصّ العربي.
+
+            ويبقى الأحادي محصورًا في أسماء الجداول والأخطاء التقنية.
           */
           dangerouslySetInnerHTML={{
             __html:
               ':root{' +
-              '--font-arabic:"Tajawal","Noto Sans Arabic","Segoe UI",system-ui,sans-serif;' +
+              '--font-arabic:"IBM Plex Sans Arabic","IBM Plex Sans","Noto Sans Arabic","Segoe UI",system-ui,sans-serif;' +
               '--font-mono:"SFMono-Regular",Menlo,Consolas,monospace' +
               '}',
           }}

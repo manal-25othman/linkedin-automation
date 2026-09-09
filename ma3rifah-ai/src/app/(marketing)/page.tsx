@@ -183,7 +183,7 @@ export default async function HomePage() {
             return (
               <Reveal key={`${item.title}-${index}`} delay={index * 110}>
                 <article className="mk-card lift h-full p-7">
-                  <div className="flex size-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                  <div className="flex size-12 items-center justify-center rounded-2xl bg-gold/10 text-gold">
                     <Icon className="size-6" aria-hidden />
                   </div>
                   <h3 className="mt-5 text-lg font-bold">{item.title}</h3>
