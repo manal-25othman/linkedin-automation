@@ -43,7 +43,7 @@ export default async function AboutPage() {
         <div className="tech-grid pointer-events-none absolute inset-0" aria-hidden />
         <div className="container relative py-16 sm:py-24">
           <div className="reveal-now mx-auto max-w-3xl text-center">
-            <h1 className="text-balance text-3xl font-bold leading-[1.3] sm:text-4xl">
+            <h1 className="text-balance text-3xl font-bold leading-[1.45] sm:text-4xl">
               {t('about.title')}
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-loose text-muted-foreground sm:text-lg">

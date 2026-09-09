@@ -94,8 +94,8 @@ export default async function HomePage() {
                 className={cn(
                   'mt-6 text-balance font-extrabold tracking-tight',
                   heroLine1.length > 55
-                    ? 'text-3xl leading-[1.3] sm:text-4xl lg:text-[2.9rem] lg:leading-[1.22]'
-                    : 'text-4xl leading-[1.22] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.15]',
+                    ? 'text-3xl leading-[1.45] sm:text-4xl lg:text-[2.9rem] lg:leading-[1.38]'
+                    : 'text-4xl leading-[1.4] sm:text-5xl lg:text-[3.5rem] lg:leading-[1.32]',
                 )}
               >
                 <SplitWords text={heroLine1} baseDelay={80} />
@@ -417,7 +417,7 @@ export default async function HomePage() {
             <div className="mk-blob mk-blob-b" aria-hidden />
             <div className="tech-grid pointer-events-none absolute inset-0 opacity-70" aria-hidden />
             <div className="relative mx-auto max-w-2xl">
-              <h2 className="mk-gradient-text text-balance text-3xl font-extrabold leading-[1.25] sm:text-4xl lg:text-5xl">
+              <h2 className="mk-gradient-text text-balance text-3xl font-extrabold leading-[1.45] sm:text-4xl lg:text-5xl">
                 {t('home.final.title')}
               </h2>
               <p className="mt-5 text-base leading-loose text-muted-foreground sm:text-lg">

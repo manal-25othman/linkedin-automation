@@ -190,7 +190,7 @@ export function FeatureShowcase({ items }: { items: ShowcaseItem[] }) {
                       {item.badge}
                     </Badge>
                   ) : null}
-                  <h3 className="text-xl font-bold leading-snug sm:text-2xl">{item.title}</h3>
+                  <h3 className="text-xl font-bold leading-[1.5] sm:text-2xl">{item.title}</h3>
                   <p className="mt-4 text-base leading-loose text-muted-foreground">
                     {item.description}
                   </p>
