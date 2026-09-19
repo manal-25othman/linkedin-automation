@@ -8,6 +8,7 @@ import { enforceRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { AppError, toAppError } from '@/lib/errors';
 import { retrieveRelevantChunks } from '@/lib/rag/retrieval';
 import { recordAiUsage } from '@/lib/ai/usage';
+import { estimateCostUsd } from '@/lib/ai/claude';
 import { generateClarifyingQuestions, generatePolicyDraft } from '@/lib/knowledge/policy-studio';
 import { publishPolicyDraft } from '@/lib/knowledge/publish-policy';
 import { truncate } from '@/lib/utils';
@@ -151,11 +152,18 @@ export async function generatePolicyDraftAction(formData: FormData): Promise<Act
       userId: profile.id,
       operation: 'chat',
       provider: 'anthropic',
-      model: 'policy-studio',
-      inputTokens: 0,
-      outputTokens: 0,
-      costUsd: 0,
-      latencyMs: 0,
+      model: result.usage.model,
+      inputTokens:
+        result.usage.inputTokens + result.usage.cacheReadTokens + result.usage.cacheWriteTokens,
+      outputTokens: result.usage.outputTokens,
+      costUsd: estimateCostUsd(
+        result.usage.model,
+        result.usage.inputTokens,
+        result.usage.outputTokens,
+        result.usage.cacheReadTokens,
+        result.usage.cacheWriteTokens,
+      ),
+      latencyMs: result.usage.latencyMs,
       // عمل إداري لا يُحسب على حصّة أسئلة الموظفين — كما في مسوّدة
       // الفجوة سواءً بسواء.
       countsAsQuestion: false,
