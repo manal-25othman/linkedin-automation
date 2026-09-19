@@ -8,15 +8,36 @@
 
 ---
 
-## ١. قاعدة البيانات (Neon — مجاني)
+## ١. قاعدة البيانات
+
+Vercel يشغّل الكود فقط ولا يحفظ بيانات: كل نشر جديد يبدأ من نسخة نظيفة. الطلبات
+والخدمات وحسابات المسوّقين وأرصدة العمولات تحتاج مكانًا دائمًا خارج الاستضافة.
+
+### الأسهل: من داخل Vercel (موصى به)
+
+لا حاجة لحساب ثانٍ — Vercel ينشئ قاعدة Postgres من لوحته (المزوّد خلفها Neon):
+
+1. أنشئي المشروع على Vercel أولًا (الخطوة ٢ أدناه).
+2. من المشروع: **Storage → Create Database → Postgres**.
+3. اختاري المنطقة **Frankfurt (eu-central-1)** — الأقرب للسعودية، وكل صفحة في
+   موقعك تسأل القاعدة فالمسافة تُحسّ.
+4. Vercel يحقن متغيّرات الاتصال تلقائيًّا. تأكّدي من أمرين فقط:
+   - `DATABASE_URL` = رابط **المجمّع** (فيه `-pooler`)
+   - `DIRECT_URL` = الرابط **المباشر** (بلا `-pooler`؛ اسمه عندهم غالبًا
+     `DATABASE_URL_UNPOOLED` أو `POSTGRES_URL_NON_POOLING`) — انسخي قيمته
+     وأضيفيها باسم `DIRECT_URL`.
+
+### البديل: حساب Neon مستقلّ
+
+إن فضّلتِ لوحة قاعدة منفصلة عن الاستضافة:
 
 1. سجّلي في [neon.tech](https://neon.tech) بحساب GitHub.
-2. **Create project** → الاسم `anjez` → المنطقة **Frankfurt (eu-central-1)** (الأقرب للسعودية).
-3. من صفحة **Connection Details** انسخي رابطين:
-   - **Pooled connection** (فيه `-pooler` في العنوان) → سيصير `DATABASE_URL`
-   - **Direct connection** (بلا `-pooler`) → سيصير `DIRECT_URL`
+2. **Create project** → الاسم `anjez` → المنطقة **Frankfurt (eu-central-1)**.
+3. من **Connection Details** انسخي الرابطين: *Pooled* → `DATABASE_URL`،
+   و*Direct* → `DIRECT_URL`.
 
-> الفرق مهمّ: الترحيلات لا تعمل عبر المجمّع، والتطبيق بلا مجمّع يستنفد حدّ الاتصالات.
+> **لماذا رابطان؟** الترحيلات (إنشاء الجداول) لا تعمل عبر المجمّع، والتطبيق بلا
+> مجمّع يستنفد حدّ الاتصالات على المنصّات بلا خوادم. هذا أكثر ما يُفشل أول نشر.
 
 ## ٢. المشروع على Vercel
 
@@ -26,12 +47,13 @@
    - **Root Directory**: اضغطي *Edit* واختاري `anjez`
    - **Framework Preset**: Next.js (يُكتشف تلقائيًّا)
    - **Build Command**: يأتي من `vercel.json` — لا تغيّريها
-4. أضيفي متغيّرات البيئة (**Environment Variables**) قبل الضغط على Deploy:
+4. أضيفي متغيّرات البيئة (**Environment Variables**). إن أنشأتِ القاعدة من داخل
+   Vercel فمتغيّراتها موجودة أصلًا — أضيفي الباقي فقط:
 
 | المتغيّر | القيمة |
 |---|---|
-| `DATABASE_URL` | رابط Neon المجمّع (pooled) |
-| `DIRECT_URL` | رابط Neon المباشر |
+| `DATABASE_URL` | رابط القاعدة المجمّع (pooled) |
+| `DIRECT_URL` | رابط القاعدة المباشر (unpooled) |
 | `AUTH_SECRET` | ولّديه بالأمر: `openssl rand -base64 48` |
 | `NEXT_PUBLIC_SITE_URL` | `https://اسم-مشروعك.vercel.app` (تعدّلينه بعد ربط النطاق) |
 | `PAYMENT_PROVIDER` | `manual` |
@@ -47,7 +69,7 @@
 
 ```bash
 cd anjez
-# ألصقي روابط Neon نفسها هنا مؤقّتًا
+# ألصقي رابطَي القاعدة نفسيهما هنا مؤقّتًا
 DATABASE_URL="…" DIRECT_URL="…" \
 SEED_ADMIN_EMAIL="بريدك" SEED_ADMIN_PASSWORD="كلمة-المرور" \
 npm run db:seed

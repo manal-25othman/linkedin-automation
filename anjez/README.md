@@ -94,8 +94,9 @@ npm run dev
 
 دليل مفصّل خطوة بخطوة: [`DEPLOY.md`](DEPLOY.md). باختصار:
 
-1. **قاعدة البيانات**: Neon أو Supabase أو أي PostgreSQL. اضبط `DATABASE_URL` على الـ pooler
-   و`DIRECT_URL` على الاتصال المباشر.
+1. **قاعدة البيانات**: تُنشأ من داخل Vercel (Storage → Postgres) أو من Neon/Supabase
+   مباشرة — أي PostgreSQL يعمل. اضبط `DATABASE_URL` على الـ pooler و`DIRECT_URL`
+   على الاتصال المباشر.
 2. **Vercel**: أمر البناء `npm run vercel-build` (يشغّل الهجرات ثم البناء).
 3. **الدفع**: `PAYMENT_PROVIDER=manual` للتحويل البنكي (العميل يحوّل، والإدارة تؤكّد
    الاستلام من صفحة الطلب فتُحتسب العمولة) — مناسب للتشغيل قبل اعتماد بوّابة.
