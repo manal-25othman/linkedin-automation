@@ -41,6 +41,15 @@ export interface PolicyDraftResult {
   citations: PolicyCitation[];
   /** المكتبة فارغة أو لم تُطابق — المسوّدة بلا سند نظامي */
   withoutReferences: boolean;
+  /** استهلاك النداء — يُسجَّل في المحاسبة كأي نداء آخر */
+  usage: {
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
+    latencyMs: number;
+  };
 }
 
 /**
@@ -208,5 +217,17 @@ export async function generatePolicyDraft(
     excerpt: match.content.slice(0, 400),
   }));
 
-  return { body, citations, withoutReferences: references.length === 0 };
+  return {
+    body,
+    citations,
+    withoutReferences: references.length === 0,
+    usage: {
+      model: completion.model,
+      inputTokens: completion.inputTokens,
+      outputTokens: completion.outputTokens,
+      cacheReadTokens: completion.cacheReadTokens,
+      cacheWriteTokens: completion.cacheWriteTokens,
+      latencyMs: completion.latencyMs,
+    },
+  };
 }

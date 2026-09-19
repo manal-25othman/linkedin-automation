@@ -182,3 +182,36 @@ describe('الإجراءات محروسة', () => {
     expect(ACTIONS).toContain('countsAsQuestion: false');
   });
 });
+
+describe('التخزين المؤقت لا يُسقط النداءات القصيرة', () => {
+  const CLAUDE = read('src/lib/ai/claude.ts');
+
+  /**
+   * العطل الذي كشفه أول تشغيل: نقطة تخزين مؤقت على موجّه أقصر من حدّ
+   * المزوّد الأدنى **يرفضها الطلب** ولا يتجاهلها. فسقط نداءا استوديو
+   * السياسات معًا — وهما أول نداءين في المشروع بموجّه قصير — ووصل
+   * المستخدمَ «الخدمة غير متاحة» بلا سبب ظاهر.
+   *
+   * والحارس هنا على الآلية لا على المسوّدة: أي مهمّة قادمة بموجّه قصير
+   * تسقط السقوط نفسه، وهذا ما يمنعه.
+   */
+  it('التخزين مشروط بطول الموجّه', () => {
+    expect(CLAUDE).toContain('MIN_CACHEABLE_PROMPT_CHARS');
+    expect(CLAUDE).toMatch(/cacheable\s*=\s*params\.systemPrompt\.length >= MIN_CACHEABLE_PROMPT_CHARS/);
+  });
+
+  it('`cache_control` لا يُرسَل إلا إذا كان الموجّه قابلًا للتخزين', () => {
+    expect(CLAUDE).toMatch(/\.\.\.\(cacheable \? \{ cache_control/);
+  });
+
+  it('موجّها استوديو السياسات دون الحدّ فعلًا — وهو سبب الحارس', () => {
+    const questions = STUDIO.slice(STUDIO.indexOf('const system ='), STUDIO.indexOf('try {'));
+    expect(questions.length).toBeLessThan(2000);
+  });
+
+  it('توليد المسوّدة يسجّل استهلاكًا حقيقيًّا لا أصفارًا', () => {
+    expect(ACTIONS).toContain('result.usage.inputTokens');
+    expect(ACTIONS).toContain('estimateCostUsd(');
+    expect(ACTIONS).not.toContain('inputTokens: 0');
+  });
+});

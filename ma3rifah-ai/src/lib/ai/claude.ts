@@ -126,6 +126,19 @@ export function estimateCostUsd(
  * (prompt caching) مفعّل على موجّه النظام لأنه ثابت عبر كل أسئلة
  * الشركة الواحدة، وهو أكبر جزء ثابت في الطلب.
  */
+/**
+ * أقلّ طول يُرجى منه تخزينٌ مؤقت.
+ *
+ * نقطة تخزين على موجّه أقصر من حدّ المزوّد الأدنى **يرفضها الطلب**، لا
+ * يتجاهلها. فالنداء كله يسقط ويصل المستخدمَ «الخدمة غير متاحة» — وهو
+ * عطل يظهر عند أول مهمّة موجّهها قصير، ولا يظهر في المهام القائمة لأن
+ * موجّهاتها طويلة.
+ *
+ * والحدّ بالمحارف لا بالرموز: عدّ الرموز يحتاج نداءً آخر، والعربية
+ * تقارب محرفين للرمز، فألفا محرف حدٌّ متحفّظ دون عتبة المزوّد بكثير.
+ */
+const MIN_CACHEABLE_PROMPT_CHARS = 2000;
+
 export async function generateAnswer(params: {
   systemPrompt: string;
   history: ConversationTurn[];
@@ -138,6 +151,7 @@ export async function generateAnswer(params: {
   const anthropic = getClient();
   const model = params.model || serverEnv.anthropicModel;
   const startedAt = Date.now();
+  const cacheable = params.systemPrompt.length >= MIN_CACHEABLE_PROMPT_CHARS;
 
   try {
     const response = await anthropic.messages.create({
@@ -147,7 +161,7 @@ export async function generateAnswer(params: {
         {
           type: 'text',
           text: params.systemPrompt,
-          cache_control: { type: 'ephemeral' },
+          ...(cacheable ? { cache_control: { type: 'ephemeral' as const } } : {}),
         },
       ],
       ...(supportsEffort(model)
