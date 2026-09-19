@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import {
   Banknote,
+  BookOpen,
   Building2,
   FileText,
   Files,
@@ -74,6 +75,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             >
               <FileText className="me-2 inline size-4" aria-hidden />
               المحتوى
+            </Link>
+            <Link
+              href="/admin/reference"
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <BookOpen className="me-2 inline size-4" aria-hidden />
+              المكتبة المرجعية
             </Link>
             <Link
               href="/admin/pages"

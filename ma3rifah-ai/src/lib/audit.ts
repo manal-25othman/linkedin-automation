@@ -50,6 +50,12 @@ export type AuditAction =
   | 'knowledge_gap.assigned'
   | 'knowledge_gap.unassigned'
   | 'knowledge_gap.expert_answered'
+  | 'policy.draft_started'
+  | 'policy.draft_edited'
+  | 'policy.draft_discarded'
+  | 'policy.approved'
+  | 'reference.uploaded'
+  | 'reference.deleted'
   | 'feedback_survey.submitted'
   | 'assistant.question_asked'
   | 'assistant.answer_unanswered';

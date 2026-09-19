@@ -188,3 +188,21 @@ as $$
   join public.platform_reference_documents d on d.id = c.document_id
   limit coalesce(p_match_count, 8);
 $$;
+
+-- (١٤) فتح مسوّدات السياسات للجميع — يجب أن تسقط اختبارات «الموظف لا
+--      يرى مسوّدات شركته»، و«لا يرى النسخ»، و«الدالّة ترفض الموظف»،
+--      وحدُّ الشركتين قراءةً وكتابةً. وهي الحارس الذي يمنع أن يعمل
+--      موظف بنصٍّ تنظيميّ لم يوقّعه أحد.
+drop policy if exists policy_drafts_all on public.policy_drafts;
+create policy policy_drafts_all on public.policy_drafts
+  for all to authenticated using (true) with check (true);
+
+drop policy if exists policy_draft_versions_all on public.policy_draft_versions;
+create policy policy_draft_versions_all on public.policy_draft_versions
+  for all to authenticated using (true) with check (true);
+
+-- (١٥) إسقاط قيد اكتمال الاعتماد — يجب أن يسقط اختبار «لا اعتماد بلا
+--      معتمِد وتاريخ»: يصير ترقية سياسةٍ إلى معتمدة تحديثَ عمود واحد
+--      بلا أثر لمن فعلها.
+alter table public.policy_drafts
+  drop constraint if exists policy_drafts_approval_complete;

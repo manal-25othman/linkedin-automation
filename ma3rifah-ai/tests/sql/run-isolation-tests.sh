@@ -87,6 +87,9 @@ run_sql -f "$ROOT/tests/sql/11_expert_validation_tests.sql" >/dev/null
 echo "▸ اختبارات المكتبة المرجعية"
 run_sql -f "$ROOT/tests/sql/12_policy_reference_tests.sql" >/dev/null
 
+echo "▸ اختبارات استوديو السياسات"
+run_sql -f "$ROOT/tests/sql/13_policy_studio_tests.sql" >/dev/null
+
 echo
 "${PSQL_BASE[@]}" -d "$TEST_DB" -P pager=off -c "
   select id as \"#\",
