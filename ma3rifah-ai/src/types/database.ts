@@ -12,7 +12,7 @@ export type UserRole = 'SUPER_ADMIN' | 'COMPANY_ADMIN' | 'MANAGER' | 'EMPLOYEE';
 export type CompanyStatus = 'ACTIVE' | 'SUSPENDED' | 'PENDING';
 export type ProfileStatus = 'ACTIVE' | 'INVITED' | 'DISABLED';
 export type DocumentStatus = 'PROCESSING' | 'READY' | 'FAILED' | 'ARCHIVED';
-export type DocumentSource = 'UPLOAD' | 'CURATED_ANSWER';
+export type DocumentSource = 'UPLOAD' | 'CURATED_ANSWER' | 'AUTHORED_POLICY';
 export type DocumentVisibility = 'COMPANY' | 'DEPARTMENT' | 'ROLE';
 export type MessageRole = 'USER' | 'ASSISTANT';
 export type AnswerStatus = 'ANSWERED' | 'UNANSWERED' | 'ERROR';
@@ -546,6 +546,79 @@ type Table<Row extends Record<string, unknown>> = {
   Relationships: [];
 };
 
+/** وثيقة في المكتبة المرجعية الرسمية — بلا `company_id` عمدًا */
+export type PlatformReferenceDocumentRow = {
+  id: string;
+  name: string;
+  authority: string;
+  reference_code: string | null;
+  source_url: string | null;
+  description: string | null;
+  file_type: string;
+  file_size_bytes: number;
+  status: DocumentStatus;
+  error_message: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PlatformReferenceChunkRow = {
+  id: string;
+  document_id: string;
+  chunk_index: number;
+  content: string;
+  token_count: number;
+  page_number: number | null;
+  section_title: string | null;
+  embedding: string | null;
+  created_at: string;
+};
+
+export type PolicyDraftStatus = 'DRAFT' | 'APPROVED' | 'DISCARDED';
+
+export type PolicyClarification = {
+  question: string;
+  answer: string;
+};
+
+export type PolicyDraftCitation = {
+  authority: string;
+  referenceCode: string | null;
+  documentName: string;
+  excerpt: string;
+};
+
+export type PolicyDraftRow = {
+  id: string;
+  company_id: string;
+  gap_id: string | null;
+  title: string;
+  topic: string;
+  clarifications: PolicyClarification[];
+  body: string;
+  citations: PolicyDraftCitation[];
+  status: PolicyDraftStatus;
+  version: number;
+  document_id: string | null;
+  created_by: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PolicyDraftVersionRow = {
+  id: string;
+  draft_id: string;
+  company_id: string;
+  version: number;
+  body: string;
+  note: string | null;
+  author_id: string | null;
+  created_at: string;
+};
+
 export interface Database {
   public: {
     Tables: {
@@ -564,6 +637,10 @@ export interface Database {
       notifications: Table<NotificationRow>;
       whatsapp_links: Table<WhatsAppLinkRow>;
       feedback_surveys: Table<FeedbackSurveyRow>;
+      platform_reference_documents: Table<PlatformReferenceDocumentRow>;
+      platform_reference_chunks: Table<PlatformReferenceChunkRow>;
+      policy_drafts: Table<PolicyDraftRow>;
+      policy_draft_versions: Table<PolicyDraftVersionRow>;
       support_tickets: Table<SupportTicketRow>;
       support_messages: Table<SupportMessageRow>;
       analytics_events: Table<AnalyticsEventRow>;
@@ -587,6 +664,28 @@ export interface Database {
       submit_expert_answer: {
         Args: { p_gap_id: string; p_answer: string };
         Returns: boolean;
+      };
+      save_policy_draft_version: {
+        Args: { p_draft_id: string; p_body: string; p_note?: string | null };
+        Returns: number;
+      };
+      match_platform_reference_chunks: {
+        Args: {
+          p_query_embedding: string;
+          p_match_count?: number;
+          p_min_similarity?: number;
+        };
+        Returns: {
+          chunk_id: string;
+          document_id: string;
+          document_name: string;
+          authority: string;
+          reference_code: string | null;
+          content: string;
+          page_number: number | null;
+          section_title: string | null;
+          similarity: number;
+        }[];
       };
       match_document_chunks: {
         Args: {

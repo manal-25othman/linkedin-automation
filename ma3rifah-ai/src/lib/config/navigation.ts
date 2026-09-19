@@ -12,6 +12,7 @@ import {
   Sparkles,
   Target,
   Users,
+  ScrollText,
 } from 'lucide-react';
 import type { Permission } from '@/lib/auth/rbac';
 
@@ -77,6 +78,12 @@ export const DASHBOARD_NAV: NavGroup[] = [
         label: 'فجوات المعرفة',
         icon: Target,
         permission: 'knowledge_gaps.view',
+      },
+      {
+        href: '/policy-studio',
+        label: 'استوديو السياسات',
+        icon: ScrollText,
+        permission: 'documents.manage',
       },
       {
         href: '/analytics',
