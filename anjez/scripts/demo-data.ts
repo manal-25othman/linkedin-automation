@@ -5,6 +5,7 @@
  * للتطوير فقط: `npx tsx scripts/demo-data.ts`
  */
 import { PrismaClient } from "@prisma/client";
+import { isRemoteDatabase } from "../src/lib/db-target";
 
 const prisma = new PrismaClient();
 
@@ -23,8 +24,12 @@ function code(length: number) {
 }
 
 async function main() {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("لا تُشغَّل بيانات العرض في الإنتاج.");
+  // الحارس على موقع القاعدة لا على NODE_ENV: الأمر يُكتب من جهاز المطوّر حيث
+  // NODE_ENV ليس production مهما كانت القاعدة التي يشير إليها الرابط.
+  if (isRemoteDatabase()) {
+    throw new Error(
+      "DATABASE_URL يشير إلى قاعدة غير محلّية. بيانات العرض للتطوير فقط — طلبات وعمولات وهمية لا مكان لها في قاعدة حيّة.",
+    );
   }
 
   const affiliate = await prisma.affiliate.findFirst({

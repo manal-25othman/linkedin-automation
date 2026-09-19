@@ -4,6 +4,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { checkSeedPassword, isRemoteDatabase } from "../src/lib/db-target";
 
 const prisma = new PrismaClient();
 
@@ -588,6 +589,17 @@ async function pruneStaleCatalog() {
 }
 
 async function main() {
+  // الفحص قبل أي كتابة: حارسٌ يقع بعد بذر الكتالوج يترك قاعدة نصف مُهيّأة
+  // ويكون قد فات أوانه أصلًا.
+  if (isRemoteDatabase()) {
+    const check = checkSeedPassword(process.env.SEED_ADMIN_PASSWORD);
+    if (!check.ok) {
+      throw new Error(
+        `${check.reason}\nمثال: SEED_ADMIN_PASSWORD="كلمة-قوية-123" npm run db:seed`,
+      );
+    }
+  }
+
   console.log("بدء تهيئة البيانات…");
 
   for (const category of categories) {
@@ -658,10 +670,6 @@ async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim() || "admin@anjez.local";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
 
-  if (!adminPassword && process.env.NODE_ENV === "production") {
-    throw new Error("SEED_ADMIN_PASSWORD مطلوب في الإنتاج.");
-  }
-
   const passwordHash = await bcrypt.hash(adminPassword || "Anjez12345", 12);
 
   await prisma.user.upsert({
@@ -680,8 +688,9 @@ async function main() {
     console.log("كلمة المرور الافتراضية للتطوير: Anjez12345 — غيّرها فورًا.");
   }
 
-  // مسوّق تجريبي في التطوير فقط، ليعمل تدفّق الإحالة كاملًا بلا تسجيل يدوي.
-  if (process.env.NODE_ENV !== "production") {
+  // مسوّق تجريبي على القواعد المحلّية فقط: حساب بكلمة مرور منشورة لا مكان له
+  // في قاعدة حيّة، ولو كان «للتجربة».
+  if (!isRemoteDatabase()) {
     const partnerHash = await bcrypt.hash("Partner12345", 12);
     const partner = await prisma.user.upsert({
       where: { email: "partner@anjez.local" },
