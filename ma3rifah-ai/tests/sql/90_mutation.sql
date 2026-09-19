@@ -126,3 +126,65 @@ $$;
 drop policy if exists knowledge_gaps_select on public.knowledge_gaps;
 create policy knowledge_gaps_select on public.knowledge_gaps
   for select to authenticated using (true);
+
+-- (١١) فتح الكتابة في المكتبة المرجعية للجميع — يجب أن تسقط الضوابط
+--      السالبة الأربعة: كتابة الموظف، وتعديله، وحذفه المقاطع، وكتابة
+--      مدير شركة. وهي الحارس الذي يمنع أن يصير نصٌّ تنظيمي مكتوبًا من
+--      عميل سياسةَ شركةٍ مُعتمدة عند عميل آخر.
+drop policy if exists platform_reference_documents_write
+  on public.platform_reference_documents;
+create policy platform_reference_documents_write
+  on public.platform_reference_documents
+  for all to authenticated using (true) with check (true);
+
+drop policy if exists platform_reference_chunks_write
+  on public.platform_reference_chunks;
+create policy platform_reference_chunks_write
+  on public.platform_reference_chunks
+  for all to authenticated using (true) with check (true);
+
+-- (١٢) إسقاط شرط النشر من قراءة المكتبة — يجب أن يسقط اختبارا «الموظف
+--      لا يرى وثيقة قيد المعالجة» و«لا يقرأ مقاطعها»: الاستشهاد بنصّ
+--      نصفِ مفهرس أسوأ من غياب الاستشهاد.
+drop policy if exists platform_reference_documents_select
+  on public.platform_reference_documents;
+create policy platform_reference_documents_select
+  on public.platform_reference_documents
+  for select to authenticated using (true);
+
+drop policy if exists platform_reference_chunks_select
+  on public.platform_reference_chunks;
+create policy platform_reference_chunks_select
+  on public.platform_reference_chunks
+  for select to authenticated using (true);
+
+-- (١٣) تسريب المكتبة إلى استرجاع الشركات — أخطر طفرة في هذه المجموعة:
+--      تجعل نظام العمل يظهر لموظف بوصفه لائحةَ شركته. يجب أن يسقط
+--      اختبار «دالّة استرجاع الشركات لا تذكر جداول المكتبة إطلاقًا».
+create or replace function public.match_chunks_for_user(
+  p_user_id         uuid,
+  p_query_embedding vector(1024),
+  p_match_count     int default 8,
+  p_min_similarity  float default 0.3,
+  p_category_ids    uuid[] default null
+)
+returns table (
+  chunk_id      uuid,
+  document_id   uuid,
+  document_name text,
+  content       text,
+  page_number   int,
+  section_title text,
+  similarity    float
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select c.id, d.id, d.name, c.content, c.page_number, c.section_title,
+         1 - (c.embedding <=> p_query_embedding)
+  from public.platform_reference_chunks c          -- ⚠ كان: document_chunks
+  join public.platform_reference_documents d on d.id = c.document_id
+  limit coalesce(p_match_count, 8);
+$$;
