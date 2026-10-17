@@ -162,6 +162,76 @@ type DocumentRow = {
   uploaded_by: string | null;
   created_at: string;
   updated_at: string;
+
+  /* ---------- الإصدار (0041) ---------- */
+  /**
+   * هوية الوثيقة الثابتة. **هذا الصفّ إصدارٌ منها لا وثيقة.**
+   * ويُملأ تلقائيًا بمُشغِّل في القاعدة إن لم يُمرَّر، فكل مسارات
+   * الإدخال القائمة تعمل بلا تعديل.
+   */
+  family_id: string;
+  version_label: string | null;
+  /**
+   * حالة الاعتماد — **منفصلة تمامًا عن `status`** الذي يصف الفهرسة.
+   * وثيقة READY غير معتمدة أمرٌ طبيعي، والعكس يمنعه قيدٌ في القاعدة.
+   */
+  approval_status: DocApprovalStatus;
+  effective_from: string | null;
+  supersedes_document_id: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  archived_by: string | null;
+  archived_at: string | null;
+};
+
+/** حالة اعتماد الإصدار. `MIGRATED_UNREVIEWED` للوثائق السابقة لنظام الإصدارات */
+export type DocApprovalStatus =
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'APPROVED'
+  | 'ARCHIVED'
+  | 'SUPERSEDED'
+  | 'MIGRATED_UNREVIEWED';
+
+export type DocVersionEvent =
+  | 'UPLOADED'
+  | 'SUBMITTED_FOR_REVIEW'
+  | 'APPROVED'
+  | 'ARCHIVED'
+  | 'SUPERSEDED'
+  | 'REVIEWED_NO_CHANGE'
+  | 'FIRST_EFFECTIVE'
+  | 'MIGRATED';
+
+/** الهوية الثابتة للوثيقة — تجمع إصداراتها وتشير إلى الفعّال منها */
+export type DocumentFamilyRow = {
+  id: string;
+  company_id: string;
+  title: string;
+  category_id: string | null;
+  /** القسم المالك للمحتوى — للعرض والتصفية، **لا للصلاحيات** */
+  department_id: string | null;
+  content_owner_id: string | null;
+  /** مصدر الإجابات الاعتيادية. تبديله معاملةٌ واحدة فلا فترة خليط */
+  effective_document_id: string | null;
+  review_interval_months: number | null;
+  review_due_at: string | null;
+  last_reviewed_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** سجلّ أحداث الإصدار — يُقرأ ولا يُكتب من الواجهة */
+export type DocumentVersionEventRow = {
+  id: string;
+  company_id: string;
+  family_id: string;
+  document_id: string | null;
+  event: DocVersionEvent;
+  actor_id: string | null;
+  note: string | null;
+  created_at: string;
 };
 
 /** نصوص الصفحات المقروءة ضوئيًا — لخطّ المعالجة وحده، لا سياسة قراءة للمستخدمين */
@@ -627,6 +697,8 @@ export interface Database {
       profiles: Table<ProfileRow>;
       knowledge_categories: Table<KnowledgeCategoryRow>;
       documents: Table<DocumentRow>;
+      document_families: Table<DocumentFamilyRow>;
+      document_version_events: Table<DocumentVersionEventRow>;
       document_chunks: Table<DocumentChunkRow>;
       document_ocr_pages: Table<DocumentOcrPageRow>;
       conversations: Table<ConversationRow>;
@@ -661,6 +733,29 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      approve_document_version: {
+        Args: {
+          p_document_id: string;
+          p_effective_from?: string | null;
+          p_note?: string | null;
+        };
+        /** معرّف العائلة */
+        Returns: string;
+      };
+      archive_document_version: {
+        Args: { p_document_id: string; p_note?: string | null };
+        Returns: undefined;
+      };
+      chunks_of_document_version: {
+        Args: { p_document_id: string };
+        Returns: {
+          chunk_id: string;
+          chunk_index: number;
+          content: string;
+          page_number: number | null;
+          section_title: string | null;
+        }[];
+      };
       submit_expert_answer: {
         Args: { p_gap_id: string; p_answer: string };
         Returns: boolean;
