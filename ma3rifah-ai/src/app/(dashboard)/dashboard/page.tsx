@@ -114,11 +114,23 @@ export default async function DashboardPage() {
   );
 
   // رحلة التجهيز — تُحسب من البيانات لا من علامة محفوظة
+  /*
+   * الوثائق التي تُجيب فعلًا = التي لها إصدار معتمد ساري.
+   *
+   * ولا يُقرأ هذا من `documents_ready`: الفهرسة لا تعني الاعتماد بعد
+   * `0042`، والخلط بينهما يُظهر خطوة التجهيز منجزةً وهي ليست كذلك.
+   */
+  const { count: documentsApproved } = await supabase
+    .from('document_families')
+    .select('id', { count: 'exact', head: true })
+    .not('effective_document_id', 'is', null);
+
   const onboarding = computeOnboarding(
     {
       usersCount: stats?.users_count ?? 0,
       documentsCount: stats?.documents_count ?? 0,
       documentsReady: stats?.documents_ready ?? 0,
+      documentsApproved: documentsApproved ?? 0,
       questionsCount,
     },
     { canManage: can(profile.role, 'documents.manage') },

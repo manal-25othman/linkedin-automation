@@ -71,6 +71,8 @@ export default async function DocumentFamilyPage({
   const canManage = can(profile.role, 'documents.manage');
 
   const effective = family.versions.find((v) => v.isEffective) ?? null;
+  // أحدث إصدار جاهز للاعتماد — مادة خطوة التجهيز الظاهرة
+  const pendingApproval = family.versions.find((v) => v.canApprove) ?? null;
   const unreviewedMigration =
     effective?.approvalStatus === 'MIGRATED_UNREVIEWED';
 
@@ -95,10 +97,22 @@ export default async function DocumentFamilyPage({
           <div className="flex flex-wrap items-center gap-3">
             {effective ? (
               <>
-                <ShieldCheck className="size-5 text-gold" aria-hidden />
+                {/*
+                  لا تُستخدم عبارة «المرجع المعتمد» لإصدارٍ لم يُعتمد.
+                  والوثيقة المرحَّلة تخدم فعلًا ولم يُقرَّر اعتمادها، فوصفها
+                  معتمدةً كذبٌ صغير يجعل المدير يطمئنّ إلى ما لم يراجعه.
+                */}
+                <ShieldCheck
+                  className={
+                    unreviewedMigration ? 'size-5 text-muted-foreground' : 'size-5 text-gold'
+                  }
+                  aria-hidden
+                />
                 <div>
                   <p className="text-sm font-semibold">
-                    المرجع المعتمد: الإصدار {effective.versionLabel ?? '—'}
+                    {unreviewedMigration
+                      ? `مرجع مستخدم حاليًا — بانتظار المراجعة: الإصدار ${effective.versionLabel ?? '—'}`
+                      : `المرجع المعتمد: الإصدار ${effective.versionLabel ?? '—'}`}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {effective.effectiveFrom
@@ -135,6 +149,23 @@ export default async function DocumentFamilyPage({
               رُحّلت مع إطلاق نظام الإصدارات وتعمل مرجعًا كما كانت، لكن لا قرار
               اعتماد موثَّقًا لها.
               {canManage ? ' اعتمدها لتثبيت مرجعيتها بقرار له صاحب وتاريخ.' : ''}
+            </div>
+          ) : null}
+
+          {/*
+            بديل التفعيل التلقائي الذي أُلغي: خطوة ظاهرة تقول ماذا الآن.
+            الوثيقة المفهرسة وغير المعتمدة لا تُجيب، ولو تُركت بلا هذه
+            الرسالة لظنّ المدير أن الرفع كفى — وانتظر جوابًا لا يأتي.
+          */}
+          {!effective && pendingApproval ? (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs leading-relaxed">
+              <strong className="font-semibold">
+                اكتملت معالجة الإصدار {pendingApproval.versionLabel ?? '—'} وهو جاهز
+                للاعتماد.
+              </strong>{' '}
+              {canManage
+                ? 'راجعه واعتمده لبدء استخدام الوثيقة في إجابات المساعد.'
+                : 'سيبدأ استخدامه بعد اعتماد مدير الشركة.'}
             </div>
           ) : null}
 

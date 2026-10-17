@@ -733,6 +733,39 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      activate_due_document_versions: {
+        Args: Record<string, never>;
+        /** عدد الإصدارات التي فُعّلت */
+        Returns: number;
+      };
+      can_read_document_family: {
+        Args: { p_family_id: string };
+        Returns: boolean;
+      };
+      preview_document_version_chunks: {
+        Args: {
+          p_document_id: string;
+          p_query_embedding: string;
+          p_match_count?: number;
+        };
+        Returns: {
+          chunk_id: string;
+          content: string;
+          page_number: number | null;
+          section_title: string | null;
+          similarity: number;
+        }[];
+      };
+      families_awaiting_review: {
+        Args: Record<string, never>;
+        Returns: {
+          family_id: string;
+          title: string;
+          reason: 'NO_REFERENCE' | 'MIGRATED_UNREVIEWED' | 'PENDING_VERSION';
+          pending_document: string | null;
+          updated_at: string;
+        }[];
+      };
       approve_document_version: {
         Args: {
           p_document_id: string;

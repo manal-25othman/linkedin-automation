@@ -17,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { UploadDialog } from '@/components/dashboard/documents/upload-dialog';
+import { AwaitingReviewCard } from '@/components/dashboard/documents/awaiting-review';
 import { DocumentRowActions } from '@/components/dashboard/documents/document-actions';
 import {
   DocumentStatusBadge,
@@ -57,6 +58,16 @@ export default async function DocumentsPage() {
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
   const failedCount = documents.filter((document) => document.status === 'FAILED').length;
 
+  /*
+   * الوثائق المنتظرة مراجعة — تُجلب لمن يملك الإدارة وحده.
+   *
+   * والشرط هنا لتفادي نداءٍ لا لزوم له فحسب؛ الحراسة الفعلية داخل
+   * الدالّة نفسها (`is_company_admin()`)، فلا تعتمد على هذا السطر.
+   */
+  const awaitingReview = canManage
+    ? ((await supabase.rpc('families_awaiting_review')).data ?? [])
+    : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -68,6 +79,8 @@ export default async function DocumentsPage() {
           ) : null
         }
       />
+
+      <AwaitingReviewCard items={awaitingReview} />
 
       {failedCount > 0 ? (
         <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-4">

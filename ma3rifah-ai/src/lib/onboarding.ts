@@ -21,6 +21,15 @@ export interface WorkspaceState {
   documentsCount: number;
   documentsReady: number;
   questionsCount: number;
+  /**
+   * وثائق لها إصدار معتمد ساري — أي تُجيب فعلًا.
+   *
+   * وهي خطوة قائمة بذاتها لأن الفهرسة لا تكفي بعد `0042`: الملف
+   * المرفوع المفهرس **لا يُجيب** حتى يعتمده مخوَّل. ولولا هذه الخطوة
+   * لرفع المدير ملفًا، ورأى «اكتملت المعالجة»، ثم سأل فلم يجد — ولا
+   * شيء في اللوحة يقول له لماذا.
+   */
+  documentsApproved: number;
 }
 
 export interface OnboardingStep {
@@ -75,6 +84,16 @@ export function computeOnboarding(
       done: state.documentsReady > 0,
       href: '/documents',
       cta: 'متابعة حالة المعالجة',
+      requiresManage: true,
+    },
+    {
+      id: 'approve',
+      title: 'راجع واعتمد لبدء استخدام الوثيقة',
+      description:
+        'الوثيقة المعالَجة جاهزة للاعتماد. ولا تدخل إجابات المساعد قبل أن تعتمدها.',
+      done: state.documentsApproved > 0,
+      href: '/documents',
+      cta: 'مراجعة واعتماد',
       requiresManage: true,
     },
     {
