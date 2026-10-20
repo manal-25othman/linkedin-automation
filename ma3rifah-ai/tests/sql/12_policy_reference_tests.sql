@@ -20,19 +20,28 @@
 -- ليست زينة — المواصفة تشترط ألّا تُقرأ وثيقة قبل اكتمال فهرستها،
 -- وإلا استشهدت المسوّدة بنصٍّ نصفِ مفهرس.
 insert into public.platform_reference_documents
-  (id, name, authority, reference_code, status)
+  (id, name, authority, reference_code, source_url, status)
 values
   ('ffffffff-0000-4000-8000-000000000001',
-   'نظام العمل — نصّ اختباري', 'وزارة الموارد البشرية', 'المادة ٧٤', 'READY'),
+   'نظام العمل — نصّ اختباري', 'وزارة الموارد البشرية', 'المادة ٧٤',
+   'https://laws.boe.gov.sa/test', 'READY'),
   ('ffffffff-0000-4000-8000-000000000002',
-   'لائحة قيد المعالجة — نصّ اختباري', 'جهة اختبارية', null, 'PROCESSING')
+   'لائحة قيد المعالجة — نصّ اختباري', 'جهة اختبارية', null, null, 'PROCESSING')
 on conflict (id) do nothing;
 
+/*
+ * المتجهات ضرورية لا تزيين: الدالّة تشترط `embedding is not null`،
+ * فالمقطع بلا متجه لا يُرجَع أبدًا — ويمرّ اختبار «تتجاهل غير المنشورة»
+ * بالمصادفة لا بالحارس. والاختبار الذي ينجح لأن لا شيء يُرجَع أصلًا
+ * اختبارٌ بلا قيمة.
+ */
 insert into public.platform_reference_chunks
-  (document_id, chunk_index, content)
+  (document_id, chunk_index, content, embedding)
 values
-  ('ffffffff-0000-4000-8000-000000000001', 0, 'نصّ مرجعي منشور للاختبار.'),
-  ('ffffffff-0000-4000-8000-000000000002', 0, 'نصّ مرجعي قيد المعالجة للاختبار.')
+  ('ffffffff-0000-4000-8000-000000000001', 0, 'نصّ مرجعي منشور للاختبار.',
+   array_fill(0.01::real, array[1024])::vector(1024)),
+  ('ffffffff-0000-4000-8000-000000000002', 0, 'نصّ مرجعي قيد المعالجة للاختبار.',
+   array_fill(0.01::real, array[1024])::vector(1024))
 on conflict (document_id, chunk_index) do nothing;
 
 -- ══════════════════ موظف عادي في الشركة أ ══════════════════
@@ -162,4 +171,52 @@ from public.match_platform_reference_chunks(
        array_fill(0.01::real, array[1024])::vector(1024), 20, 0.0)
 where document_id = 'ffffffff-0000-4000-8000-000000000002';
 
+-- وضابط موجب يمنع أن ينجح ما سبق بسبب استرجاع خاوٍ أصلًا
+insert into public.test_results (category, name, passed, detail)
+select 'المكتبة المرجعية',
+       'والمنشورة تُرجَع فعلًا (ضابط موجب)',
+       count(*) > 0, 'أرجع=' || count(*)
+from public.match_platform_reference_chunks(
+       array_fill(0.01::real, array[1024])::vector(1024), 20, 0.0)
+where document_id = 'ffffffff-0000-4000-8000-000000000001';
+
 commit;
+
+-- ══════════════════ تتبّع المصدر (0043) ══════════════════
+-- الادّعاء: الرابط وتاريخ النسخ **يصلان** المستشهِد.
+--
+-- وكان العطل أن الرابط يُخزَّن ويُعرض في صفحة الإدارة ثم يتوقف: دالّة
+-- البحث لا تُرجعه، فلا يصل استوديو السياسات، فيقرأ المدير حكمًا منسوبًا
+-- إلى نظام ولا يملك طريقًا للتحقق منه.
+
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', :user_a_hr_emp, true);
+
+insert into public.test_results (category, name, passed, detail)
+select 'المكتبة المرجعية',
+       'دالّة البحث تُرجع رابط المصدر الرسمي',
+       count(*) = 1, 'بالرابط=' || count(*)
+from public.match_platform_reference_chunks(
+       array_fill(0.01::real, array[1024])::vector(1024), 20, 0.0)
+where document_id = 'ffffffff-0000-4000-8000-000000000001'
+  and source_url = 'https://laws.boe.gov.sa/test';
+
+insert into public.test_results (category, name, passed, detail)
+select 'المكتبة المرجعية',
+       'وتُرجع تاريخ نسخ النصّ — فالنظام يتغيّر والاستشهاد لا يُحدِّث نفسه',
+       count(*) = 1, 'بالتاريخ=' || count(*)
+from public.match_platform_reference_chunks(
+       array_fill(0.01::real, array[1024])::vector(1024), 20, 0.0)
+where document_id = 'ffffffff-0000-4000-8000-000000000001'
+  and text_copied_at is not null;
+commit;
+
+-- والمكتبة ما زالت خارج استرجاع الشركات بعد التعديل (انحدار)
+insert into public.test_results (category, name, passed, detail)
+select 'المكتبة المرجعية',
+       'ودالّة الاسترجاع الهجين ما زالت لا تعرف جداول المكتبة',
+       count(*) = 0, 'ذكرَتها=' || count(*)
+from pg_proc
+where proname = 'match_document_chunks_hybrid'
+  and prosrc like '%platform_reference%';

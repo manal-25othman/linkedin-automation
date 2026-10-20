@@ -626,6 +626,8 @@ export type PlatformReferenceDocumentRow = {
   description: string | null;
   file_type: string;
   file_size_bytes: number;
+  /** متى نُسخ النصّ من مصدره الرسمي */
+  text_copied_at: string;
   status: DocumentStatus;
   error_message: string | null;
   uploaded_by: string | null;
@@ -656,6 +658,9 @@ export type PolicyDraftCitation = {
   authority: string;
   referenceCode: string | null;
   documentName: string;
+  /** اختياريان: المسوّدات المحفوظة قبل `0043` لا تحملهما */
+  sourceUrl?: string | null;
+  textCopiedAt?: string | null;
   excerpt: string;
 };
 
@@ -809,6 +814,8 @@ export interface Database {
           document_name: string;
           authority: string;
           reference_code: string | null;
+          source_url: string | null;
+          text_copied_at: string | null;
           content: string;
           page_number: number | null;
           section_title: string | null;

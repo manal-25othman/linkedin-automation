@@ -41,6 +41,10 @@ export interface ReferenceMatch {
   documentName: string;
   authority: string;
   referenceCode: string | null;
+  /** رابط المصدر الرسمي — يصل المدير أسفل المسوّدة ليتحقق بنفسه */
+  sourceUrl: string | null;
+  /** متى نُسخ النصّ: النظام يتغيّر والاستشهاد لا يُحدِّث نفسه */
+  textCopiedAt: string | null;
   content: string;
   pageNumber: number | null;
   sectionTitle: string | null;
@@ -181,6 +185,8 @@ export async function searchReferenceLibrary(
     documentName: row.document_name,
     authority: row.authority,
     referenceCode: row.reference_code,
+    sourceUrl: row.source_url,
+    textCopiedAt: row.text_copied_at,
     content: row.content,
     pageNumber: row.page_number,
     sectionTitle: row.section_title,
