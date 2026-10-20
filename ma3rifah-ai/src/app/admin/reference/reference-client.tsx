@@ -8,11 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input, Textarea } from '@/components/ui/input';
+import { createClient } from '@/lib/supabase/client';
 import { CrudDialog } from '@/components/dashboard/crud-dialog';
 import { EmptyState } from '@/components/shared/states';
 import { formatBytes, formatRelativeTime } from '@/lib/utils';
 import type { DocumentStatus } from '@/types/database';
-import { deleteReferenceDocumentAction, uploadReferenceDocumentAction } from './actions';
+import {
+  createReferenceUploadTicketAction,
+  deleteReferenceDocumentAction,
+  finalizeReferenceUploadAction,
+  uploadReferenceDocumentAction,
+} from './actions';
 
 export interface ReferenceDocumentView {
   id: string;
@@ -34,6 +40,57 @@ const STATUS_LABEL: Record<DocumentStatus, { label: string; variant: 'success' |
 
 export function ReferenceClient({ documents }: { documents: ReferenceDocumentView[] }) {
   const [adding, setAdding] = useState(false);
+  const [hasFile, setHasFile] = useState(false);
+
+  /*
+   * مساران في نموذج واحد.
+   *
+   * الملف يحتاج ثلاث خطوات (تذكرة ← رفع من المتصفح ← إنهاء) لأن حمولة
+   * الإجراء الخادمي محدودة ولا تحتمل ملفًا كاملًا. واللصق يحتاج خطوة.
+   * والمستخدم لا يُطالَب بمعرفة الفرق.
+   */
+  async function submitReference(formData: FormData) {
+    const file = formData.get('file');
+
+    if (!(file instanceof File) || file.size === 0) {
+      const body = String(formData.get('body') ?? '').trim();
+      if (!body) {
+        return { ok: false, message: 'ارفع ملفًا أو الصق النصّ.' };
+      }
+      return uploadReferenceDocumentAction(formData);
+    }
+
+    const ticket = await createReferenceUploadTicketAction({
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+    });
+
+    if (!ticket.ok || !ticket.ticket) {
+      return { ok: false, message: ticket.message ?? 'تعذّر تجهيز الرفع.' };
+    }
+
+    const supabase = createClient();
+    const { error } = await supabase.storage
+      .from('reference-library')
+      .uploadToSignedUrl(ticket.ticket.path, ticket.ticket.token, file, {
+        contentType: file.type || 'application/pdf',
+      });
+
+    if (error) {
+      return { ok: false, message: 'تعذّر رفع الملف. تحقّق من اتصالك.' };
+    }
+
+    const finalize = new FormData();
+    for (const key of ['name', 'authority', 'referenceCode', 'sourceUrl', 'description']) {
+      finalize.set(key, String(formData.get(key) ?? ''));
+    }
+    finalize.set('storagePath', ticket.ticket.path);
+    finalize.set('fileName', file.name);
+    finalize.set('fileType', file.type);
+
+    return finalizeReferenceUploadAction(finalize);
+  }
   const [pending, startTransition] = useTransition();
 
   // الحذف خارج `CrudDialog`، فيُغلَّف هنا: نموذج HTML يشترط إجراءً
@@ -108,9 +165,9 @@ export function ReferenceClient({ documents }: { documents: ReferenceDocumentVie
         open={adding}
         onOpenChange={setAdding}
         title="وثيقة مرجعية"
-        description="الصق النصّ من مصدره الرسمي كما هو. لا تُعِد صياغته — النصّ النظامي المُعاد صياغته يصير سياسةَ شركةٍ معتمدة."
+        description="ارفع ملف النظام من مصدره الرسمي، أو الصق نصّه. لا تُعِد صياغته — النصّ النظامي المُعاد صياغته يصير سياسةَ شركةٍ معتمدة."
         submitLabel="رفع وفهرسة"
-        action={uploadReferenceDocumentAction}
+        action={submitReference}
       >
         <div className="space-y-2">
           <Label htmlFor="name">اسم الوثيقة *</Label>
@@ -135,9 +192,32 @@ export function ReferenceClient({ documents }: { documents: ReferenceDocumentVie
           <Input id="sourceUrl" name="sourceUrl" type="url" placeholder="https://laws.boe.gov.sa/..." />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="body">النصّ *</Label>
-          <Textarea id="body" name="body" rows={12} required placeholder="الصق النصّ الكامل هنا…" />
+          <Label htmlFor="file">ملف النظام (PDF أو Word)</Label>
+          <Input
+            id="file"
+            name="file"
+            type="file"
+            accept=".pdf,.doc,.docx,.txt,.md"
+            onChange={(event) => setHasFile(!!event.currentTarget.files?.length)}
+          />
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            يمرّ الملف بخطّ المعالجة نفسه الذي تمرّ به مستندات الشركات: إصلاح PDF
+            العربي، والقراءة الضوئية للممسوح، وقياس جودة الاستخراج. والملف الفاسد
+            يُرفض ولا يُخزَّن.
+          </p>
         </div>
+
+        {!hasFile ? (
+          <div className="space-y-2">
+            <Label htmlFor="body">أو الصق النصّ</Label>
+            <Textarea
+              id="body"
+              name="body"
+              rows={10}
+              placeholder="للمقاطع القصيرة — مادة واحدة مثلًا…"
+            />
+          </div>
+        ) : null}
       </CrudDialog>
     </>
   );

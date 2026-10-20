@@ -628,6 +628,13 @@ export type PlatformReferenceDocumentRow = {
   file_size_bytes: number;
   /** متى نُسخ النصّ من مصدره الرسمي */
   text_copied_at: string;
+  /** مسار الملف الأصلي إن رُفع ملفًا — فارغ إن لُصق النصّ */
+  storage_path: string | null;
+  /** بصمة النصّ المستخرَج — أساس كشف تغيّر النظام في مصدره لاحقًا */
+  checksum: string | null;
+  page_count: number | null;
+  ocr_pages: number;
+  source_checked_at: string | null;
   status: DocumentStatus;
   error_message: string | null;
   uploaded_by: string | null;
