@@ -381,7 +381,226 @@ export function stripCitationMarkers(answer: string): string {
 }
 
 // =====================================================================
-// ٥) المعادلة المركّبة — درجة الثقة
+// ٥) الجملة ومصدرها — ما كان يُرمى بعد استخلاص قائمة المصادر
+// =====================================================================
+
+export interface AnswerClaim {
+  /** ترتيب الجملة في الإجابة، بادئًا من صفر */
+  position: number;
+  /** نصّ الجملة بلا علامات الاستشهاد */
+  text: string;
+  /** فهارس المقاطع المستشهَد بها لهذه الجملة (بادئة من صفر) */
+  sourceIndexes: number[];
+}
+
+/** علامة ترقيم قائمة («٣. ») تُحجب مؤقتًا كي لا تُقرأ نهايةَ جملة */
+const LIST_MARKER = /^([ \t]*)(\d+)\.[ \t]/gm;
+const LIST_SENTINEL = '\u0000';
+
+/**
+ * سحب علامات الاستشهاد إلى ما قبل علامة الترقيم.
+ *
+ * النموذج يكتب «المهلة ثلاثون يومًا. [مصدر 2]» كثيرًا، والعلامة بعد
+ * النقطة تلتحق بالجملة **التالية** عند أي تقسيم ساذج — فتُنسب معلومةٌ
+ * إلى مصدرٍ لم تأتِ منه، وهو أسوأ من ألّا تُنسب أصلًا.
+ */
+const TRAILING_CITATION =
+  /([.؟!؛])([ \t]*)((?:\[\s*(?:ال)?(?:مصدر|source)\s*[:#]?\s*[0-9٠-٩]+\s*\])+)/g;
+
+/**
+ * تقطيع الإجابة إلى جُمَلٍ، كلٌّ مع المصادر التي استُشهد بها فيها.
+ *
+ * الموجّه يطلب علامة مصدر في آخر كل جملة تحمل معلومة عن الشركة،
+ * والنموذج يفعل — ثم تُحذف العلامات ويبقى «ما المصادر» ويضيع «أيّ
+ * جملة من أيّ مصدر». وهذا هو ما يحتاجه المراجع تحديدًا: الإجابة
+ * المبنيّة على أربع وثائق تُراجَع جملةً جملة أو لا تُراجَع.
+ *
+ * ولا تُحفظ الجملة بلا استشهاد: الموجّه يعفي الجمل العامة (التحية،
+ * اقتراح جهة التواصل) من العلامة، فحفظُها ادّعاءٌ بأنّ لها مصدرًا.
+ */
+export function splitClaims(answer: string, sourceCount: number): AnswerClaim[] {
+  const lists: string[] = [];
+  const guarded = answer
+    .replace(LIST_MARKER, (_match, indent: string, digits: string) => {
+      lists.push(digits);
+      return `${indent}${LIST_SENTINEL}${lists.length - 1}${LIST_SENTINEL} `;
+    })
+    .replace(TRAILING_CITATION, '$3$1$2');
+
+  const restore = (text: string) =>
+    text.replace(
+      new RegExp(`${LIST_SENTINEL}(\\d+)${LIST_SENTINEL}`, 'g'),
+      (_match, index: string) => `${lists[Number(index)] ?? ''}.`,
+    );
+
+  const claims: AnswerClaim[] = [];
+
+  for (const raw of guarded.split(/(?<=[.؟!؛])\s+|\n+/)) {
+    const sentence = restore(raw).trim();
+    if (sentence.length === 0) continue;
+
+    const sourceIndexes = parseCitations(sentence, sourceCount);
+    if (sourceIndexes.length === 0) continue;
+
+    const text = stripCitationMarkers(sentence);
+    if (text.length === 0) continue;
+
+    claims.push({ position: claims.length, text, sourceIndexes });
+  }
+
+  return claims;
+}
+
+// =====================================================================
+// ٦) التعارض بين وثيقتين — إشارة محسوبة لا حكم نموذج
+// =====================================================================
+
+/**
+ * أدنى تشابه لفظي يُعدّ عنده مقطعان «في الموضوع نفسه».
+ *
+ * والعتبة منخفضة عمدًا لسببٍ في الاسترجاع لا في المقارنة: اختيار
+ * السياق يُنوِّع المقاطع (MMR) فيُبعد المتشابهَين عن بعضهما قصدًا،
+ * فمقطعان نجَوا من التنويع وما زالا يشتركان في ربع مفرداتهما هما
+ * في الموضوع نفسه فعلًا.
+ */
+const CONFLICT_TOPIC_SIMILARITY = 0.25;
+
+export interface SuspectedConflict {
+  /** فهرسا المقطعين المتعارضين */
+  indexes: [number, number];
+  /** الأرقام التي انفرد بها كلٌّ منهما */
+  numbersA: string[];
+  numbersB: string[];
+  /** قوة الاشتباه = التشابه اللفظي بين المقطعين */
+  topicSimilarity: number;
+}
+
+/** الأرقام التي تحمل معطًى لا ترقيمَ قائمة — القاعدة نفسها في `verifyNumbers` */
+function meaningfulNumbers(text: string): Set<string> {
+  const result = new Set<string>();
+  for (const value of extractNumbers(text)) {
+    const numeric = Number(value);
+    if (Number.isInteger(numeric) && numeric >= 0 && numeric <= 20) continue;
+    result.add(value);
+  }
+  return result;
+}
+
+/**
+ * اشتباه تعارضٍ بين مقطعين من وثيقتين مختلفتين.
+ *
+ * القاعدة: موضوعٌ واحد وأرقامٌ مختلفة. مقطعان يتكلمان عن مهلة الإشعار
+ * أحدهما يقول ثلاثين والآخر ستين ⇒ موضعٌ يستحقّ النظر.
+ *
+ * وحدوده تُقال صراحةً لأنها تحدّد ما يصحّ ادّعاؤه:
+ *
+ *   • يكشف **اشتباهًا** لا تعارضًا. مقطعان عن الإجازات أحدهما للسنوية
+ *     والآخر للمرضية يختلفان في الأرقام بلا تعارض أصلًا.
+ *   • ولا يكشف التعارض الذي لا رقم فيه: «يجوز» مقابل «لا يجوز» يمرّ
+ *     بلا إشارة. وهذا نقصٌ معروف، وعلاجه ليس خفضَ العتبة.
+ *   • ويقتصر على وثيقتين **مختلفتين**: اختلاف الأرقام داخل وثيقة
+ *     واحدة تفصيلٌ في موضعه الغالب لا تناقض.
+ *
+ * ولذلك يُعرض ما يُعرض بوصفه «راجع هذين الموضعين»، لا «المصادر
+ * متعارضة». وتحذيرٌ يدّعي أكثر مما يعرف يُعتاد تجاهلُه، فيضيع معه
+ * التحذير الصادق.
+ */
+export function detectSuspectedConflict(
+  chunks: { content: string; documentId: string }[],
+  consideredIndexes: number[],
+): SuspectedConflict | null {
+  const entries = consideredIndexes
+    .map((index) => ({ index, chunk: chunks[index] }))
+    .filter((entry): entry is { index: number; chunk: (typeof chunks)[number] } =>
+      Boolean(entry.chunk),
+    )
+    .map((entry) => ({
+      ...entry,
+      tokens: contentTokens(entry.chunk.content),
+      numbers: meaningfulNumbers(entry.chunk.content),
+    }));
+
+  let strongest: SuspectedConflict | null = null;
+
+  for (let a = 0; a < entries.length; a += 1) {
+    for (let b = a + 1; b < entries.length; b += 1) {
+      const left = entries[a];
+      const right = entries[b];
+
+      if (left.chunk.documentId === right.chunk.documentId) continue;
+      if (left.numbers.size === 0 || right.numbers.size === 0) continue;
+
+      const topicSimilarity = jaccard(left.tokens, right.tokens);
+      if (topicSimilarity < CONFLICT_TOPIC_SIMILARITY) continue;
+
+      const onlyLeft = [...left.numbers].filter((value) => !right.numbers.has(value));
+      const onlyRight = [...right.numbers].filter((value) => !left.numbers.has(value));
+      if (onlyLeft.length === 0 || onlyRight.length === 0) continue;
+
+      if (strongest === null || topicSimilarity > strongest.topicSimilarity) {
+        strongest = {
+          indexes: [left.index, right.index],
+          numbersA: onlyLeft,
+          numbersB: onlyRight,
+          topicSimilarity: Number(topicSimilarity.toFixed(4)),
+        };
+      }
+    }
+  }
+
+  return strongest;
+}
+
+// =====================================================================
+// ٧) تغطية الإجابة — ما بين «أجابت» و«لم تجد»
+// =====================================================================
+
+export type AnswerCoverage = 'FULL' | 'PARTIAL' | 'NEEDS_CLARIFICATION';
+
+export interface CoverageReading {
+  coverage: AnswerCoverage;
+  /** ما لم تغطّه المصادر، أو ما يلزم توضيحه — بنصّ النموذج */
+  note: string | null;
+  /** نصّ الإجابة بلا علامات الحالة */
+  text: string;
+}
+
+const PARTIAL_MARKER = /\[\s*تغطية\s*ناقصة\s*:\s*([^\]]+)\]/u;
+const CLARIFY_MARKER = /\[\s*يحتاج\s*توضيح(?:ًا|ا)?\s*:\s*([^\]]+)\]/u;
+
+/**
+ * قراءة علامة التغطية من آخر الإجابة.
+ *
+ * التقاطُ العلامة حسابيّ، والحكمُ الذي تحتها حكمُ النموذج — وهذا
+ * مقصود ومحدود: لا سبيل إلى معرفة «هل غطّى الجوابُ شِقَّي السؤال»
+ * بحسابٍ محلّي، إذ يلزم فهم السؤال نفسه.
+ *
+ * وهو امتداد لما يجري اليوم بالضبط: «لم أجد معلومات كافية» صيغةٌ
+ * يكتبها النموذج ويلتقطها الكود نصًّا، وعليها تقوم كل فجوات المعرفة.
+ * فالجديد هنا حالتان بينهما، لا أسلوبٌ جديد في الحكم.
+ *
+ * والعلامة تُحيَّد في محتوى المقاطع قبل إرسالها (`neutralizeChunkContent`)،
+ * وإلا استطاع مستندٌ مرفوع أن يجعل كلّ إجابةٍ تبدو ناقصة التغطية.
+ */
+export function readCoverage(answer: string): CoverageReading {
+  const clarify = answer.match(CLARIFY_MARKER);
+  const partial = answer.match(PARTIAL_MARKER);
+
+  const text = answer.replace(CLARIFY_MARKER, '').replace(PARTIAL_MARKER, '').trim();
+
+  // التوضيح أسبق: سؤالٌ غامض لا تُقاس تغطيته أصلًا قبل أن يُفهم
+  if (clarify) {
+    return { coverage: 'NEEDS_CLARIFICATION', note: clarify[1].trim() || null, text };
+  }
+  if (partial) {
+    return { coverage: 'PARTIAL', note: partial[1].trim() || null, text };
+  }
+
+  return { coverage: 'FULL', note: null, text };
+}
+
+// =====================================================================
+// ٨) المعادلة المركّبة — درجة الثقة
 // =====================================================================
 
 /**

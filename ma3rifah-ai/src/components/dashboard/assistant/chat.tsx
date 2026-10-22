@@ -521,6 +521,14 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-sm font-medium">{source.documentName}</span>
+                        {/*
+                          اسم الإصدار الذي أُخذ منه النصّ فعلًا، لا الإصدار
+                          الحالي للوثيقة: الإجابة تُقرأ بعد أسابيع، وقد
+                          اعتُمد إصدار أحدث بينهما.
+                        */}
+                        {source.versionLabel ? (
+                          <Badge variant="muted">{source.versionLabel}</Badge>
+                        ) : null}
                         {source.pageNumber ? (
                           <Badge variant="muted">صفحة {formatNumber(source.pageNumber)}</Badge>
                         ) : null}

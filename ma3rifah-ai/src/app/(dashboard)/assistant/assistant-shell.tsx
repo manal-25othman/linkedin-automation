@@ -75,7 +75,9 @@ export async function AssistantShell({
     if (assistantIds.length > 0) {
       const { data: sourceRows } = await supabase
         .from('message_sources')
-        .select('message_id, document_id, document_name, page_number, section_title, similarity, excerpt')
+        .select(
+          'message_id, document_id, document_name, version_label, page_number, section_title, similarity, excerpt',
+        )
         .in('message_id', assistantIds)
         .order('similarity', { ascending: false });
 
@@ -84,6 +86,7 @@ export async function AssistantShell({
         list.push({
           documentId: source.document_id ?? '',
           documentName: source.document_name,
+          versionLabel: source.version_label,
           pageNumber: source.page_number,
           sectionTitle: source.section_title,
           similarity: source.similarity ?? 0,

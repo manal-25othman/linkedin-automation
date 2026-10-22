@@ -7,8 +7,15 @@ import { retrieveRelevantChunks, summarizeSources } from '@/lib/rag/retrieval';
 import { isConversationalFollowUp } from '@/lib/rag/gap-filter';
 import { generateAnswer, generateConversationTitle, estimateCostUsd, rewriteSearchQuery } from '@/lib/ai/claude';
 import { buildSystemPrompt, buildUserMessage, isUnansweredResponse } from '@/lib/ai/prompts';
-import { verifyAnswer, stripCitationMarkers } from '@/lib/rag/verify';
-import type { ConfidenceLevel } from '@/lib/rag/verify';
+import {
+  verifyAnswer,
+  stripCitationMarkers,
+  splitClaims,
+  detectSuspectedConflict,
+  readCoverage,
+} from '@/lib/rag/verify';
+import type { ConfidenceLevel, SuspectedConflict } from '@/lib/rag/verify';
+import type { RetrievedChunk } from '@/lib/rag/retrieval';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import { recordAnalyticsEvent } from '@/lib/audit';
 import { getEmbeddingProvider } from '@/lib/rag/embeddings';
@@ -24,6 +31,8 @@ import type { CompanyAiSettings } from '@/types/database';
 export interface AnswerSource {
   documentId: string;
   documentName: string;
+  /** اسم الإصدار الذي أُخذ منه النص — null لوثيقة بلا عائلة بعد */
+  versionLabel: string | null;
   pageNumber: number | null;
   sectionTitle: string | null;
   similarity: number;
@@ -43,6 +52,12 @@ export interface AskResult {
   confidenceLevel: ConfidenceLevel | null;
   /** أرقام وردت في الإجابة بلا أصل في المصادر */
   unverifiedNumbers: string[];
+  /** ما لم تغطّه المصادر من السؤال — null حين كانت التغطية كاملة */
+  coverageNote: string | null;
+  /** ما يلزم السائل توضيحه قبل أن يصحّ جواب واحد */
+  clarificationNote: string | null;
+  /** موضعان يستحقّان النظر لاختلاف أرقامهما في موضوع واحد */
+  conflictNote: string | null;
 }
 
 const MAX_QUESTION_LENGTH = 2000;
@@ -223,9 +238,15 @@ export async function askAssistant(input: {
     userMessage: buildUserMessage(question, retrieval.chunks),
   });
 
-  const unanswered = retrieval.isEmpty || isUnansweredResponse(completion.text);
+  // --- التغطية ---
+  // تُقرأ علامة الحالة وتُنزع من النصّ قبل أي قياس: بقاؤها يُفسد
+  // حساب الرسوخ (كلماتها ليست من المصادر) ويُعرض للمستخدم رمزًا
+  // داخليًا لا معنى له عنده.
+  const coverage = readCoverage(completion.text);
+
+  const unanswered = retrieval.isEmpty || isUnansweredResponse(coverage.text);
   const rawAnswer =
-    completion.text.trim() ||
+    coverage.text.trim() ||
     'لم أجد معلومات كافية في قاعدة معرفة الشركة للإجابة عن هذا السؤال.';
 
   // --- التحقق من رسوخ الإجابة في مصادرها ---
@@ -233,10 +254,36 @@ export async function askAssistant(input: {
   // يتحقق أنه لم يفعل. القياس معجمي محلي بلا استدعاء نموذج ثانٍ.
   const verification = verifyAnswer({ answer: rawAnswer, chunks: retrieval.chunks });
 
+  // --- الجملة ومصدرها ---
+  // تُقطَّع قبل حذف العلامات، فهي كل ما يربط جملةً بوثيقةٍ بعينها.
+  const claims = unanswered ? [] : splitClaims(rawAnswer, retrieval.chunks.length);
+
+  // --- اشتباه التعارض ---
+  // يُحسب على المقاطع التي استُشهد بها وحدها: التعارض بين مقطعين لم
+  // يدخلا الإجابة ليس تحذيرًا للقارئ بل ضجيج عن نصّ لم يره.
+  const conflict = unanswered
+    ? null
+    : detectSuspectedConflict(retrieval.chunks, verification.citedIndexes);
+
+  const coverageNote = unanswered || coverage.coverage === 'FULL' ? null : coverage.note;
+  const conflictNote = conflict ? describeConflict(retrieval.chunks, conflict) : null;
+
   // تُحذف علامات [مصدر ن] بعد استخلاصها: أفادت في الربط ولا تفيد القارئ
   const answerText = appendWarnings(
     stripCitationMarkers(rawAnswer),
-    unanswered ? [] : verification.warnings,
+    unanswered
+      ? []
+      : [
+          ...verification.warnings,
+          ...(coverageNote
+            ? [
+                coverage.coverage === 'NEEDS_CLARIFICATION'
+                  ? `حدّد ${coverageNote} ليصحّ جواب واحد — المصادر تفرّق بينها.`
+                  : `لم أجد في مستندات الشركة نصًّا عن: ${coverageNote}`,
+              ]
+            : []),
+          ...(conflictNote ? [conflictNote] : []),
+        ],
   );
 
   if (verification.numbers.unverified.length > 0) {
@@ -257,7 +304,9 @@ export async function askAssistant(input: {
       user_id: profile.id,
       role: 'ASSISTANT',
       content: answerText,
-      answer_status: unanswered ? 'UNANSWERED' : 'ANSWERED',
+      answer_status: unanswered ? 'UNANSWERED' : COVERAGE_STATUS[coverage.coverage],
+      coverage_note: coverageNote,
+      conflict_note: conflictNote,
       latency_ms: completion.latencyMs + retrieval.latencyMs,
       model: completion.model,
       input_tokens: completion.inputTokens,
@@ -284,9 +333,46 @@ export async function askAssistant(input: {
     .filter((chunk): chunk is NonNullable<typeof chunk> => Boolean(chunk));
 
   const summarized = unanswered ? [] : summarizeSources(citedChunks);
+
+  /*
+   * وصف الإصدار يُنسخ الآن لا يُقرأ لاحقًا.
+   *
+   * `documents.id` إصدارٌ بعينه، فالاستشهاد دقيقٌ أصلًا — لكن اسمه
+   * يعيش في العائلة وتتغيّر العائلة. فلو قُرئ وقت العرض لأظهرت إجابةُ
+   * الأمس اسمَ إصدار اليوم، وهي لم تُبنَ عليه.
+   *
+   * وبجلسة المستخدم لا بمفتاح الخدمة: الدالّة تَفحص `can_read_document`،
+   * ومفتاح الخدمة بلا هوية فترجع خاويةً بلا خطأ — فتُحفظ الاستشهادات
+   * بلا أسماء إصدارات ولا يشتكي شيء.
+   */
+  const versions = new Map<string, { familyId: string | null; label: string | null }>();
+
+  if (summarized.length > 0) {
+    const documentIds = [...new Set(summarized.map((chunk) => chunk.documentId))];
+    const { data: versionRows, error: versionError } = await supabase.rpc(
+      'describe_document_versions',
+      { p_document_ids: documentIds },
+    );
+
+    if (versionError) {
+      // لا تُسقط الإجابة: الاستشهاد بلا اسم إصدار أنقص لا باطل
+      logger.warn('تعذّر قراءة أسماء الإصدارات للاستشهاد', {
+        reason: versionError.message,
+      });
+    }
+
+    for (const row of versionRows ?? []) {
+      versions.set(row.document_id, {
+        familyId: row.family_id,
+        label: row.version_label,
+      });
+    }
+  }
+
   const sources: AnswerSource[] = summarized.map((chunk) => ({
     documentId: chunk.documentId,
     documentName: chunk.documentName,
+    versionLabel: versions.get(chunk.documentId)?.label ?? null,
     pageNumber: chunk.pageNumber,
     sectionTitle: chunk.sectionTitle,
     similarity: chunk.similarity,
@@ -301,6 +387,8 @@ export async function askAssistant(input: {
         document_id: chunk.documentId,
         chunk_id: chunk.chunkId,
         document_name: chunk.documentName,
+        family_id: versions.get(chunk.documentId)?.familyId ?? null,
+        version_label: versions.get(chunk.documentId)?.label ?? null,
         page_number: chunk.pageNumber,
         section_title: chunk.sectionTitle,
         similarity: chunk.similarity,
@@ -309,10 +397,48 @@ export async function askAssistant(input: {
     );
   }
 
+  // --- الجمل ومصادرها ---
+  // تُحفظ بعد المصادر لا قبلها: فشلُها لا يُسقط الإجابة، وإجابةٌ بلا
+  // تفصيلِ جُمَلٍ أنقص من إجابةٍ معه — لا باطلة.
+  if (claims.length > 0) {
+    const { error: claimsError } = await supabase.from('message_claims').insert(
+      claims.map((claim) => ({
+        company_id: company.id,
+        message_id: assistantMessage.id,
+        position: claim.position,
+        text: truncate(claim.text, 2000),
+        document_ids: [
+          ...new Set(
+            claim.sourceIndexes
+              .map((index) => retrieval.chunks[index]?.documentId)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        ],
+      })),
+    );
+
+    if (claimsError) {
+      logger.warn('تعذّر حفظ جمل الإجابة ومصادرها', { reason: claimsError.message });
+    }
+  }
+
   // --- فجوة معرفة ---
   // المتابعات المحادثية («تاكد الان») تفشل استرجاعًا بالطبع، وليست
   // فجواتِ توثيق — تسجيلُها يملأ قائمة المدير بما لا يُجاب فتُهمَل
-  if (unanswered && !isConversationalFollowUp(question)) {
+  /*
+   * والتغطية الناقصة فجوةٌ أيضًا — وهي الأخطر لأنها لا تُرى.
+   *
+   * سؤالٌ من شقّين أُجيب عن أحدهما يُسجَّل اليوم `ANSWERED` فلا يبلغ
+   * المدير أبدًا، والشقّ الثاني يبقى بلا توثيق سنةً كاملة بينما
+   * «لم أجد» الصريحة تصل في يومها.
+   *
+   * ونصُّ ما نقص يُحفظ على الرسالة لا على الفجوة: ربطُه بالفجوة يأتي
+   * مع تحويل الفجوات إلى مهامّ، حيث يتوسّع سجلّ الفجوة أصلًا — وترحيلٌ
+   * يُضيف حقلًا ثم يُعاد تشكيله بعد أسبوع تكلفةٌ بلا مقابل.
+   */
+  const recordsGap = unanswered || coverage.coverage === 'PARTIAL';
+
+  if (recordsGap && !isConversationalFollowUp(question)) {
     const { data: gapId, error: gapError } = await supabase.rpc('record_knowledge_gap', {
       p_question: question,
     });
@@ -351,8 +477,10 @@ export async function askAssistant(input: {
       await notifyCompanyAdmins({
         companyId: company.id,
         type: 'GAP_OPENED',
-        title: 'سؤال لم تجد له قاعدة المعرفة إجابة',
-        body: question,
+        title: unanswered
+          ? 'سؤال لم تجد له قاعدة المعرفة إجابة'
+          : 'سؤال أُجيب عنه جزئيًا — بقي شقّ بلا توثيق',
+        body: coverageNote ? `${question}\n\nالناقص: ${coverageNote}` : question,
         link: '/knowledge-gaps',
         entityType: 'knowledge_gap',
         entityId: gapId,
@@ -387,7 +515,36 @@ export async function askAssistant(input: {
     confidence: unanswered ? null : verification.confidence,
     confidenceLevel: unanswered ? null : verification.level,
     unverifiedNumbers: unanswered ? [] : verification.numbers.unverified,
+    coverageNote: coverage.coverage === 'PARTIAL' ? coverageNote : null,
+    clarificationNote: coverage.coverage === 'NEEDS_CLARIFICATION' ? coverageNote : null,
+    conflictNote,
   };
+}
+
+/** علامة التغطية ← حالة الإجابة المحفوظة */
+const COVERAGE_STATUS = {
+  FULL: 'ANSWERED',
+  PARTIAL: 'PARTIAL',
+  NEEDS_CLARIFICATION: 'NEEDS_CLARIFICATION',
+} as const;
+
+/**
+ * صياغة الاشتباه بلغة تُراجَع لا بلغة تُصدّق.
+ *
+ * «راجع هذين الموضعين» لا «المصادر متعارضة»: ما حُسب هو اختلاف أرقام
+ * في موضوع واحد، وقد يكون فرقًا مشروعًا بين فئتين. والتحذير الذي
+ * يدّعي أكثر مما يعرف يُكذَّب مرةً ثم يُتجاهل دائمًا.
+ */
+function describeConflict(chunks: RetrievedChunk[], conflict: SuspectedConflict): string {
+  const [left, right] = conflict.indexes;
+  const nameA = chunks[left]?.documentName ?? 'مصدر';
+  const nameB = chunks[right]?.documentName ?? 'مصدر';
+
+  return (
+    `راجع هذين الموضعين قبل الاعتماد: «${nameA}» يذكر ` +
+    `${conflict.numbersA.join('، ')}، و«${nameB}» يذكر ` +
+    `${conflict.numbersB.join('، ')} في الموضوع نفسه.`
+  );
 }
 
 async function getDepartmentName(

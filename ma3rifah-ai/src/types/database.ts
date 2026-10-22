@@ -15,7 +15,14 @@ export type DocumentStatus = 'PROCESSING' | 'READY' | 'FAILED' | 'ARCHIVED';
 export type DocumentSource = 'UPLOAD' | 'CURATED_ANSWER' | 'AUTHORED_POLICY';
 export type DocumentVisibility = 'COMPANY' | 'DEPARTMENT' | 'ROLE';
 export type MessageRole = 'USER' | 'ASSISTANT';
-export type AnswerStatus = 'ANSWERED' | 'UNANSWERED' | 'ERROR';
+export type AnswerStatus =
+  | 'ANSWERED'
+  | 'UNANSWERED'
+  | 'ERROR'
+  /** غطّت المصادر شقًّا من السؤال وبقي شقّ بلا نصّ */
+  | 'PARTIAL'
+  /** السؤال يحتمل أكثر من قراءة، ولكل قراءة جواب مختلف */
+  | 'NEEDS_CLARIFICATION';
 export type FeedbackValue = 'UP' | 'DOWN';
 export type GapStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED';
 type SiteContentRow = {
@@ -290,6 +297,10 @@ type MessageRow = {
   unverified_numbers: number;
   /** استُنتجت المصادر معجميًا لغياب استشهاد صريح من النموذج */
   citations_inferred: boolean;
+  /** ما لم تغطّه المصادر من السؤال، بنصّ النموذج */
+  coverage_note: string | null;
+  /** اشتباه تعارض محسوب بين مصدرين — نصّ جاهز للعرض */
+  conflict_note: string | null;
   created_at: string;
 };
 
@@ -300,11 +311,89 @@ type MessageSourceRow = {
   document_id: string | null;
   chunk_id: string | null;
   document_name: string;
+  /** عائلة الوثيقة — لتتبّع كل استشهادات الوثيقة عبر إصداراتها */
+  family_id: string | null;
+  /** اسم الإصدار كما كان يوم صدرت الإجابة، منسوخًا لا مقروءًا */
+  version_label: string | null;
   page_number: number | null;
   section_title: string | null;
   similarity: number | null;
   excerpt: string | null;
   created_at: string;
+};
+
+type MessageClaimRow = {
+  id: string;
+  company_id: string;
+  message_id: string;
+  /** ترتيب الجملة في الإجابة، بادئًا من صفر */
+  position: number;
+  text: string;
+  /** الإصدارات التي استُشهد بها لهذه الجملة */
+  document_ids: string[];
+  created_at: string;
+};
+
+/**
+ * الفرق المحسوب بين إصدارين.
+ *
+ * بنيةٌ لا نثر: ما يُحفظ هنا نتيجةُ حساب، والنثر الذي يُقرأ يُولَّد
+ * منه. ولو حُفظ النثر وحده لصار تعديلُ خوارزمية المقارنة لاحقًا بلا
+ * أثر على ما خُزّن، وبقيت فروقٌ قديمة تُعرض كأنها صحيحة.
+ */
+export interface DocumentDiff {
+  /** اسم الخوارزمية ونسختها — نتيجةٌ بنسخةٍ أقدم تُعاد لا تُعرض */
+  algorithm: string;
+  /** عدد الفقرات في كل إصدار بعد إعادة بناء النصّ من مقاطعه */
+  fromParagraphs: number;
+  toParagraphs: number;
+  /** فقرات لا نظير لها في الإصدار الأقدم */
+  added: string[];
+  /** فقرات اختفت من الإصدار الأحدث */
+  removed: string[];
+  /** فقرات تقابلت وتغيّر نصّها */
+  changed: DocumentParagraphChange[];
+  /**
+   * الأرقام التي تبدّلت — مستخرَجة من `changed`، وتُفرد لأنها أخطر ما
+   * يتغيّر في لائحة، وأسهل ما يُفوَّت وسط فقراتٍ متشابهة.
+   */
+  numberChanges: DocumentNumberChange[];
+  /** فقرات لم تتغيّر — عددًا لا نصًّا */
+  unchanged: number;
+  /** true حين بلغ الحساب حدَّه فاكتفى بما قاس */
+  truncated: boolean;
+}
+
+export interface DocumentParagraphChange {
+  before: string;
+  after: string;
+  /** تشابه لفظي ∈ [0,1] — وعليه وقع اعتبارهما فقرةً واحدة تغيّرت */
+  similarity: number;
+}
+
+export interface DocumentNumberChange {
+  before: string;
+  after: string;
+  /** أرقامٌ كانت في الأقدم واختفت */
+  removedNumbers: string[];
+  /** أرقامٌ ظهرت في الأحدث */
+  addedNumbers: string[];
+}
+
+type DocumentComparisonRow = {
+  id: string;
+  company_id: string;
+  family_id: string;
+  from_document_id: string;
+  to_document_id: string;
+  /** الفرق المحسوب حسابيًا — وهو الحقيقة */
+  diff: DocumentDiff;
+  /** صياغة نثرية مولَّدة من `diff` وحده، وقد تغيب */
+  summary: string | null;
+  summary_model: string | null;
+  summary_at: string | null;
+  computed_at: string;
+  computed_by: string | null;
 };
 
 type KnowledgeGapRow = {
@@ -719,6 +808,8 @@ export interface Database {
       conversations: Table<ConversationRow>;
       messages: Table<MessageRow>;
       message_sources: Table<MessageSourceRow>;
+      message_claims: Table<MessageClaimRow>;
+      document_comparisons: Table<DocumentComparisonRow>;
       knowledge_gaps: Table<KnowledgeGapRow>;
       knowledge_gap_askers: Table<KnowledgeGapAskerRow>;
       notifications: Table<NotificationRow>;
@@ -793,6 +884,24 @@ export interface Database {
       archive_document_version: {
         Args: { p_document_id: string; p_note?: string | null };
         Returns: undefined;
+      };
+      describe_document_versions: {
+        Args: { p_document_ids: string[] };
+        Returns: {
+          document_id: string;
+          family_id: string | null;
+          version_label: string | null;
+        }[];
+      };
+      save_document_comparison: {
+        Args: {
+          p_from_document_id: string;
+          p_to_document_id: string;
+          p_diff: DocumentDiff;
+          p_summary?: string | null;
+          p_summary_model?: string | null;
+        };
+        Returns: string;
       };
       chunks_of_document_version: {
         Args: { p_document_id: string };
@@ -1263,6 +1372,8 @@ export type DocumentChunk = Tables<'document_chunks'>;
 export type Conversation = Tables<'conversations'>;
 export type Message = Tables<'messages'>;
 export type MessageSource = Tables<'message_sources'>;
+export type MessageClaim = Tables<'message_claims'>;
+export type DocumentComparison = Tables<'document_comparisons'>;
 export type KnowledgeGap = Tables<'knowledge_gaps'>;
 export type Plan = Tables<'plans'>;
 export type Subscription = Tables<'subscriptions'>;
