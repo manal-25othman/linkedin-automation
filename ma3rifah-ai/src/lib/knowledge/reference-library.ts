@@ -101,6 +101,9 @@ async function indexReferenceBody(params: {
       description: meta.description?.trim() || null,
       file_type: params.fileType,
       file_size_bytes: Buffer.byteLength(body, 'utf8'),
+      // النصّ يُحفظ ليُعاد منه البناء عند الفشل ولتُعرض المعاينة —
+      // والوثيقة الفاشلة بلا مقاطع فلا تُبنى من لا شيء.
+      source_text: body,
       storage_path: params.storagePath ?? null,
       checksum: params.checksum ?? null,
       page_count: params.pageCount ?? null,
@@ -148,7 +151,11 @@ async function indexReferenceBody(params: {
 
     await admin
       .from('platform_reference_documents')
-      .update({ status: 'READY', updated_at: new Date().toISOString() })
+      .update({
+        status: 'READY',
+        chunk_count: chunks.length,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', documentId);
 
     logger.info('فُهرست وثيقة مرجعية', { chunkCount: chunks.length });
@@ -361,4 +368,101 @@ export async function searchReferenceLibrary(
     sectionTitle: row.section_title,
     similarity: row.similarity,
   }));
+}
+
+
+/**
+ * إعادة فهرسة وثيقة مرجعية من نصّها المحفوظ.
+ *
+ * الحاجة إليها عملية لا نظرية: أكثر أسباب الفشل شيوعًا هو حدّ معدّل
+ * مزوّد التضمين — عطلٌ عابر لا علاقة له بالمحتوى. وبلا إعادة محاولة
+ * يُجبَر المالك على حذف الوثيقة ورفعها من الصفر لسببٍ يزول بعد دقيقة.
+ *
+ * وتُبنى من `source_text` لا من المقاطع: الوثيقة الفاشلة قد لا تملك
+ * مقاطع أصلًا — وهي الحالة التي تحتاج هذه الدالّة أكثر من غيرها.
+ */
+export async function reindexReferenceDocument(documentId: string): Promise<number> {
+  const admin = createAdminClient();
+
+  const { data: doc, error } = await admin
+    .from('platform_reference_documents')
+    .select('id, source_text, reference_code')
+    .eq('id', documentId)
+    .maybeSingle();
+
+  if (error || !doc) {
+    throw new AppError('NOT_FOUND', 'الوثيقة غير موجودة.');
+  }
+
+  const body = doc.source_text ?? '';
+  if (body.length < MIN_BODY_LENGTH) {
+    // الوثائق المرفوعة قبل حفظ النصّ لا نصّ محفوظ لها
+    throw new AppError(
+      'VALIDATION',
+      'لا يوجد نصّ محفوظ لهذه الوثيقة. احذفها وارفعها من جديد.',
+    );
+  }
+
+  await admin
+    .from('platform_reference_documents')
+    .update({ status: 'PROCESSING', error_message: null })
+    .eq('id', documentId);
+
+  try {
+    const chunks = buildChunks({ text: body, pages: [], pageCount: null });
+    if (chunks.length === 0) throw new Error('لم يُنتج النصّ أي مقاطع');
+
+    const embeddings = await embedTexts(
+      chunks.map((chunk) => chunk.content),
+      'document',
+    );
+    if (embeddings.length !== chunks.length) {
+      throw new Error('عدد التضمينات لا يطابق عدد المقاطع');
+    }
+
+    // تُحذف المقاطع القديمة أولًا — وإلا بقيت نسخة نصف مفهرسة بجانب
+    // الجديدة فيُرجع البحث الاثنتين.
+    await admin.from('platform_reference_chunks').delete().eq('document_id', documentId);
+
+    const { error: insertError } = await admin
+      .from('platform_reference_chunks')
+      .insert(
+        chunks.map((chunk, position) => ({
+          document_id: documentId,
+          chunk_index: chunk.index,
+          content: chunk.content,
+          token_count: chunk.tokenCount,
+          page_number: chunk.pageNumber,
+          section_title: doc.reference_code?.trim() || null,
+          embedding: toPgVector(embeddings[position]),
+        })),
+      );
+
+    if (insertError) throw new Error(insertError.message);
+
+    await admin
+      .from('platform_reference_documents')
+      .update({
+        status: 'READY',
+        chunk_count: chunks.length,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', documentId);
+
+    logger.info('أُعيدت فهرسة وثيقة مرجعية', { chunkCount: chunks.length });
+    return chunks.length;
+  } catch (cause) {
+    await admin
+      .from('platform_reference_documents')
+      .update({
+        status: 'FAILED',
+        error_message: 'تعذّرت إعادة الفهرسة.',
+      })
+      .eq('id', documentId);
+
+    logger.error('تعذّرت إعادة فهرسة وثيقة مرجعية', {
+      reason: cause instanceof Error ? cause.message : String(cause),
+    });
+    throw new AppError('INTERNAL', 'تعذّرت إعادة الفهرسة. حاول بعد قليل.');
+  }
 }

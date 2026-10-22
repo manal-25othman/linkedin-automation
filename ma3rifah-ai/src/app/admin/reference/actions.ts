@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { randomUUID } from 'node:crypto';
 import {
   ingestReferenceDocument,
+  reindexReferenceDocument,
   ingestReferenceDocumentFromFile,
   REFERENCE_BUCKET,
 } from '@/lib/knowledge/reference-library';
@@ -221,6 +222,90 @@ export async function finalizeReferenceUploadAction(
         .remove([storagePath])
         .catch(() => undefined);
     }
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+
+export interface ReferenceChunkPreview {
+  chunkIndex: number;
+  content: string;
+  tokenCount: number;
+  hasEmbedding: boolean;
+}
+
+/**
+ * معاينة ما فُهرس — لا ما رُفع.
+ *
+ * والفرق جوهريّ: الاستخراج قد يُسقط جدولًا أو يخلط عمودًا، والمعاينة
+ * هي ما يكشفه. ورفعٌ يقول «منشورة» بلا دليل على محتواه ثقةٌ عمياء في
+ * نصٍّ تُبنى عليه سياسات شركات.
+ */
+export async function previewReferenceChunksAction(documentId: string): Promise<{
+  ok: boolean;
+  chunks?: ReferenceChunkPreview[];
+  message?: string;
+}> {
+  try {
+    await requireSuperAdmin();
+
+    if (!documentId) throw new AppError('VALIDATION', 'الوثيقة غير محدّدة.');
+
+    const admin = createAdminClient();
+    const { data, error } = await admin.rpc('preview_reference_chunks', {
+      p_document_id: documentId,
+      p_limit: 20,
+    });
+
+    if (error) {
+      logger.error('تعذّرت معاينة المقاطع', { reason: error.message });
+      return { ok: false, message: 'تعذّرت المعاينة.' };
+    }
+
+    return {
+      ok: true,
+      chunks: (data ?? []).map((row) => ({
+        chunkIndex: row.chunk_index,
+        content: row.content,
+        tokenCount: row.token_count,
+        hasEmbedding: row.has_embedding,
+      })),
+    };
+  } catch (error) {
+    return { ok: false, message: toAppError(error).displayMessage };
+  }
+}
+
+/**
+ * إعادة الفهرسة.
+ *
+ * أكثر أسباب الفشل شيوعًا حدّ معدّل مزوّد التضمين — عطلٌ عابر لا علاقة
+ * له بالمحتوى، وكان يوجب الحذف وإعادة الرفع من الصفر.
+ */
+export async function reindexReferenceDocumentAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    const { profile } = await requireSuperAdmin();
+
+    const documentId = String(formData.get('documentId') ?? '').trim();
+    if (!documentId) throw new AppError('VALIDATION', 'الوثيقة غير محدّدة.');
+
+    const chunkCount = await reindexReferenceDocument(documentId);
+
+    await recordAudit({
+      companyId: null,
+      actorId: profile.id,
+      actorEmail: profile.email,
+      action: 'reference.uploaded',
+      entityType: 'platform_reference_document',
+      entityId: documentId,
+      metadata: { reindexed: true, chunkCount },
+    });
+
+    revalidatePath('/admin/reference');
+    return { ok: true, message: `أُعيدت الفهرسة — ${chunkCount} مقطعًا.` };
+  } catch (error) {
     return { ok: false, message: toAppError(error).displayMessage };
   }
 }

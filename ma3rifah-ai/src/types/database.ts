@@ -635,6 +635,9 @@ export type PlatformReferenceDocumentRow = {
   page_count: number | null;
   ocr_pages: number;
   source_checked_at: string | null;
+  /** النصّ الذي فُهرس — يُعاد منه البناء وتُعرض منه المعاينة */
+  source_text: string | null;
+  chunk_count: number;
   status: DocumentStatus;
   error_message: string | null;
   uploaded_by: string | null;
@@ -808,6 +811,15 @@ export interface Database {
       save_policy_draft_version: {
         Args: { p_draft_id: string; p_body: string; p_note?: string | null };
         Returns: number;
+      };
+      preview_reference_chunks: {
+        Args: { p_document_id: string; p_limit?: number };
+        Returns: {
+          chunk_index: number;
+          content: string;
+          token_count: number;
+          has_embedding: boolean;
+        }[];
       };
       match_platform_reference_chunks: {
         Args: {

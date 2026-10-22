@@ -20,7 +20,7 @@ export default async function ReferenceLibraryPage() {
 
   const { data } = await admin
     .from('platform_reference_documents')
-    .select('id, name, authority, reference_code, source_url, status, file_size_bytes, created_at')
+    .select('id, name, authority, reference_code, source_url, status, file_size_bytes, chunk_count, created_at')
     .order('created_at', { ascending: false })
     .limit(200);
 
@@ -30,6 +30,7 @@ export default async function ReferenceLibraryPage() {
     authority: doc.authority,
     referenceCode: doc.reference_code,
     sourceUrl: doc.source_url,
+    chunkCount: doc.chunk_count,
     status: doc.status,
     sizeBytes: doc.file_size_bytes,
     createdAt: doc.created_at,
