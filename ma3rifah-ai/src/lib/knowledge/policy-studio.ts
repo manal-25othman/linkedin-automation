@@ -3,6 +3,7 @@ import 'server-only';
 import { generateAnswer } from '@/lib/ai/claude';
 import { neutralizeChunkContent } from '@/lib/ai/prompts';
 import { searchReferenceLibrary, type ReferenceMatch } from '@/lib/knowledge/reference-library';
+import { POLICY_LEGAL_NOTICE as DRAFT_NOTICE } from '@/lib/knowledge/policy-notice';
 import type { RetrievedChunk } from '@/lib/rag/retrieval';
 import { logger } from '@/lib/logger';
 
@@ -22,9 +23,13 @@ import { logger } from '@/lib/logger';
  * ومصادر مغلوطة. المصدران اثنان لا ثالث لهما: وثائق الشركة، والمكتبة.
  */
 
-export const POLICY_LEGAL_NOTICE =
-  'مسودة تنظيمية أُعدّت بمساعدة المنصة استنادًا إلى وثائق الشركة والمراجع ' +
-  'النظامية المذكورة. تحتاج مراجعة مختص قبل اعتمادها ملزِمة.';
+/**
+ * التنبيه يعيش في `policy-notice.ts` ويُعاد تصديره هنا.
+ *
+ * لأن الناشر يحتاجه أيضًا — ليستبدله لا ليُلحقه — واستيرادُه هذا
+ * الملفَّ كلَّه لأجل سطرٍ يجرّ معه النموذجَ والمكتبةَ المرجعية.
+ */
+export { POLICY_LEGAL_NOTICE } from '@/lib/knowledge/policy-notice';
 
 const MIN_CLARIFICATIONS = 3;
 const MAX_CLARIFICATIONS = 5;
@@ -218,7 +223,7 @@ export async function generatePolicyDraft(
 
   // التنبيه يُلحَق هنا لا يُطلب من النموذج: الحاجز الذي يعتمد على
   // امتثال نموذجٍ ليس حاجزًا.
-  const body = `${drafted}\n\n---\n\n> ⚠️ ${POLICY_LEGAL_NOTICE}`;
+  const body = `${drafted}\n\n---\n\n> ⚠️ ${DRAFT_NOTICE}`;
 
   const citations: PolicyCitation[] = references.map((match) => ({
     authority: match.authority,

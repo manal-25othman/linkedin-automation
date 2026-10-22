@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  POLICY_LEGAL_NOTICE,
+  finalizePolicyBody,
+  mentionsDraftNotice,
+} from '@/lib/knowledge/policy-notice';
 
 /**
  * حارس استوديو السياسات والمكتبة المرجعية.
@@ -27,6 +32,7 @@ const STUDIO_MIGRATION = read('supabase/migrations/0040_policy_studio.sql');
 const STUDIO = read('src/lib/knowledge/policy-studio.ts');
 const LIBRARY = read('src/lib/knowledge/reference-library.ts');
 const PUBLISH = read('src/lib/knowledge/publish-policy.ts');
+const NOTICE = read('src/lib/knowledge/policy-notice.ts');
 const ACTIONS = read('src/app/(dashboard)/policy-studio/actions.ts');
 
 describe('المكتبة لا تلمس عزل الشركات', () => {
@@ -90,12 +96,14 @@ describe('المسوّدة لا تصل موظفًا', () => {
 
 describe('التنبيه القانوني حاجز برمجي لا طلبٌ من النموذج', () => {
   it('النصّ ثابت في الشيفرة', () => {
-    expect(STUDIO).toContain('export const POLICY_LEGAL_NOTICE');
-    expect(STUDIO).toContain('تحتاج مراجعة مختص');
+    expect(NOTICE).toContain('export const POLICY_LEGAL_NOTICE');
+    expect(NOTICE).toContain('تحتاج مراجعة مختص');
+    // يبقى مُصدَّرًا من الاستوديو: كان مستوردًا منه قبل أن يُفصل
+    expect(STUDIO).toContain('POLICY_LEGAL_NOTICE');
   });
 
   it('يُلحَق بالمسوّدة بعد التوليد', () => {
-    expect(STUDIO).toMatch(/const body = `\$\{drafted\}[\s\S]*POLICY_LEGAL_NOTICE/);
+    expect(STUDIO).toMatch(/const body = `\$\{drafted\}[\s\S]*DRAFT_NOTICE/);
   });
 
   it('الموجّه لا يطلب من النموذج كتابة التنبيه', () => {
@@ -248,5 +256,78 @@ describe('التخزين المؤقت لا يُسقط النداءات القص�
     expect(ACTIONS).toContain('result.usage.inputTokens');
     expect(ACTIONS).toContain('estimateCostUsd(');
     expect(ACTIONS).not.toContain('inputTokens: 0');
+  });
+});
+
+/**
+ * حارس: السياسة المعتمدة لا تصف نفسها مسوّدة.
+ *
+ * التنبيه يُذيَّل بالمسوّدة برمجيًّا — وهو صواب — ثم كان يُنشر معها
+ * كما هو. فتدخل قاعدةَ المعرفة سياسةٌ اعتمدتها الإدارة ونصُّها يقول
+ * «مسودة… تحتاج مراجعة مختص قبل اعتمادها ملزِمة».
+ *
+ * وليس سطرًا في الهامش: المتن يُقطَّع ويُفهرس، فيُسترجع ويُعرض للموظف
+ * في مقتطف المصدر، وقد يُطابق سؤال «هل هذه السياسة ملزمة؟» — فيُجاب
+ * بلا عن سياسةٍ اعتمدتها شركته.
+ */
+describe('متن السياسة المنشورة', () => {
+  const draft = [
+    '# سياسة العمل عن بعد',
+    '',
+    '١. يجوز للموظف العمل عن بعد يومين في الأسبوع.',
+    '',
+    '---',
+    '',
+    `> ⚠️ ${POLICY_LEGAL_NOTICE}`,
+  ].join('\n');
+
+  const approvedAt = new Date('2026-10-22T09:00:00Z');
+
+  it('لا يصف نفسه مسوّدة بعد الاعتماد', () => {
+    const published = finalizePolicyBody(draft, approvedAt);
+    expect(mentionsDraftNotice(published)).toBe(false);
+    expect(published).not.toContain('تحتاج مراجعة مختص');
+  });
+
+  it('ويحمل بدلها تنبيه اعتماد بتاريخه', () => {
+    const published = finalizePolicyBody(draft, approvedAt);
+    expect(published).toContain('اعتمدتها إدارة الشركة بتاريخ');
+    // السنة بالأرقام العربية-الهندية أو اللاتينية بحسب البيئة — والمهم
+    // أنّ التاريخ ميلاديّ: ١٤٤٨ هجريّة تعني أنّ `ca-gregory` سقط
+    expect(published).toMatch(/٢٠٢٦|2026/);
+    // أثر «أُعدّت بمساعدة المنصة» يبقى في المتن لا في سجلٍّ إداري وحده
+    expect(published).toContain('أُعدّت بمساعدة المنصة');
+  });
+
+  it('ولا يبتلع نصّ السياسة نفسه (ضابط موجب)', () => {
+    const published = finalizePolicyBody(draft, approvedAt);
+    expect(published).toContain('يجوز للموظف العمل عن بعد يومين في الأسبوع');
+    expect(published).toContain('# سياسة العمل عن بعد');
+  });
+
+  it('يُنزع السطر ولو نقله المدير إلى أول المتن', () => {
+    const moved = `> ⚠️ ${POLICY_LEGAL_NOTICE}\n\n# سياسة العمل عن بعد\n\n١. بند.`;
+    const published = finalizePolicyBody(moved, approvedAt);
+    expect(mentionsDraftNotice(published)).toBe(false);
+    expect(published).toContain('# سياسة العمل عن بعد');
+  });
+
+  it('ولا يتراكم تنبيه الاعتماد عند إعادة النشر', () => {
+    const once = finalizePolicyBody(draft, approvedAt);
+    const twice = finalizePolicyBody(once, approvedAt);
+    const occurrences = twice.split('اعتمدتها إدارة الشركة بتاريخ').length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it('الناشر يستبدل التنبيه قبل التقطيع لا بعده', () => {
+    // مواضع النداء لا الاستيراد: الاستيرادات كلها في أعلى الملف
+    const swapAt = PUBLISH.indexOf('finalizePolicyBody(cleanText');
+    const chunkAt = PUBLISH.indexOf('buildChunks({');
+    expect(swapAt).toBeGreaterThan(-1);
+    expect(swapAt).toBeLessThan(chunkAt);
+  });
+
+  it('وحارسٌ أخير يمنع فهرسة مقطع يصف السياسة مسوّدة', () => {
+    expect(PUBLISH).toContain('mentionsDraftNotice(chunk.content)');
   });
 });

@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { buildChunks } from '@/lib/rag/chunk';
 import { embedTexts, toPgVector } from '@/lib/rag/embeddings';
 import { cleanText } from '@/lib/rag/extract';
+import { finalizePolicyBody, mentionsDraftNotice } from '@/lib/knowledge/policy-notice';
 import { AppError } from '@/lib/errors';
 import { approveAuthoredVersion } from '@/lib/documents/approve-authored';
 import { logger } from '@/lib/logger';
@@ -37,7 +38,17 @@ export interface PublishPolicyInput {
 export async function publishPolicyDraft(
   input: PublishPolicyInput,
 ): Promise<string> {
-  const body = cleanText(input.body);
+  /*
+   * تنبيه المسوّدة يُستبدل قبل أي شيء آخر — قبل القياس وقبل التقطيع.
+   *
+   * لأنّ ما يُقطَّع هنا هو ما يقرؤه الموظف: نصُّ المسوّدة يقول عن نفسه
+   * إنه «مسودة… تحتاج مراجعة مختص قبل اعتمادها ملزِمة»، ويُفهرس هذا
+   * السطر كبقية المتن فيُسترجع ويُعرض — عن سياسةٍ اعتمدتها الشركة.
+   *
+   * والاستبدال لا الحذف: أثر «أُعدّت بمساعدة المنصة» يبقى في المتن
+   * نفسه لا في سجلٍّ إداري وحده.
+   */
+  const body = finalizePolicyBody(cleanText(input.body), new Date());
 
   if (body.length < MIN_BODY_LENGTH) {
     throw new AppError('VALIDATION', 'نصّ السياسة قصير جدًا.');
@@ -102,6 +113,13 @@ export async function publishPolicyDraft(
   try {
     const chunks = buildChunks({ text: body, pages: [], pageCount: null });
     if (chunks.length === 0) throw new Error('لم تُنتج السياسة أي مقاطع');
+
+    // حاجز أخير قبل الفهرسة: لا يدخل قاعدةَ المعرفة مقطعٌ يصف سياسةً
+    // معتمدة بأنها مسوّدة. وهو فحص رخيص على نصٍّ قُطّع للتوّ، ويمسك
+    // ما يفلت من الاستبدال لو حرّر المدير السطر فلم يُطابَق.
+    if (chunks.some((chunk) => mentionsDraftNotice(chunk.content))) {
+      throw new Error('بقي تنبيه المسوّدة في نصّ السياسة بعد الاستبدال');
+    }
 
     const embeddings = await embedTexts(
       chunks.map((chunk) => chunk.content),
