@@ -5,6 +5,7 @@ import { buildChunks } from '@/lib/rag/chunk';
 import { embedTexts, toPgVector } from '@/lib/rag/embeddings';
 import { cleanText } from '@/lib/rag/extract';
 import { AppError } from '@/lib/errors';
+import { approveAuthoredVersion } from '@/lib/documents/approve-authored';
 import { logger } from '@/lib/logger';
 import { truncate } from '@/lib/utils';
 
@@ -161,6 +162,16 @@ export async function upsertCuratedAnswer(
         processed_at: new Date().toISOString(),
       })
       .eq('id', documentId);
+
+    // الاعتماد وقع قبل هذا السطر: المدير كتب الجواب واعتمده. فيُسجَّل
+    // قرارًا على الإصدار كي يُجيب فعلًا — ولا يُطلب منه اعتماده ثانيةً.
+    await approveAuthoredVersion({
+      admin,
+      companyId: input.companyId,
+      documentId,
+      approverId: input.authorId,
+      note: 'إجابة معتمدة لسدّ فجوة معرفية — اعتُمدت عند كتابتها',
+    });
 
     logger.info('فُهرست إجابة معتمدة', { chunkCount: chunks.length });
   } catch (error) {

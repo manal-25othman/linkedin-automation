@@ -206,3 +206,71 @@ create policy policy_draft_versions_all on public.policy_draft_versions
 --      بلا أثر لمن فعلها.
 alter table public.policy_drafts
   drop constraint if exists policy_drafts_approval_complete;
+
+-- (١٦) **نزع شرط الإصدار الفعّال من الاسترجاع** — أخطر طفرة على نظام
+--      الإصدارات: يصير كل إصدارٍ مفهرس مصدرًا للإجابات، فتُجيب المنصّة
+--      من مسودة لم يعتمدها أحد، ومن نسخةٍ استُبدلت، ومن إصدارٍ لم يسرِ
+--      بعد. ولا شيء في الواجهة يُظهر ذلك: الإجابة تأتي بمصدر وصفحة،
+--      والمصدر ملفٌّ لم يُقرّ.
+--
+--      يجب أن تسقط: «الاسترجاع لا يُرجع مقطعًا من إصدار غير فعّال»،
+--      و«الإصدار المستبدَل خرج من الاسترجاع»، و«المؤرشف لا يُجيب»،
+--      و«الوثيقة غير المعتمدة لا تدخل إجابات الموظفين»، و«الإصدار
+--      المستقبلي لا يدخل الإجابات قبل موعده».
+create or replace function public.match_document_chunks_hybrid(
+  p_query_embedding vector(1024),
+  p_query_text text,
+  p_match_count int default 8,
+  p_min_similarity real default 0.30,
+  p_category_ids uuid[] default null
+)
+returns table (
+  chunk_id uuid, document_id uuid, document_name text, content text,
+  page_number int, section_title text, similarity real,
+  lexical_rank real, fused_score real, matched_by text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  -- ⚠ بلا ربط العائلة، وبلا الحاجز الزمنيّ
+  select c.id, c.document_id, d.name, c.content, c.page_number,
+         c.section_title,
+         (1 - (c.embedding <=> p_query_embedding))::real,
+         0::real, 0::real, 'dense'::text
+  from public.document_chunks c
+  join public.documents d on d.id = c.document_id
+  join public.profiles p on p.id = auth.uid()
+  where c.company_id = p.company_id
+    and d.status = 'READY'
+    and c.embedding is not null
+  order by c.embedding <=> p_query_embedding
+  limit coalesce(p_match_count, 8);
+$$;
+
+-- (١٧) **جعل رؤية العائلة بحدّ الشركة وحده** — يُلغي ربط ظهور العائلة
+--      بصلاحيات إصداراتها، فيرى موظف المالية **عنوان** وثيقة مقصورة
+--      على الموارد البشرية. والعنوان وحده معلومة: «لائحة إنهاء خدمات
+--      قسم المشتريات» تكشف ما لا يحقّ له ولو لم يُفتح ملف.
+--
+--      يجب أن تسقط: «موظف المالية لا يرى عائلة وثيقة الموارد البشرية»،
+--      و«ولا أحداث سجلّها»، و«مدير القسم لا يرى عائلة الوثيقة المقصورة
+--      على مدير الشركة».
+create or replace function public.can_read_document_family(p_family_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select true;  -- ⚠ كان: وجودُ إصدارٍ يحقّ للمستخدم قراءته
+$$;
+
+-- (١٨) **السماح باعتماد إصدار لم تكتمل فهرسته** — يُسقط الحاجز البنيوي
+--      على الجدول، فيصير مرجعُ الشركة ملفًا لا مقاطع له: سياسة
+--      «معتمدة» لا يجدها أي سؤال.
+--
+--      يجب أن يسقط اختبار «قيد القاعدة يمنع تعيين إصدار غير مفهرس
+--      مرجعًا (حاجز بنيوي)».
+drop trigger if exists document_families_effective_guard on public.document_families;

@@ -35,6 +35,21 @@ insert into public.documents (id, company_id, name, file_type, storage_path, sta
   ('dddddddd-dddd-dddd-dddd-dddddddddddd','11111111-1111-1111-1111-111111111111','تعديلات نظام العمل','pdf','a/1.pdf','READY','COMPANY','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
   ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee','22222222-2222-2222-2222-222222222222','مستند شركة ب','pdf','b/1.pdf','READY','COMPANY','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
 
+-- تُعتمد الإصدارات صراحةً: لا تفعيل تلقائي بعد `0042`، والاسترجاع
+-- يُجيب من الإصدار المعتمد الساري وحده.
+update public.documents
+   set approval_status = 'APPROVED', effective_from = current_date,
+       approved_by = uploaded_by, approved_at = now()
+ where id in ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+              'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+
+update public.document_families f
+   set effective_document_id = d.id
+  from public.documents d
+ where d.family_id = f.id
+   and d.id in ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+                'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+
 -- متجهٌ متعامدٌ على متجه السؤال عمدًا: التشابه صفر، فلا يمرّ من الأرضية
 -- الدلالية أبدًا. وهكذا نعزل أثر المسار اللفظيّ وحده.
 insert into public.document_chunks

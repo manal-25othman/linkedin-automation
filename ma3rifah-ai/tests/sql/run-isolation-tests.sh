@@ -90,6 +90,12 @@ run_sql -f "$ROOT/tests/sql/12_policy_reference_tests.sql" >/dev/null
 echo "▸ اختبارات استوديو السياسات"
 run_sql -f "$ROOT/tests/sql/13_policy_studio_tests.sql" >/dev/null
 
+echo "▸ اختبارات إصدارات الوثائق"
+run_sql -f "$ROOT/tests/sql/14_document_versions_tests.sql" >/dev/null
+
+echo "▸ اختبارات تفعيل الإصدارات وظهور العائلة"
+run_sql -f "$ROOT/tests/sql/15_version_activation_tests.sql" >/dev/null
+
 echo
 "${PSQL_BASE[@]}" -d "$TEST_DB" -P pager=off -c "
   select id as \"#\",

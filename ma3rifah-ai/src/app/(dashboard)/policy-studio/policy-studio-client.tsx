@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Input, Textarea } from '@/components/ui/input';
 import { CrudDialog } from '@/components/dashboard/crud-dialog';
 import { EmptyState } from '@/components/shared/states';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatDate, formatRelativeTime } from '@/lib/utils';
 import type { PolicyClarification, PolicyDraftCitation, PolicyDraftStatus } from '@/types/database';
 import {
   approvePolicyDraftAction,
@@ -217,10 +217,36 @@ export function PolicyStudioClient({ drafts }: { drafts: PolicyDraftView[] }) {
                 <Label>المراجع النظامية المستنَد إليها</Label>
                 <ul className="space-y-1.5 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
                   {editing.citations.map((citation, index) => (
-                    <li key={index}>
-                      • {citation.authority}
-                      {citation.referenceCode ? ` — ${citation.referenceCode}` : ''} ·{' '}
-                      {citation.documentName}
+                    <li key={index} className="space-y-0.5">
+                      <span className="block">
+                        • {citation.authority}
+                        {citation.referenceCode ? ` — ${citation.referenceCode}` : ''} ·{' '}
+                        {citation.documentName}
+                      </span>
+                      {/*
+                        الرابط وتاريخ النسخ: بلاهما يقرأ المدير حكمًا
+                        منسوبًا إلى نظام ولا يملك طريقًا للتحقق منه.
+                        والتاريخ ليس زينة — النصّ النظاميّ يتغيّر،
+                        والاستشهاد لا يُحدِّث نفسه.
+                      */}
+                      {citation.sourceUrl || citation.textCopiedAt ? (
+                        <span className="block ps-3 text-[11px]">
+                          {citation.sourceUrl ? (
+                            <a
+                              href={citation.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
+                              المصدر الرسمي ↗
+                            </a>
+                          ) : null}
+                          {citation.sourceUrl && citation.textCopiedAt ? ' · ' : ''}
+                          {citation.textCopiedAt
+                            ? `نُسخ النصّ في ${formatDate(citation.textCopiedAt)}`
+                            : ''}
+                        </span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>

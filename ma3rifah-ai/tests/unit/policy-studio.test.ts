@@ -152,6 +152,41 @@ describe('المكتبة لا تدخل المساعد العادي', () => {
   });
 });
 
+describe('المكتبة تستعمل خطّ المعالجة نفسه لا بابًا أضعف', () => {
+  /**
+   * كانت المكتبة الموضع الوحيد في المنتج الذي يطلب لصق النصّ يدويًا،
+   * بينما يملك المشروع إصلاح PDF العربي المشوّه، والقراءة الضوئية،
+   * وقياس جودة الاستخراج الذي يرفض الملف الفاسد.
+   *
+   * أي أن **أهمّ نصّ في المنصّة** — النظام الذي تستند إليه سياسات
+   * الشركات — كان يدخل من أضعف باب. والانحدار هنا لا يظهر في عطل:
+   * يظهر في استشهادٍ بنصٍّ نصف مقروء، وعليه اسم جهة ورقم مادة فيُوثَق به.
+   */
+  it('ترفع الملف عبر الاستخراج وكشف الممسوح', () => {
+    expect(LIBRARY).toContain('extractOrDetectScan');
+  });
+
+  it('وتقيس جودة الاستخراج وترفض الفاسد', () => {
+    expect(LIBRARY).toContain('assessExtraction');
+    expect(LIBRARY).toContain("quality.verdict === 'EMPTY'");
+  });
+
+  it('وتقرأ الممسوح ضوئيًا', () => {
+    expect(LIBRARY).toContain('ocrPdfPages');
+  });
+
+  it('ودلو ملفاتها منفصل عن دلو مستندات الشركات', () => {
+    // الفصل البنيوي نفسه الذي دعا إلى فصل جداولها: سياسةٌ واحدة
+    // تتغيّر يومًا فتكشف ما لا يُقصد.
+    expect(LIBRARY).toContain("REFERENCE_BUCKET = 'reference-library'");
+    expect(LIBRARY).not.toContain(".from('documents')");
+  });
+
+  it('ويبقى مسار اللصق متاحًا للمقاطع القصيرة', () => {
+    expect(LIBRARY).toContain('export async function ingestReferenceDocument(');
+  });
+});
+
 describe('النشر يمرّ بالأنبوب المثبَت', () => {
   it('السياسة تصير مستندًا لا نوع بيانات جديدًا', () => {
     expect(PUBLISH).toContain("source_kind: 'AUTHORED_POLICY'");

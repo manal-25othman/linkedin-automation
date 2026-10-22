@@ -17,6 +17,7 @@ function state(over: Partial<WorkspaceState> = {}): WorkspaceState {
     usersCount: 1,
     documentsCount: 0,
     documentsReady: 0,
+    documentsApproved: 0,
     questionsCount: 0,
     ...over,
   };
@@ -44,7 +45,13 @@ describe('حساب التقدّم', () => {
 
   it('كل الخطوات تُنجز فتختفي البطاقة', () => {
     const progress = computeOnboarding(
-      state({ usersCount: 2, documentsCount: 3, documentsReady: 3, questionsCount: 5 }),
+      state({
+        usersCount: 2,
+        documentsCount: 3,
+        documentsReady: 3,
+        documentsApproved: 3,
+        questionsCount: 5,
+      }),
     );
     expect(progress.complete).toBe(true);
     expect(progress.percent).toBe(100);
@@ -64,8 +71,15 @@ describe('الخطوة التالية', () => {
   it('هي أول خطوة ناقصة', () => {
     expect(computeOnboarding(state()).next?.id).toBe('upload');
     expect(computeOnboarding(state({ documentsCount: 1 })).next?.id).toBe('indexed');
+    // الاعتماد يسبق السؤال: الوثيقة المفهرسة لا تُجيب قبل اعتمادها،
+    // فتوجيه المستخدم إلى السؤال قبلها يوجّهه إلى «لم أجد».
     expect(
       computeOnboarding(state({ documentsCount: 1, documentsReady: 1 })).next?.id,
+    ).toBe('approve');
+    expect(
+      computeOnboarding(
+        state({ documentsCount: 1, documentsReady: 1, documentsApproved: 1 }),
+      ).next?.id,
     ).toBe('ask');
   });
 
@@ -102,6 +116,41 @@ describe('من لا يملك صلاحية الإدارة', () => {
   });
 });
 
+describe('خطوة الاعتماد — بديل التفعيل التلقائي', () => {
+  /**
+   * أُلغي التفعيل التلقائي: الوثيقة المفهرسة **لا تُجيب** حتى يعتمدها
+   * مخوَّل. ولولا خطوة ظاهرة لرفع المدير ملفًا، ورأى «اكتملت المعالجة»،
+   * ثم سأل فلم يجد — ولا شيء يقول له لماذا. وهذا أسوأ من بطء: عطلٌ
+   * يبدو خللًا في المنتج وهو سياسةٌ تعمل.
+   */
+  it('الفهرسة لا تُنجز خطوة الاعتماد', () => {
+    const indexed = computeOnboarding(
+      state({ documentsCount: 1, documentsReady: 1 }),
+    );
+    const approveStep = indexed.steps.find((step) => step.id === 'approve');
+    expect(approveStep?.done).toBe(false);
+  });
+
+  it('والاعتماد يُنجزها', () => {
+    const approved = computeOnboarding(
+      state({ documentsCount: 1, documentsReady: 1, documentsApproved: 1 }),
+    );
+    expect(approved.steps.find((step) => step.id === 'approve')?.done).toBe(true);
+  });
+
+  it('وهي الخطوة التالية بعد اكتمال الفهرسة', () => {
+    const indexed = computeOnboarding(
+      state({ documentsCount: 1, documentsReady: 1 }),
+    );
+    expect(indexed.next?.id).toBe('approve');
+  });
+
+  it('ولا تُعرض لمن لا يملك الإدارة', () => {
+    const employee = computeOnboarding(state(), { canManage: false });
+    expect(employee.steps.some((step) => step.id === 'approve')).toBe(false);
+  });
+});
+
 describe('سلامة النسبة', () => {
   it('بين صفر ومئة في كل الحالات', () => {
     const combos: WorkspaceState[] = [];
@@ -109,12 +158,15 @@ describe('سلامة النسبة', () => {
       for (const docs of [0, 2]) {
         for (const ready of [0, 2]) {
           for (const questions of [0, 9]) {
-            combos.push({
-              usersCount: users,
-              documentsCount: docs,
-              documentsReady: ready,
-              questionsCount: questions,
-            });
+            for (const approved of [0, 1]) {
+              combos.push({
+                usersCount: users,
+                documentsCount: docs,
+                documentsReady: ready,
+                documentsApproved: approved,
+                questionsCount: questions,
+              });
+            }
           }
         }
       }

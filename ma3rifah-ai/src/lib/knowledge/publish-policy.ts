@@ -5,6 +5,7 @@ import { buildChunks } from '@/lib/rag/chunk';
 import { embedTexts, toPgVector } from '@/lib/rag/embeddings';
 import { cleanText } from '@/lib/rag/extract';
 import { AppError } from '@/lib/errors';
+import { approveAuthoredVersion } from '@/lib/documents/approve-authored';
 import { logger } from '@/lib/logger';
 import { truncate } from '@/lib/utils';
 
@@ -138,6 +139,16 @@ export async function publishPolicyDraft(
         processed_at: new Date().toISOString(),
       })
       .eq('id', documentId);
+
+    // المدير اعتمد المسوّدة قبل النشر، فالاعتماد يُسجَّل هنا قرارًا على
+    // الإصدار. وبدونه تُنشَر سياسةٌ «معتمدة» لا يجدها السؤال.
+    await approveAuthoredVersion({
+      admin,
+      companyId: input.companyId,
+      documentId,
+      approverId: input.approverId,
+      note: 'سياسة اعتمدها مدير الشركة في استوديو السياسات',
+    });
 
     await admin
       .from('policy_drafts')

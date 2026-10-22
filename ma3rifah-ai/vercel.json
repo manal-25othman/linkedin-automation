@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/activate-versions",
+      "schedule": "5 0 * * *"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { AlertTriangle, FileStack } from 'lucide-react';
 import { requirePermission } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
@@ -16,6 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { UploadDialog } from '@/components/dashboard/documents/upload-dialog';
+import { AwaitingReviewCard } from '@/components/dashboard/documents/awaiting-review';
 import { DocumentRowActions } from '@/components/dashboard/documents/document-actions';
 import {
   DocumentStatusBadge,
@@ -41,7 +43,7 @@ export default async function DocumentsPage() {
     supabase
       .from('documents')
       .select(
-        'id, name, status, error_message, file_type, file_size_bytes, chunk_count, page_count, ocr_pages, visibility, allowed_department_ids, category_id, created_at',
+        'id, family_id, name, approval_status, status, error_message, file_type, file_size_bytes, chunk_count, page_count, ocr_pages, visibility, allowed_department_ids, category_id, created_at',
       )
       .order('created_at', { ascending: false })
       .limit(200),
@@ -56,6 +58,16 @@ export default async function DocumentsPage() {
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]));
   const failedCount = documents.filter((document) => document.status === 'FAILED').length;
 
+  /*
+   * الوثائق المنتظرة مراجعة — تُجلب لمن يملك الإدارة وحده.
+   *
+   * والشرط هنا لتفادي نداءٍ لا لزوم له فحسب؛ الحراسة الفعلية داخل
+   * الدالّة نفسها (`is_company_admin()`)، فلا تعتمد على هذا السطر.
+   */
+  const awaitingReview = canManage
+    ? ((await supabase.rpc('families_awaiting_review')).data ?? [])
+    : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -67,6 +79,8 @@ export default async function DocumentsPage() {
           ) : null
         }
       />
+
+      <AwaitingReviewCard items={awaitingReview} />
 
       {failedCount > 0 ? (
         <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
@@ -112,7 +126,14 @@ export default async function DocumentsPage() {
               {documents.map((document) => (
                 <TableRow key={document.id}>
                   <TableCell className="max-w-[22rem]">
-                    <p className="truncate font-medium">{document.name}</p>
+                    {/* اسم المستند يفتح صفحة إصداراته — وهي مدخل
+                        المقارنة والاعتماد وسجلّ الوثيقة */}
+                    <Link
+                      href={`/documents/${document.family_id}`}
+                      className="truncate font-medium hover:underline"
+                    >
+                      {document.name}
+                    </Link>
                     {document.status === 'FAILED' && document.error_message ? (
                       <p className="mt-1 text-xs leading-relaxed text-destructive">
                         {document.error_message}

@@ -120,6 +120,29 @@ values
   (:doc_b_secret::uuid, :company_b::uuid, 'عقود عملاء — الشركة ب',
    'text/plain', 100, 'READY', 'COMPANY', '{}', '{}', :user_b_admin::uuid);
 
+-- ---------- اعتماد الإصدارات ----------
+-- بعد `0042` لم يبق تفعيل تلقائي: الوثيقة المفهرسة **جاهزة للاعتماد**
+-- لا مرجعًا للإجابات. فتُعتمد هنا صراحةً — والمثبّت يصف شركتين اتّخذتا
+-- قرار الاعتماد فعلًا، وهو ما تفعله الشركة العاملة.
+--
+-- ويُضبَط المؤشّر بمفتاح الخدمة مباشرةً لا بالدالّة: الدالّة تحتاج جلسة
+-- مستخدم، والمثبّت يُطبَّق قبل أي جلسة.
+
+update public.documents
+   set approval_status = 'APPROVED',
+       effective_from  = current_date,
+       approved_by     = uploaded_by,
+       approved_at     = now()
+ where id in (:doc_a_public::uuid, :doc_a_hr::uuid,
+              :doc_a_admin::uuid, :doc_b_secret::uuid);
+
+update public.document_families f
+   set effective_document_id = d.id
+  from public.documents d
+ where d.family_id = f.id
+   and d.id in (:doc_a_public::uuid, :doc_a_hr::uuid,
+                :doc_a_admin::uuid, :doc_b_secret::uuid);
+
 -- ---------- المقاطع والمتجهات ----------
 -- المتجه نفسه للجميع ⇒ تشابه متطابق ⇒ لا مجال لنتيجة صحيحة بالمصادفة
 

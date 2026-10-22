@@ -243,6 +243,46 @@ export async function finalizeUploadAction(formData: FormData): Promise<ActionRe
 
     const fileType = String(formData.get('fileType') || '') || blob.type || 'application/octet-stream';
 
+    /*
+     * رفع **إصدار جديد لوثيقة قائمة**: يأتي `familyId` من النموذج.
+     *
+     * وهو معرّفٌ من العميل، فيُفحَص انتماؤه للشركة قبل استعماله —
+     * وإلا أمكن لمن يعرف معرّف عائلةٍ في شركة أخرى أن يدسّ إصدارًا
+     * داخلها، فيصير ملفُّه مرجعَ تلك الشركة عند أول اعتماد. وهو
+     * الفحص نفسه الذي يحرس `storagePath` أعلاه، ولسببه نفسه.
+     *
+     * وإن لم يُمرَّر شيء، أنشأ مُشغِّل القاعدة عائلةً جديدة للوثيقة.
+     */
+    const requestedFamilyId = String(formData.get('familyId') ?? '').trim() || null;
+    let familyId: string | null = null;
+    let versionLabel: string | null = null;
+
+    if (requestedFamilyId) {
+      const { data: family } = await admin
+        .from('document_families')
+        .select('id')
+        .eq('id', requestedFamilyId)
+        .eq('company_id', company.id)
+        .maybeSingle();
+
+      if (!family) {
+        logger.warn('محاولة رفع إصدار إلى عائلة خارج الشركة', { actorId: profile.id });
+        await admin.storage.from('documents').remove([storagePath]);
+        throw new AppError('FORBIDDEN', 'الوثيقة غير صالحة.');
+      }
+
+      familyId = family.id;
+
+      // ترقيم بشريّ الظاهر: عدّ إصدارات العائلة ثم التالي.
+      const { count } = await admin
+        .from('documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('family_id', familyId)
+        .eq('company_id', company.id);
+
+      versionLabel = String((count ?? 0) + 1);
+    }
+
     const { data: document, error: insertError } = await admin
       .from('documents')
       .insert({
@@ -259,6 +299,7 @@ export async function finalizeUploadAction(formData: FormData): Promise<ActionRe
         allowed_department_ids: metadata.allowedDepartmentIds,
         allowed_roles: metadata.allowedRoles,
         uploaded_by: profile.id,
+        ...(familyId ? { family_id: familyId, version_label: versionLabel } : {}),
       })
       .select('id')
       .single();

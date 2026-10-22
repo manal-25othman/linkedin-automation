@@ -33,6 +33,16 @@ export interface PolicyCitation {
   authority: string;
   referenceCode: string | null;
   documentName: string;
+  /**
+   * رابط المصدر الرسمي وتاريخ نسخ نصّه.
+   *
+   * بلا هذين يقرأ المدير «(وزارة الموارد البشرية — المادة ١٠٩)» ولا
+   * يملك طريقًا للتحقق — وهو أخطر استشهاد في المنتج وأقلّه قابلية
+   * للمراجعة. واختياريان لأن المسوّدات المحفوظة قبل هذه الإضافة لا
+   * تحملهما، ولا تُعاد كتابتها.
+   */
+  sourceUrl?: string | null;
+  textCopiedAt?: string | null;
   excerpt: string;
 }
 
@@ -214,6 +224,8 @@ export async function generatePolicyDraft(
     authority: match.authority,
     referenceCode: match.referenceCode,
     documentName: match.documentName,
+    sourceUrl: match.sourceUrl,
+    textCopiedAt: match.textCopiedAt,
     excerpt: match.content.slice(0, 400),
   }));
 
