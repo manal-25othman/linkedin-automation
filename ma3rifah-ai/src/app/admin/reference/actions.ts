@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireSuperAdmin } from '@/lib/auth/session';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import { randomUUID } from 'node:crypto';
 import {
   ingestReferenceDocument,
@@ -251,8 +252,18 @@ export async function previewReferenceChunksAction(documentId: string): Promise<
 
     if (!documentId) throw new AppError('VALIDATION', 'الوثيقة غير محدّدة.');
 
-    const admin = createAdminClient();
-    const { data, error } = await admin.rpc('preview_reference_chunks', {
+    /*
+     * بعميل المستخدم لا بمفتاح الخدمة — والفرق هو كل العطل:
+     *
+     * الدالّة في القاعدة تسأل `is_super_admin()`، وهي تقرأ `auth.uid()`
+     * من رمز المنادي. ومفتاح الخدمة بلا هوية مستخدم، فتُرجع الدالّة
+     * صفرًا من المقاطع بلا خطأ — فتظهر المعاينة خاوية ويبدو أن الفهرسة
+     * فشلت وهي ناجحة.
+     *
+     * وهذا أسوأ شكل للعطل: لا رسالة ولا سجلّ، فراغٌ يُفسَّر خطأً.
+     */
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc('preview_reference_chunks', {
       p_document_id: documentId,
       p_limit: 20,
     });
